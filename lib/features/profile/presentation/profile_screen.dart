@@ -1,4 +1,5 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/core/theme/theme_controller.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
@@ -116,6 +117,8 @@ class _ProfileContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -155,7 +158,7 @@ class _ProfileContent extends ConsumerWidget {
                               color: AppColors.goldBright,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: AppColors.white,
+                                color: AppColors.surface(context),
                                 width: 2,
                               ),
                             ),
@@ -181,7 +184,7 @@ class _ProfileContent extends ConsumerWidget {
                         Text(
                           'Member since Jan 2026',
                           style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: AppColors.muted),
+                              ?.copyWith(color: AppColors.secondaryText(context)),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -214,13 +217,21 @@ class _ProfileContent extends ConsumerWidget {
                     value: '${progress.currentWeight.toStringAsFixed(1)} kg',
                     label: 'Current Weight',
                   ),
-                  Container(width: 1, height: 58, color: AppColors.border),
+                  Container(
+                    width: 1,
+                    height: 58,
+                    color: AppColors.divider(context),
+                  ),
                   _ProfileMetric(
                     icon: Icons.fitness_center_rounded,
                     value: '${progress.workoutsThisMonth}',
                     label: 'Workouts This Month',
                   ),
-                  Container(width: 1, height: 58, color: AppColors.border),
+                  Container(
+                    width: 1,
+                    height: 58,
+                    color: AppColors.divider(context),
+                  ),
                   const _ProfileMetric(
                     icon: Icons.local_fire_department_outlined,
                     value: '320',
@@ -279,8 +290,16 @@ class _ProfileContent extends ConsumerWidget {
         const SizedBox(height: 14),
         PremiumCard(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: const Column(
+          child: Column(
             children: [
+              _SettingsSwitchRow(
+                icon: Icons.dark_mode_outlined,
+                label: 'Dark Mode',
+                value: isDarkMode,
+                onChanged: (value) => ref
+                    .read(themeModeProvider.notifier)
+                    .setDarkMode(value),
+              ),
               _InfoRow(
                 icon: Icons.notifications_none_rounded,
                 label: 'Notifications',
@@ -357,7 +376,7 @@ class _ProfileMetric extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.secondaryText(context)),
           ),
         ],
       ),
@@ -401,12 +420,58 @@ class _InfoRow extends StatelessWidget {
                   value,
                   style: Theme.of(
                     context,
-                  ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                  ).textTheme.titleMedium?.copyWith(color: AppColors.secondaryText(context)),
                 ),
             ],
           ),
         ),
         if (showDivider) const Divider(height: 1),
+      ],
+    );
+  }
+}
+
+class _SettingsSwitchRow extends StatelessWidget {
+  const _SettingsSwitchRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 52,
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.gold, size: 20),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Switch(
+                value: value,
+                activeThumbColor: AppColors.goldBright,
+                activeTrackColor: AppColors.gold.withValues(alpha: .38),
+                onChanged: onChanged,
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
       ],
     );
   }

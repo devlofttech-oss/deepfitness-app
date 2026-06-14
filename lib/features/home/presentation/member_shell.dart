@@ -22,9 +22,9 @@ class MemberShell extends StatelessWidget {
             height: 72,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             decoration: BoxDecoration(
-              color: AppColors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: AppColors.divider(context)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: .06),
@@ -99,7 +99,7 @@ class _NavItem extends StatelessWidget {
                 width: 38,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: active ? AppColors.black : Colors.transparent,
+                  color: active ? AppColors.text(context) : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -114,7 +114,9 @@ class _NavItem extends StatelessWidget {
                 curve: Curves.easeOutCubic,
                 style:
                     Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: active ? AppColors.black : AppColors.muted,
+                      color: active
+                          ? AppColors.text(context)
+                          : AppColors.secondaryText(context),
                       fontWeight: active ? FontWeight.w700 : FontWeight.w500,
                     ) ??
                     const TextStyle(),

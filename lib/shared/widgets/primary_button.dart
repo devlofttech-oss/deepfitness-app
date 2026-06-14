@@ -30,7 +30,9 @@ class PrimaryButton extends StatelessWidget {
         child: FilledButton(
           onPressed: onPressed,
           style: FilledButton.styleFrom(
-            backgroundColor: outline ? AppColors.white : AppColors.goldBright,
+            backgroundColor: outline
+                ? AppColors.surface(context)
+                : AppColors.goldBright,
             side: BorderSide(
               color: outline ? AppColors.gold : AppColors.goldBright,
             ),

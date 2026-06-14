@@ -35,7 +35,7 @@ class PageHeader extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: AppColors.muted,
+                    color: AppColors.secondaryText(context),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

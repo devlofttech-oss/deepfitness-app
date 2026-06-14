@@ -68,13 +68,17 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                     workout.name,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
+                      fontSize: 18,
                     ),
                   ),
                   Text(
                     '${workout.exercises.indexWhere((item) => item.id == exercise.id) + 1} of ${workout.exercises.length} Exercises',
                     style: Theme.of(
                       context,
-                    ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                    ).textTheme.titleMedium?.copyWith(
+                      color: AppColors.secondaryText(context),
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -90,21 +94,21 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 88,
-                height: 88,
+                width: 76,
+                height: 76,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(18),
+                    color: AppColors.subtle(context),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Icon(
                     Icons.fitness_center_rounded,
-                    color: Colors.grey.shade700,
-                    size: 36,
+                    color: AppColors.secondaryText(context),
+                    size: 30,
                   ),
                 ),
               ),
-              const SizedBox(width: 24),
+              const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,15 +116,18 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                     Text(
                       exercise.name,
                       style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w800, fontSize: 18),
                     ),
                     Text(
                       exercise.description,
                       style: Theme.of(
                         context,
-                      ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                      ).textTheme.titleMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                        fontSize: 13,
+                      ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
                     Row(
                       children: [
                         Expanded(
@@ -134,8 +141,8 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                         ),
                         Container(
                           width: 1,
-                          height: 54,
-                          color: AppColors.border,
+                          height: 48,
+                          color: AppColors.divider(context),
                         ),
                         Expanded(
                           child: _Prescription(
@@ -213,9 +220,10 @@ class _ExerciseLoggingContent extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
                 'Add Extra Sets (Optional)',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.secondaryText(context),
+                  fontSize: 13,
+                ),
               ),
             ),
             const Expanded(child: Divider()),
@@ -228,10 +236,14 @@ class _ExerciseLoggingContent extends ConsumerWidget {
             onTap: () => ref.read(exerciseLogsProvider.notifier).addExtraSet(),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 22,
-                  backgroundColor: AppColors.background,
-                  child: Icon(Icons.add_rounded, color: AppColors.muted),
+                  backgroundColor: AppColors.subtle(context),
+                  child: Icon(
+                    Icons.add_rounded,
+                    color: AppColors.secondaryText(context),
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 18),
                 Expanded(
@@ -246,7 +258,10 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                   'Tap to log',
                   style: Theme.of(
                     context,
-                  ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                  ).textTheme.titleMedium?.copyWith(
+                    color: AppColors.secondaryText(context),
+                    fontSize: 13,
+                  ),
                 ),
               ],
             ),
@@ -305,9 +320,9 @@ class _SquareButton extends StatelessWidget {
         width: 46,
         height: 46,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: AppColors.divider(context)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: .04),
@@ -340,13 +355,14 @@ class _Prescription extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(icon, color: AppColors.gold, size: 19),
-            const SizedBox(width: 8),
+            Icon(icon, color: AppColors.gold, size: 17),
+            const SizedBox(width: 6),
             Text(
               label,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: AppColors.gold,
                 fontWeight: FontWeight.w600,
+                fontSize: 13,
               ),
             ),
           ],
@@ -356,7 +372,10 @@ class _Prescription extends StatelessWidget {
           value,
           style: Theme.of(
             context,
-          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+          ).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
         ),
       ],
     );
@@ -388,24 +407,33 @@ class _SetLogRow extends StatelessWidget {
               Row(
                 children: [
                   CircleAvatar(
-                    radius: 21,
+                    radius: 18,
                     backgroundColor: AppColors.goldBright,
                     child: Text(
                       '${log.setNumber}',
                       style: const TextStyle(fontWeight: FontWeight.w800),
                     ),
                   ),
-                  const SizedBox(width: 18),
+                  const SizedBox(width: 12),
                   Text(
                     'Set ${log.setNumber}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
+                      fontSize: 17,
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  _Chip(isMandatory ? 'Trainer Prescribed' : 'Extra'),
-                  const Spacer(),
-                  _Chip(isMandatory ? 'Mandatory' : 'Optional'),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _Chip(isMandatory ? 'Trainer' : 'Extra'),
+                        _Chip(isMandatory ? 'Mandatory' : 'Optional'),
+                      ],
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -438,8 +466,8 @@ class _SetLogRow extends StatelessWidget {
                   Container(
                     width: 1,
                     height: 46,
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    color: AppColors.border,
+                    margin: const EdgeInsets.symmetric(horizontal: 10),
+                    color: AppColors.divider(context),
                   ),
                   Expanded(
                     child: _StepperField(
@@ -465,7 +493,7 @@ class _SetLogRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 10),
                   InkWell(
                     onTap: () => onChanged(
                       ExerciseLog(
@@ -478,19 +506,19 @@ class _SetLogRow extends StatelessWidget {
                     ),
                     borderRadius: BorderRadius.circular(14),
                     child: Container(
-                      width: 58,
-                      height: 46,
+                      width: 48,
+                      height: 42,
                       decoration: BoxDecoration(
                         color: log.completed
                             ? AppColors.goldBright
-                            : AppColors.background,
-                        borderRadius: BorderRadius.circular(14),
+                            : AppColors.subtle(context),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         log.completed
                             ? Icons.check_rounded
                             : Icons.circle_outlined,
-                        size: 22,
+                        size: 20,
                       ),
                     ),
                   ),
@@ -526,15 +554,18 @@ class _StepperField extends StatelessWidget {
           label,
           style: Theme.of(
             context,
-          ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
+          ).textTheme.bodyLarge?.copyWith(
+            color: AppColors.secondaryText(context),
+            fontSize: 12,
+          ),
         ),
         const SizedBox(height: 8),
         Container(
-          height: 42,
+          height: 38,
           decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.divider(context)),
           ),
           child: Row(
             children: [
@@ -545,6 +576,7 @@ class _StepperField extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
+                    fontSize: 17,
                   ),
                 ),
               ),
@@ -568,10 +600,14 @@ class _RoundIcon extends StatelessWidget {
     return IconButton.filled(
       onPressed: onTap,
       style: IconButton.styleFrom(
-        backgroundColor: AppColors.background,
-        foregroundColor: AppColors.black,
+        backgroundColor: AppColors.subtle(context),
+        foregroundColor: AppColors.text(context),
+        minimumSize: const Size(32, 32),
+        fixedSize: const Size(32, 32),
+        padding: EdgeInsets.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
-      icon: Icon(icon),
+      icon: Icon(icon, size: 18),
     );
   }
 }
@@ -584,16 +620,17 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.goldSoft,
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.chipBackground(context),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFFC37E00),
+          color: AppColors.isDark(context) ? AppColors.goldBright : const Color(0xFFC37E00),
           fontWeight: FontWeight.w700,
+          fontSize: 10,
         ),
       ),
     );

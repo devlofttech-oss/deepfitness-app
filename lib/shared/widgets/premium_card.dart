@@ -7,13 +7,13 @@ class PremiumCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.radius = 18,
-    this.color = AppColors.white,
+    this.color,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double radius;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -21,12 +21,12 @@ class PremiumCard extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: color,
+        color: color ?? AppColors.surface(context),
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.border.withValues(alpha: .86)),
+        border: Border.all(color: AppColors.divider(context).withValues(alpha: .86)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .028),
+            color: Colors.black.withValues(alpha: AppColors.isDark(context) ? .12 : .028),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
