@@ -1,6 +1,7 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/brand_mark.dart';
 import 'package:deepfitness/shared/widgets/icon_tile.dart';
 import 'package:deepfitness/shared/widgets/metric_cell.dart';
@@ -23,15 +24,18 @@ class TodayScreen extends ConsumerWidget {
 
     return PremiumScaffold(
       bottomPadding: 132,
-      child: user.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => _ErrorState(message: error.toString()),
-        data: (userData) => workout.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _ErrorState(message: error.toString()),
-          data: (workoutData) => nutrition.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => _ErrorState(message: error.toString()),
+      child: AsyncStateView(
+        value: user,
+        errorTitle: 'Could not load your profile',
+        onRetry: () => ref.invalidate(currentUserProvider),
+        data: (userData) => AsyncStateView(
+          value: workout,
+          errorTitle: 'Could not load your workout',
+          onRetry: () => ref.invalidate(workoutProvider),
+          data: (workoutData) => AsyncStateView(
+            value: nutrition,
+            errorTitle: 'Could not load your nutrition',
+            onRetry: () => ref.invalidate(nutritionProvider),
             data: (nutritionData) => _TodayContent(
               user: userData,
               workout: workoutData,
@@ -311,19 +315,6 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(width: 1, height: 58, color: AppColors.border);
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return PremiumCard(
-      child: Text(message, style: const TextStyle(color: Colors.red)),
-    );
+    return Container(width: 1, height: 58, color: AppColors.divider(context));
   }
 }

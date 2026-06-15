@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
 import 'package:deepfitness/shared/widgets/primary_button.dart';
@@ -17,12 +20,17 @@ class ExerciseLoggingScreen extends ConsumerWidget {
     final selectedExercise = ref.watch(selectedExerciseProvider);
 
     return PremiumScaffold(
-      child: workout.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => PremiumCard(child: Text(error.toString())),
+      child: AsyncStateView(
+        value: workout,
+        errorTitle: 'Could not load exercise logging',
+        onRetry: () => ref.invalidate(workoutProvider),
         data: (workoutData) {
           if (workoutData.exercises.isEmpty) {
-            return const PremiumCard(child: Text('No exercises assigned yet.'));
+            return const AppEmptyState(
+              title: 'No exercises assigned',
+              message: 'Ask your trainer to assign a workout before logging sets.',
+              icon: Icons.fitness_center_rounded,
+            );
           }
           final exercise = selectedExercise ?? workoutData.exercises.first;
           final logs = ref.watch(exerciseLogsProvider);
@@ -94,19 +102,9 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           child: Row(
             children: [
               SizedBox(
-                width: 76,
-                height: 76,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: AppColors.subtle(context),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(
-                    Icons.fitness_center_rounded,
-                    color: AppColors.secondaryText(context),
-                    size: 30,
-                  ),
-                ),
+                width: 112,
+                height: 112,
+                child: _ExerciseMotionPreview(exercise: exercise),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -120,6 +118,8 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                     ),
                     Text(
                       exercise.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(
                         context,
                       ).textTheme.titleMedium?.copyWith(
@@ -188,11 +188,11 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 14),
-        logs.when(
-          loading: () => const PremiumCard(
-            child: Center(child: CircularProgressIndicator()),
-          ),
-          error: (error, _) => PremiumCard(child: Text(error.toString())),
+        AsyncStateView(
+          value: logs,
+          errorTitle: 'Could not load your sets',
+          loading: const AppLoadingState(rows: 2),
+          onRetry: () => ref.invalidate(exerciseLogsProvider),
           data: (items) => PremiumCard(
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
             child: Column(
@@ -272,11 +272,19 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           label: 'Save Sets',
           icon: Icons.save_outlined,
           onPressed: () async {
-            await ref.read(exerciseLogsProvider.notifier).save(exercise);
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sets saved to Supabase.')),
-              );
+            try {
+              await ref.read(exerciseLogsProvider.notifier).save(exercise);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sets saved to Supabase.')),
+                );
+              }
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(friendlyErrorMessage(error))),
+                );
+              }
             }
           },
         ),
@@ -301,6 +309,122 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           },
         ),
       ],
+    );
+  }
+}
+
+class _ExerciseMotionPreview extends StatefulWidget {
+  const _ExerciseMotionPreview({required this.exercise});
+
+  final Exercise exercise;
+
+  @override
+  State<_ExerciseMotionPreview> createState() => _ExerciseMotionPreviewState();
+}
+
+class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
+  Timer? _timer;
+  int _index = 0;
+
+  List<String> get _images => widget.exercise.imageUrls;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ExerciseMotionPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.exercise.imageUrls != widget.exercise.imageUrls) {
+      _index = 0;
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (_images.length < 2) return;
+    _timer = Timer.periodic(const Duration(milliseconds: 950), (_) {
+      if (!mounted) return;
+      setState(() => _index = (_index + 1) % _images.length);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final images = _images;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: AppColors.subtle(context)),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (images.isEmpty)
+              const _ExerciseImageFallback()
+            else
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 420),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: Image.network(
+                  images[_index % images.length],
+                  key: ValueKey('${widget.exercise.id}-$_index'),
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const _ExerciseImageFallback(),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const _ExerciseImageFallback();
+                  },
+                ),
+              ),
+            Positioned(
+              right: 8,
+              bottom: 8,
+              child: Row(
+                children: [
+                  for (var i = 0; i < images.length.clamp(0, 2); i++)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 240),
+                      width: i == _index % images.length ? 14 : 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(left: 4),
+                      decoration: BoxDecoration(
+                        color: i == _index % images.length
+                            ? AppColors.goldBright
+                            : AppColors.white.withValues(alpha: .72),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExerciseImageFallback extends StatelessWidget {
+  const _ExerciseImageFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Icon(
+        Icons.fitness_center_rounded,
+        color: AppColors.secondaryText(context),
+        size: 30,
+      ),
     );
   }
 }

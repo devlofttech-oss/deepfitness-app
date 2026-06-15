@@ -39,6 +39,14 @@ class Exercise {
     required this.notes,
     this.workoutExerciseId,
     this.isAssigned = true,
+    this.sourceId,
+    this.equipment,
+    this.level,
+    this.category,
+    this.primaryMuscles = const [],
+    this.secondaryMuscles = const [],
+    this.instructions = const [],
+    this.imageUrls = const [],
   });
 
   final String id;
@@ -52,6 +60,14 @@ class Exercise {
   final String notes;
   final String? workoutExerciseId;
   final bool isAssigned;
+  final String? sourceId;
+  final String? equipment;
+  final String? level;
+  final String? category;
+  final List<String> primaryMuscles;
+  final List<String> secondaryMuscles;
+  final List<String> instructions;
+  final List<String> imageUrls;
 }
 
 class WorkoutPlan {

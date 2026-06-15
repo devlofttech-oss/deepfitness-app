@@ -150,23 +150,19 @@ class AppDataRepository {
     final rows = await _supabaseService.client
         .from('workout_exercises')
         .select(
-          'id,sets,reps,rest_seconds,trainer_notes,sort_order,exercises(id,name,description,muscle_group,rest_seconds)',
+          'id,sets,reps,rest_seconds,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
         )
         .eq('workout_day_id', day['id'])
         .order('sort_order');
 
     final exercises = rows.map<Exercise>((row) {
       final exercise = row['exercises'] as Map<String, dynamic>;
-      return Exercise(
-        id: exercise['id'].toString(),
+      return _exerciseFromRow(
+        exercise,
         workoutExerciseId: row['id'].toString(),
-        name: exercise['name'].toString(),
-        description: (exercise['description'] ?? '').toString(),
-        muscleGroup: exercise['muscle_group'].toString(),
         sets: _toInt(row['sets']),
         reps: row['reps'].toString(),
         restSeconds: _toInt(row['rest_seconds']),
-        icon: exercise['muscle_group'].toString().toLowerCase(),
         notes: (row['trainer_notes'] ?? '').toString(),
       );
     }).toList();
@@ -326,15 +322,10 @@ class AppDataRepository {
         .order('muscle_group')
         .order('name');
     return rows.map<Exercise>((row) {
-      return Exercise(
-        id: row['id'].toString(),
-        name: row['name'].toString(),
-        description: (row['description'] ?? '').toString(),
-        muscleGroup: row['muscle_group'].toString(),
+      return _exerciseFromRow(
+        row,
         sets: 3,
         reps: '10-12',
-        restSeconds: _toInt(row['rest_seconds']),
-        icon: row['muscle_group'].toString().toLowerCase(),
         notes: '',
         isAssigned: false,
       );
@@ -671,22 +662,18 @@ class AppDataRepository {
     final rows = await _supabaseService.client
         .from('workout_exercises')
         .select(
-          'id,sets,reps,rest_seconds,trainer_notes,sort_order,exercises(id,name,description,muscle_group,rest_seconds)',
+          'id,sets,reps,rest_seconds,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
         )
         .eq('workout_day_id', day['id'])
         .order('sort_order');
     final exercises = rows.map<Exercise>((row) {
       final exercise = row['exercises'] as Map<String, dynamic>;
-      return Exercise(
-        id: exercise['id'].toString(),
+      return _exerciseFromRow(
+        exercise,
         workoutExerciseId: row['id'].toString(),
-        name: exercise['name'].toString(),
-        description: (exercise['description'] ?? '').toString(),
-        muscleGroup: exercise['muscle_group'].toString(),
         sets: _toInt(row['sets']),
         reps: row['reps'].toString(),
         restSeconds: _toInt(row['rest_seconds']),
-        icon: exercise['muscle_group'].toString().toLowerCase(),
         notes: (row['trainer_notes'] ?? '').toString(),
       );
     }).toList();
@@ -744,6 +731,57 @@ class AppDataRepository {
       level: 'Not assigned',
       exercises: const [],
     );
+  }
+
+  Exercise _exerciseFromRow(
+    Map<String, dynamic> row, {
+    required int sets,
+    required String reps,
+    String? workoutExerciseId,
+    int? restSeconds,
+    String notes = '',
+    bool isAssigned = true,
+  }) {
+    final muscleGroup = row['muscle_group'].toString();
+    final instructions = _toStringList(row['instructions']);
+    final description = (row['description'] ?? '').toString().trim();
+    return Exercise(
+      id: row['id'].toString(),
+      workoutExerciseId: workoutExerciseId,
+      name: row['name'].toString(),
+      description: description.isNotEmpty
+          ? description
+          : instructions.take(2).join(' '),
+      muscleGroup: muscleGroup,
+      sets: sets,
+      reps: reps,
+      restSeconds: restSeconds ?? _toInt(row['rest_seconds'], fallback: 60),
+      icon: muscleGroup.toLowerCase(),
+      notes: notes,
+      isAssigned: isAssigned,
+      sourceId: row['source_id']?.toString(),
+      equipment: row['equipment']?.toString(),
+      level: row['level']?.toString(),
+      category: row['category']?.toString(),
+      primaryMuscles: _toStringList(row['primary_muscles']),
+      secondaryMuscles: _toStringList(row['secondary_muscles']),
+      instructions: instructions,
+      imageUrls: _toStringList(row['image_urls']),
+    );
+  }
+
+  static List<String> _toStringList(Object? value) {
+    if (value is List) {
+      return value
+          .where((item) => item != null)
+          .map((item) => item.toString())
+          .where((item) => item.trim().isNotEmpty)
+          .toList();
+    }
+    if (value is String && value.trim().isNotEmpty) {
+      return [value];
+    }
+    return const [];
   }
 
   NutritionPlan _emptyNutrition() {

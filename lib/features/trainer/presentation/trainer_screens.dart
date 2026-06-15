@@ -2,6 +2,7 @@ import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/brand_mark.dart';
 import 'package:deepfitness/shared/widgets/icon_tile.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
@@ -131,9 +132,11 @@ class TrainerDashboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          stats.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
+          AsyncStateView(
+            value: stats,
+            errorTitle: 'Could not load trainer stats',
+            onRetry: () => ref.invalidate(trainerStatsProvider),
+            loading: const AppLoadingState(rows: 1),
             data: (stats) => Row(
               children: [
                 Expanded(
@@ -233,9 +236,13 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
             ),
           ),
           const SizedBox(height: 18),
-          members.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
+          AsyncStateView(
+            value: members,
+            errorTitle: 'Could not load members',
+            onRetry: () {
+              ref.invalidate(membersProvider);
+              ref.invalidate(trainerMembersProvider);
+            },
             data: (members) {
               final query = _search.text.trim().toLowerCase();
               final filtered = query.isEmpty
@@ -249,7 +256,20 @@ class _MembersListScreenState extends ConsumerState<MembersListScreen> {
                         )
                         .toList();
               if (filtered.isEmpty) {
-                return const PremiumCard(child: Text('No members found.'));
+                return AppEmptyState(
+                  title: query.isEmpty ? 'No members yet' : 'No matches found',
+                  message: query.isEmpty
+                      ? 'Add your first member to start assigning plans.'
+                      : 'Try a different name, goal, or email.',
+                  icon: Icons.group_outlined,
+                  action: query.isEmpty
+                      ? PrimaryButton(
+                          label: 'Add Member',
+                          icon: Icons.add_rounded,
+                          onPressed: () => context.push('/trainer/members/add'),
+                        )
+                      : null,
+                );
               }
               return Column(
                 children: [
@@ -400,7 +420,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         );
       }
     } catch (error) {
-      if (mounted) _showSnack(context, error.toString());
+      if (mounted) _showSnack(context, friendlyErrorMessage(error));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -440,7 +460,11 @@ class MemberDetailScreen extends ConsumerWidget {
 
     if (member == null) {
       return const PremiumScaffold(
-        child: PremiumCard(child: Text('No member selected.')),
+        child: AppEmptyState(
+          title: 'No member selected',
+          message: 'Open Members and choose someone to view their profile.',
+          icon: Icons.person_search_rounded,
+        ),
       );
     }
 
@@ -474,14 +498,21 @@ class MemberDetailScreen extends ConsumerWidget {
             label: 'Add Measurement',
             icon: Icons.monitor_weight_outlined,
             onPressed: () async {
-              await ref
-                  .read(appDataRepositoryProvider)
-                  .addMeasurement(member.id, member.currentWeight + .2);
-              ref.invalidate(membersProvider);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Measurement added.')),
-                );
+              try {
+                await ref
+                    .read(appDataRepositoryProvider)
+                    .addMeasurement(member.id, member.currentWeight + .2);
+                ref.invalidate(membersProvider);
+                ref.invalidate(trainerMembersProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Measurement added.')),
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  _showSnack(context, friendlyErrorMessage(error));
+                }
               }
             },
           ),
@@ -571,24 +602,42 @@ class AssignMemberScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 18),
-          members.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
-            data: (members) => Column(
-              children: [
-                for (final member in members)
-                  _MemberRow(
-                    member: member,
-                    selected: draft.member?.id == member.id,
-                    onTap: () {
-                      ref
-                          .read(assignmentDraftProvider.notifier)
-                          .setMember(member);
-                      context.push('/trainer/assign/source');
-                    },
+          AsyncStateView(
+            value: members,
+            errorTitle: 'Could not load members',
+            onRetry: () {
+              ref.invalidate(membersProvider);
+              ref.invalidate(trainerMembersProvider);
+            },
+            data: (members) {
+              if (members.isEmpty) {
+                return AppEmptyState(
+                  title: 'No members yet',
+                  message: 'Add a member before assigning a plan.',
+                  icon: Icons.group_add_outlined,
+                  action: PrimaryButton(
+                    label: 'Add Member',
+                    icon: Icons.add_rounded,
+                    onPressed: () => context.push('/trainer/members/add'),
                   ),
-              ],
-            ),
+                );
+              }
+              return Column(
+                children: [
+                  for (final member in members)
+                    _MemberRow(
+                      member: member,
+                      selected: draft.member?.id == member.id,
+                      onTap: () {
+                        ref
+                            .read(assignmentDraftProvider.notifier)
+                            .setMember(member);
+                        context.push('/trainer/assign/source');
+                      },
+                    ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -676,29 +725,39 @@ class AssignExercisesScreen extends ConsumerWidget {
             subtitle: draft.member?.name ?? 'Workout plan',
           ),
           const SizedBox(height: 18),
-          exercises.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
-            data: (items) => Column(
-              children: [
-                for (final exercise in items)
-                  _SelectableRow(
-                    active: draft.exerciseIds.contains(exercise.id),
-                    title: exercise.name,
-                    subtitle:
-                        '${exercise.muscleGroup} - ${exercise.sets} sets - ${exercise.reps} reps',
-                    onTap: () => ref
-                        .read(assignmentDraftProvider.notifier)
-                        .toggleExercise(exercise.id),
+          AsyncStateView(
+            value: exercises,
+            errorTitle: 'Could not load exercises',
+            onRetry: () => ref.invalidate(exerciseLibraryProvider),
+            data: (items) {
+              if (items.isEmpty) {
+                return const AppEmptyState(
+                  title: 'No exercises yet',
+                  message: 'Add exercises to the library before building a workout.',
+                  icon: Icons.fitness_center_rounded,
+                );
+              }
+              return Column(
+                children: [
+                  for (final exercise in items)
+                    _SelectableRow(
+                      active: draft.exerciseIds.contains(exercise.id),
+                      title: exercise.name,
+                      subtitle:
+                          '${exercise.muscleGroup} - ${exercise.sets} sets - ${exercise.reps} reps',
+                      onTap: () => ref
+                          .read(assignmentDraftProvider.notifier)
+                          .toggleExercise(exercise.id),
+                    ),
+                  const SizedBox(height: 12),
+                  PrimaryButton(
+                    label: 'Save Workout',
+                    icon: Icons.save_outlined,
+                    onPressed: () => _saveWorkout(context, ref, draft, items),
                   ),
-                const SizedBox(height: 12),
-                PrimaryButton(
-                  label: 'Save Workout',
-                  icon: Icons.save_outlined,
-                  onPressed: () => _saveWorkout(context, ref, draft, items),
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -730,16 +789,19 @@ class _AssignMealsScreenState extends ConsumerState<AssignMealsScreen> {
             subtitle: draft.member?.name ?? 'Diet plan',
           ),
           const SizedBox(height: 18),
-          templates.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
+          AsyncStateView(
+            value: templates,
+            errorTitle: 'Could not load meal templates',
+            onRetry: () => ref.invalidate(mealTemplatesProvider),
             data: (templates) {
               final meals = [...templates, ..._customMeals];
               return Column(
                 children: [
                   if (meals.isEmpty)
-                    const PremiumCard(
-                      child: Text('Add a meal to create this diet plan.'),
+                    const AppEmptyState(
+                      title: 'No meal templates',
+                      message: 'Add a custom meal below to create this diet plan.',
+                      icon: Icons.restaurant_menu_rounded,
                     ),
                   for (final meal in meals)
                     _SelectableRow(
@@ -858,48 +920,62 @@ class ExerciseLibraryScreen extends ConsumerWidget {
         children: [
           const _BackHeader(title: 'Exercises', subtitle: 'Reusable library'),
           const SizedBox(height: 18),
-          exercises.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
-            data: (exercises) => Column(
-              children: [
-                for (final exercise in exercises)
-                  PremiumCard(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      children: [
-                        const IconTile(
-                          icon: Icons.fitness_center_rounded,
-                          size: 42,
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                exercise.name,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w800),
-                              ),
-                              Text(
-                                exercise.muscleGroup,
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(color: AppColors.muted),
-                              ),
-                            ],
+          AsyncStateView(
+            value: exercises,
+            errorTitle: 'Could not load exercises',
+            onRetry: () => ref.invalidate(exerciseLibraryProvider),
+            data: (exercises) {
+              if (exercises.isEmpty) {
+                return const AppEmptyState(
+                  title: 'No exercises yet',
+                  message: 'Create exercises in Supabase to make them available here.',
+                  icon: Icons.menu_book_outlined,
+                );
+              }
+              return Column(
+                children: [
+                  for (final exercise in exercises)
+                    PremiumCard(
+                      padding: const EdgeInsets.all(14),
+                      child: Row(
+                        children: [
+                          const IconTile(
+                            icon: Icons.fitness_center_rounded,
+                            size: 42,
                           ),
-                        ),
-                        Text(
-                          '${exercise.restSeconds}s',
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.muted),
-                        ),
-                      ],
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  exercise.name,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                                Text(
+                                  exercise.muscleGroup,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: AppColors.secondaryText(context),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${exercise.restSeconds}s',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(
+                                  color: AppColors.secondaryText(context),
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -921,11 +997,13 @@ class TrainerProfileScreen extends ConsumerWidget {
         children: [
           const _BackHeader(title: 'Profile', subtitle: 'Trainer account'),
           const SizedBox(height: 20),
-          PremiumCard(
-            child: user.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Text(error.toString()),
-              data: (user) => Row(
+          AsyncStateView(
+            value: user,
+            errorTitle: 'Could not load profile',
+            loading: const AppLoadingState(rows: 1),
+            onRetry: () => ref.invalidate(currentUserProvider),
+            data: (user) => PremiumCard(
+              child: Row(
                 children: [
                   const BrandMark(size: 58),
                   const SizedBox(width: 14),
@@ -951,9 +1029,11 @@ class TrainerProfileScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          stats.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
+          AsyncStateView(
+            value: stats,
+            errorTitle: 'Could not load stats',
+            loading: const SizedBox.shrink(),
+            onRetry: () => ref.invalidate(trainerStatsProvider),
             data: (stats) => Row(
               children: [
                 Expanded(
@@ -1023,7 +1103,7 @@ class CreateWorkoutPlanScreen extends ConsumerWidget {
       if (context.mounted) context.replace('/trainer/assign/member');
     });
     return const PremiumScaffold(
-      child: Center(child: CircularProgressIndicator()),
+      child: AppLoadingState(rows: 2),
     );
   }
 }
@@ -1038,7 +1118,7 @@ class CreateDietPlanScreen extends ConsumerWidget {
       if (context.mounted) context.replace('/trainer/assign/member');
     });
     return const PremiumScaffold(
-      child: Center(child: CircularProgressIndicator()),
+      child: AppLoadingState(rows: 2),
     );
   }
 }
@@ -1060,31 +1140,41 @@ class _SavedWorkoutAssign extends ConsumerWidget {
             subtitle: draft.member?.name ?? 'Select plan',
           ),
           const SizedBox(height: 18),
-          plans.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
-            data: (plans) => Column(
-              children: [
-                for (var i = 0; i < plans.length; i++)
-                  _SelectableRow(
-                    active: draft.savedIndex == i,
-                    title: plans[i].name,
-                    subtitle: '${plans[i].exercises.length} exercises',
-                    onTap: () => ref
-                        .read(assignmentDraftProvider.notifier)
-                        .setSavedIndex(i),
+          AsyncStateView(
+            value: plans,
+            errorTitle: 'Could not load saved workouts',
+            onRetry: () => ref.invalidate(savedWorkoutPlansProvider),
+            data: (plans) {
+              if (plans.isEmpty) {
+                return const AppEmptyState(
+                  title: 'No saved workouts',
+                  message: 'Create a custom workout on the go for this member.',
+                  icon: Icons.assignment_outlined,
+                );
+              }
+              return Column(
+                children: [
+                  for (var i = 0; i < plans.length; i++)
+                    _SelectableRow(
+                      active: draft.savedIndex == i,
+                      title: plans[i].name,
+                      subtitle: '${plans[i].exercises.length} exercises',
+                      onTap: () => ref
+                          .read(assignmentDraftProvider.notifier)
+                          .setSavedIndex(i),
+                    ),
+                  const SizedBox(height: 12),
+                  PrimaryButton(
+                    label: 'Save Workout',
+                    icon: Icons.save_outlined,
+                    onPressed: () {
+                      final index = _safeIndex(draft.savedIndex, plans.length);
+                      _saveWorkout(context, ref, draft, plans[index].exercises);
+                    },
                   ),
-                const SizedBox(height: 12),
-                PrimaryButton(
-                  label: 'Save Workout',
-                  icon: Icons.save_outlined,
-                  onPressed: () {
-                    final index = _safeIndex(draft.savedIndex, plans.length);
-                    _saveWorkout(context, ref, draft, plans[index].exercises);
-                  },
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1109,31 +1199,41 @@ class _SavedDietAssign extends ConsumerWidget {
             subtitle: draft.member?.name ?? 'Select plan',
           ),
           const SizedBox(height: 18),
-          plans.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => PremiumCard(child: Text(error.toString())),
-            data: (plans) => Column(
-              children: [
-                for (var i = 0; i < plans.length; i++)
-                  _SelectableRow(
-                    active: draft.savedIndex == i,
-                    title: '${plans[i].goalCalories} kcal Diet',
-                    subtitle: '${plans[i].meals.length} meals',
-                    onTap: () => ref
-                        .read(assignmentDraftProvider.notifier)
-                        .setSavedIndex(i),
+          AsyncStateView(
+            value: plans,
+            errorTitle: 'Could not load saved diets',
+            onRetry: () => ref.invalidate(savedDietPlansProvider),
+            data: (plans) {
+              if (plans.isEmpty) {
+                return const AppEmptyState(
+                  title: 'No saved diets',
+                  message: 'Create a custom diet on the go for this member.',
+                  icon: Icons.restaurant_menu_rounded,
+                );
+              }
+              return Column(
+                children: [
+                  for (var i = 0; i < plans.length; i++)
+                    _SelectableRow(
+                      active: draft.savedIndex == i,
+                      title: '${plans[i].goalCalories} kcal Diet',
+                      subtitle: '${plans[i].meals.length} meals',
+                      onTap: () => ref
+                          .read(assignmentDraftProvider.notifier)
+                          .setSavedIndex(i),
+                    ),
+                  const SizedBox(height: 12),
+                  PrimaryButton(
+                    label: 'Save Diet',
+                    icon: Icons.save_outlined,
+                    onPressed: () {
+                      final index = _safeIndex(draft.savedIndex, plans.length);
+                      _saveDiet(context, ref, draft, plans[index].meals);
+                    },
                   ),
-                const SizedBox(height: 12),
-                PrimaryButton(
-                  label: 'Save Diet',
-                  icon: Icons.save_outlined,
-                  onPressed: () {
-                    final index = _safeIndex(draft.savedIndex, plans.length);
-                    _saveDiet(context, ref, draft, plans[index].meals);
-                  },
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -1502,20 +1602,24 @@ Future<void> _saveWorkout(
     _showSnack(context, 'Select at least one exercise.');
     return;
   }
-  await ref
-      .read(appDataRepositoryProvider)
-      .saveWorkoutPlan(
-        memberId: member.id,
-        name: draft.mode == TrainerPlanMode.saved
-            ? 'Assigned Workout'
-            : '${member.name} Custom Workout',
-        focus: member.goal,
-        exercises: exercises,
-      );
-  ref.invalidate(trainerStatsProvider);
-  if (context.mounted) {
-    _showSnack(context, 'Workout saved for ${member.name}.');
-    context.go('/trainer');
+  try {
+    await ref
+        .read(appDataRepositoryProvider)
+        .saveWorkoutPlan(
+          memberId: member.id,
+          name: draft.mode == TrainerPlanMode.saved
+              ? 'Assigned Workout'
+              : '${member.name} Custom Workout',
+          focus: member.goal,
+          exercises: exercises,
+        );
+    ref.invalidate(trainerStatsProvider);
+    if (context.mounted) {
+      _showSnack(context, 'Workout saved for ${member.name}.');
+      context.go('/trainer');
+    }
+  } catch (error) {
+    if (context.mounted) _showSnack(context, friendlyErrorMessage(error));
   }
 }
 
@@ -1538,22 +1642,26 @@ Future<void> _saveDiet(
     return;
   }
   final calories = meals.fold<int>(0, (sum, meal) => sum + meal.calories);
-  await ref
-      .read(appDataRepositoryProvider)
-      .saveDietPlan(
-        memberId: member.id,
-        name: draft.mode == TrainerPlanMode.saved
-            ? 'Assigned Diet'
-            : '${member.name} Custom Diet',
-        dailyCalories: calories + 400,
-        protein: 160,
-        carbs: 280,
-        fats: 70,
-        meals: meals,
-      );
-  if (context.mounted) {
-    _showSnack(context, 'Diet saved for ${member.name}.');
-    context.go('/trainer');
+  try {
+    await ref
+        .read(appDataRepositoryProvider)
+        .saveDietPlan(
+          memberId: member.id,
+          name: draft.mode == TrainerPlanMode.saved
+              ? 'Assigned Diet'
+              : '${member.name} Custom Diet',
+          dailyCalories: calories + 400,
+          protein: 160,
+          carbs: 280,
+          fats: 70,
+          meals: meals,
+        );
+    if (context.mounted) {
+      _showSnack(context, 'Diet saved for ${member.name}.');
+      context.go('/trainer');
+    }
+  } catch (error) {
+    if (context.mounted) _showSnack(context, friendlyErrorMessage(error));
   }
 }
 

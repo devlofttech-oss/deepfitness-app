@@ -3,6 +3,7 @@ import 'package:deepfitness/core/theme/theme_controller.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
@@ -29,12 +30,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return PremiumScaffold(
       bottomPadding: 24,
-      child: user.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => PremiumCard(child: Text(error.toString())),
-        data: (user) => progress.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => PremiumCard(child: Text(error.toString())),
+      child: AsyncStateView(
+        value: user,
+        errorTitle: 'Could not load your profile',
+        onRetry: () => ref.invalidate(currentUserProvider),
+        data: (user) => AsyncStateView(
+          value: progress,
+          errorTitle: 'Could not load your stats',
+          onRetry: () => ref.invalidate(progressProvider),
           data: (progress) => _ProfileContent(
             user: user,
             progress: progress,

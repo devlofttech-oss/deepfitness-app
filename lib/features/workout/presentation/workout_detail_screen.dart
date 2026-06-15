@@ -1,6 +1,7 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/icon_tile.dart';
 import 'package:deepfitness/shared/widgets/metric_cell.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
@@ -20,9 +21,10 @@ class WorkoutDetailScreen extends ConsumerWidget {
 
     return PremiumScaffold(
       bottomPadding: 128,
-      child: workout.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => PremiumCard(child: Text(error.toString())),
+      child: AsyncStateView(
+        value: workout,
+        errorTitle: 'Could not load workout details',
+        onRetry: () => ref.invalidate(workoutProvider),
         data: (workoutData) => _WorkoutDetailContent(workout: workoutData),
       ),
     );
@@ -142,8 +144,12 @@ class _WorkoutDetailContent extends ConsumerWidget {
             children: [
               if (workout.exercises.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 18),
-                  child: Text('No exercises assigned yet.'),
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: _InlineEmptyState(
+                    icon: Icons.fitness_center_rounded,
+                    title: 'No exercises assigned',
+                    message: 'Ask your trainer to assign a workout plan.',
+                  ),
                 ),
               for (var index = 0; index < workout.exercises.length; index++)
                 _ExerciseRow(
@@ -288,9 +294,9 @@ class _SquareButton extends StatelessWidget {
         width: 46,
         height: 46,
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: AppColors.surface(context),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(color: AppColors.divider(context)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: .04),
@@ -345,12 +351,12 @@ class _ExerciseRow extends StatelessWidget {
                   height: 46,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: AppColors.subtle(context),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
                       Icons.fitness_center_rounded,
-                      color: Colors.grey.shade700,
+                      color: AppColors.secondaryText(context),
                       size: 26,
                     ),
                   ),
@@ -397,5 +403,48 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Container(width: 1, height: 58, color: AppColors.border);
+      Container(width: 1, height: 58, color: AppColors.divider(context));
+}
+
+class _InlineEmptyState extends StatelessWidget {
+  const _InlineEmptyState({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: AppColors.gold, size: 24),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.secondaryText(context),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }

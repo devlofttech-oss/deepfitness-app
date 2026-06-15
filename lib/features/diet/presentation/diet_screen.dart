@@ -1,6 +1,7 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/icon_tile.dart';
 import 'package:deepfitness/shared/widgets/metric_cell.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
@@ -20,9 +21,10 @@ class DietScreen extends ConsumerWidget {
 
     return PremiumScaffold(
       bottomPadding: 132,
-      child: nutrition.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => PremiumCard(child: Text(error.toString())),
+      child: AsyncStateView(
+        value: nutrition,
+        errorTitle: 'Could not load your diet',
+        onRetry: () => ref.invalidate(nutritionProvider),
         data: (nutrition) => _DietContent(nutrition: nutrition),
       ),
     );
@@ -144,12 +146,20 @@ class _DietContentState extends State<_DietContent> {
         const SizedBox(height: 24),
         const SectionTitle(title: "Today's Meals"),
         const SizedBox(height: 16),
-        ...nutrition.meals.map(
-          (meal) => Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _MealCard(meal: meal),
+        if (nutrition.meals.isEmpty)
+          const AppEmptyState(
+            title: 'No meals assigned',
+            message: 'Your trainer has not assigned a diet plan for today yet.',
+            icon: Icons.restaurant_menu_rounded,
+          )
+        else
+          ...nutrition.meals.map(
+            (meal) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _MealCard(meal: meal),
+            ),
           ),
-        ),
+        const SizedBox(height: 10),
         InkWell(
           onTap: () => setState(() {
             _waterLiters = (_waterLiters + .25).clamp(0, 3);
@@ -299,5 +309,5 @@ class _Divider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) =>
-      Container(width: 1, height: 58, color: AppColors.border);
+      Container(width: 1, height: 58, color: AppColors.divider(context));
 }

@@ -1,6 +1,7 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/brand_mark.dart';
 import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
@@ -474,7 +475,7 @@ class _FieldLabel extends StatelessWidget {
 
 String? _authError(AsyncValue<AuthSessionState> authState) {
   if (!authState.hasError) return null;
-  return authState.error.toString().replaceFirst('Bad state: ', '');
+  return friendlyErrorMessage(authState.error!);
 }
 
 Future<void> _requestPasswordReset(
@@ -488,9 +489,13 @@ Future<void> _requestPasswordReset(
     return;
   }
 
-  await ref.read(authControllerProvider.notifier).resetPassword(email);
-  if (context.mounted) {
-    _showSnack(context, 'Password reset email requested.');
+  try {
+    await ref.read(authControllerProvider.notifier).resetPassword(email);
+    if (context.mounted) {
+      _showSnack(context, 'Password reset email requested.');
+    }
+  } catch (error) {
+    if (context.mounted) _showSnack(context, friendlyErrorMessage(error));
   }
 }
 

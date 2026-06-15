@@ -1,6 +1,7 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/icon_tile.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
@@ -18,9 +19,10 @@ class ProgressScreen extends ConsumerWidget {
 
     return PremiumScaffold(
       bottomPadding: 132,
-      child: progress.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => PremiumCard(child: Text(error.toString())),
+      child: AsyncStateView(
+        value: progress,
+        errorTitle: 'Could not load your progress',
+        onRetry: () => ref.invalidate(progressProvider),
         data: (progress) => _ProgressContent(progress: progress),
       ),
     );
@@ -228,15 +230,35 @@ class _ThreeMetricCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              for (var index = 0; index < items.length; index++) ...[
-                Expanded(child: _Metric(item: items[index])),
-                if (index != items.length - 1)
-                  Container(width: 1, height: 72, color: AppColors.border),
+          if (items.isEmpty)
+            Row(
+              children: [
+                const Icon(Icons.insights_rounded, color: AppColors.gold),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Complete workouts and add measurements to fill this in.',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                ),
               ],
-            ],
-          ),
+            )
+          else
+            Row(
+              children: [
+                for (var index = 0; index < items.length; index++) ...[
+                  Expanded(child: _Metric(item: items[index])),
+                  if (index != items.length - 1)
+                    Container(
+                      width: 1,
+                      height: 72,
+                      color: AppColors.divider(context),
+                    ),
+                ],
+              ],
+            ),
         ],
       ),
     );
