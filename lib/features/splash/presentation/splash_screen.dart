@@ -13,8 +13,9 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+    with TickerProviderStateMixin {
+  late final AnimationController _introController;
+  late final AnimationController _progressController;
   late final Animation<double> _fade;
   late final Animation<double> _scale;
   late final Animation<double> _progress;
@@ -23,19 +24,32 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _introController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 700),
     )..forward();
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    _scale = Tween<double>(
-      begin: .96,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
-    _progress = Tween<double>(begin: 0, end: .72).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
     );
-    Future<void>.delayed(const Duration(milliseconds: 1250), () {
+    _fade = CurvedAnimation(
+      parent: _introController,
+      curve: Curves.easeOutCubic,
+    );
+    _scale = Tween<double>(begin: .96, end: 1).animate(
+      CurvedAnimation(parent: _introController, curve: Curves.easeOutBack),
+    );
+    _progress = Tween<double>(begin: 0, end: .72).animate(
+      CurvedAnimation(
+        parent: _progressController,
+        curve: Curves.easeInOutCubic,
+      ),
+    );
+    Future<void>.delayed(const Duration(milliseconds: 520), () {
+      if (!mounted) return;
+      _progressController.forward();
+    });
+    Future<void>.delayed(const Duration(milliseconds: 1750), () {
       if (!mounted) return;
       _minimumWaitDone = true;
       _goNext(ref.read(authControllerProvider));
@@ -44,7 +58,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   void dispose() {
-    _controller.dispose();
+    _introController.dispose();
+    _progressController.dispose();
     super.dispose();
   }
 
