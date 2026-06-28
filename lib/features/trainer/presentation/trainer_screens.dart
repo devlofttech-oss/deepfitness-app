@@ -361,7 +361,8 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
           _LabeledField(
             label: 'Height',
             controller: _height,
-            keyboardType: TextInputType.number,
+            keyboardType: TextInputType.text,
+            hintText: '178 cm or 5\'7',
           ),
           _LabeledField(
             label: 'Weight',
@@ -394,24 +395,24 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     final phone = _normalizePhone(_phone.text.trim());
     final password = _password.text;
     final goal = _goal.text.trim();
-    final height = double.tryParse(_height.text.trim());
+    final height = _parseHeightCm(_height.text);
     final weight = double.tryParse(_weight.text.trim());
     final age = int.tryParse(_age.text.trim());
-    if (name.isEmpty ||
-        (email.isEmpty && phone == null) ||
-        password.length < 6 ||
-        goal.isEmpty ||
-        height == null ||
-        weight == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Enter name, email or phone, password, goal, height, and weight.',
-          ),
-        ),
-      );
+    final missing = <String>[
+      if (name.isEmpty) 'name',
+      if (email.isEmpty && phone == null) 'email or phone',
+      if (password.length < 6) '6+ character password',
+      if (goal.isEmpty) 'goal',
+      if (height == null) 'valid height',
+      if (weight == null) 'valid weight',
+    ];
+    if (missing.isNotEmpty) {
+      _showSnack(context, 'Enter ${missing.join(', ')}.');
       return;
     }
+    final heightCm = height;
+    final currentWeight = weight;
+    if (heightCm == null || currentWeight == null) return;
     setState(() => _saving = true);
     try {
       final invite = await ref
@@ -423,8 +424,8 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             password: password,
             goal: goal,
             age: age,
-            heightCm: height,
-            weight: weight,
+            heightCm: heightCm,
+            weight: currentWeight,
           );
       ref.invalidate(membersProvider);
       ref.invalidate(trainerMembersProvider);
@@ -463,6 +464,30 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     if (value.isEmpty) return null;
     final compact = value.replaceAll(RegExp(r'\s+'), '');
     return compact.startsWith('+') ? compact : '+91$compact';
+  }
+
+  double? _parseHeightCm(String value) {
+    final raw = value.trim().toLowerCase();
+    if (raw.isEmpty) return null;
+
+    final numeric = double.tryParse(raw.replaceAll('cm', '').trim());
+    if (numeric != null) {
+      if (numeric >= 80 && numeric <= 260) return numeric;
+      if (numeric > 0 && numeric < 9) return numeric * 30.48;
+      return null;
+    }
+
+    final feetMatch = RegExp(
+      r'''^(\d+(?:\.\d+)?)\s*(?:'|ft|feet)\s*(\d+(?:\.\d+)?)?\s*(?:"|in|inch|inches)?$''',
+    ).firstMatch(raw);
+    if (feetMatch == null) return null;
+
+    final feet = double.tryParse(feetMatch.group(1) ?? '');
+    final inches = double.tryParse(feetMatch.group(2) ?? '0') ?? 0;
+    if (feet == null || feet <= 0 || inches < 0 || inches >= 12) return null;
+
+    final centimeters = (feet * 12 + inches) * 2.54;
+    return centimeters >= 80 && centimeters <= 260 ? centimeters : null;
   }
 }
 
@@ -2175,12 +2200,14 @@ class _LabeledField extends StatelessWidget {
     required this.controller,
     this.keyboardType,
     this.obscureText = false,
+    this.hintText,
   });
 
   final String label;
   final TextEditingController controller;
   final TextInputType? keyboardType;
   final bool obscureText;
+  final String? hintText;
 
   @override
   Widget build(BuildContext context) {
@@ -2200,6 +2227,9 @@ class _LabeledField extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
+            decoration: hintText == null
+                ? null
+                : InputDecoration(hintText: hintText),
           ),
         ],
       ),
