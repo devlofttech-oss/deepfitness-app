@@ -39,6 +39,8 @@ class Exercise {
     required this.restSeconds,
     required this.icon,
     required this.notes,
+    required this.tracksWeight,
+    required this.targetWeight,
     this.workoutExerciseId,
     this.isAssigned = true,
     this.sourceId,
@@ -60,6 +62,8 @@ class Exercise {
   final int restSeconds;
   final String icon;
   final String notes;
+  final bool tracksWeight;
+  final int targetWeight;
   final String? workoutExerciseId;
   final bool isAssigned;
   final String? sourceId;

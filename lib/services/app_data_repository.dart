@@ -168,7 +168,7 @@ class AppDataRepository {
     final rows = await _supabaseService.client
         .from('workout_exercises')
         .select(
-          'id,sets,reps,rest_seconds,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
+          'id,sets,reps,rest_seconds,target_weight_kg,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,default_sets,default_reps,tracks_weight,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
         )
         .eq('workout_day_id', day['id'])
         .order('sort_order');
@@ -181,6 +181,7 @@ class AppDataRepository {
         sets: _toInt(row['sets']),
         reps: row['reps'].toString(),
         restSeconds: _toInt(row['rest_seconds']),
+        targetWeight: _toInt(row['target_weight_kg']),
         notes: (row['trainer_notes'] ?? '').toString(),
       );
     }).toList();
@@ -283,7 +284,9 @@ class AppDataRepository {
 
     final logs = await _supabaseService.client
         .from('exercise_logs')
-        .select('weight,reps,completed,logged_at,exercises(name,muscle_group)')
+        .select(
+          'weight,reps,completed,logged_at,exercises(name,muscle_group,tracks_weight)',
+        )
         .eq('member_id', userId)
         .order('logged_at', ascending: false);
 
@@ -307,7 +310,9 @@ class AppDataRepository {
       final name = exercise['name'].toString();
       final muscle = exercise['muscle_group'].toString();
       final weight = _toInt(row['weight']);
-      if (!personalBests.containsKey(name) || weight > personalBests[name]!) {
+      if (exercise['tracks_weight'] != false &&
+          weight > 0 &&
+          (!personalBests.containsKey(name) || weight > personalBests[name]!)) {
         personalBests[name] = weight;
       }
       muscleCounts[muscle] = (muscleCounts[muscle] ?? 0) + 1;
@@ -630,6 +635,9 @@ class AppDataRepository {
           'sort_order': i + 1,
           'sets': exercises[i].sets,
           'reps': exercises[i].reps,
+          'target_weight_kg': exercises[i].tracksWeight
+              ? exercises[i].targetWeight
+              : 0,
           'rest_seconds': exercises[i].restSeconds,
           'trainer_notes': exercises[i].notes.isEmpty
               ? 'Controlled reps. Leave one rep in reserve.'
@@ -775,7 +783,11 @@ class AppDataRepository {
     final reps = int.tryParse(exercise.reps.split('-').first) ?? 10;
     return [
       for (var i = 1; i <= exercise.sets.clamp(1, 5); i++)
-        ExerciseLog(setNumber: i, weight: 0, reps: reps),
+        ExerciseLog(
+          setNumber: i,
+          weight: exercise.tracksWeight ? exercise.targetWeight : 0,
+          reps: reps,
+        ),
     ];
   }
 
@@ -942,7 +954,7 @@ class AppDataRepository {
     final rows = await _supabaseService.client
         .from('workout_exercises')
         .select(
-          'id,sets,reps,rest_seconds,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
+          'id,sets,reps,rest_seconds,target_weight_kg,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,default_sets,default_reps,tracks_weight,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
         )
         .eq('workout_day_id', day['id'])
         .order('sort_order');
@@ -954,6 +966,7 @@ class AppDataRepository {
         sets: _toInt(row['sets']),
         reps: row['reps'].toString(),
         restSeconds: _toInt(row['rest_seconds']),
+        targetWeight: _toInt(row['target_weight_kg']),
         notes: (row['trainer_notes'] ?? '').toString(),
       );
     }).toList();
@@ -1023,6 +1036,7 @@ class AppDataRepository {
     required String reps,
     String? workoutExerciseId,
     int? restSeconds,
+    int? targetWeight,
     String notes = '',
     bool isAssigned = true,
   }) {
@@ -1042,6 +1056,8 @@ class AppDataRepository {
       restSeconds: restSeconds ?? _toInt(row['rest_seconds'], fallback: 60),
       icon: muscleGroup.toLowerCase(),
       notes: notes,
+      tracksWeight: row['tracks_weight'] != false,
+      targetWeight: targetWeight ?? _toInt(row['target_weight_kg']),
       isAssigned: isAssigned,
       sourceId: row['source_id']?.toString(),
       equipment: row['equipment']?.toString(),

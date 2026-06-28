@@ -35,6 +35,7 @@ create table public.exercises (
   muscle_group text not null,
   default_sets integer not null default 3,
   default_reps text not null default '10-12',
+  tracks_weight boolean not null default true,
   rest_seconds integer not null default 60,
   created_by uuid references public.trainers(id) on delete set null,
   created_at timestamptz not null default now()
@@ -67,6 +68,7 @@ create table public.workout_exercises (
   sort_order integer not null default 0,
   sets integer not null,
   reps text not null,
+  target_weight_kg numeric(7, 2) not null default 0,
   rest_seconds integer not null default 60,
   trainer_notes text,
   created_at timestamptz not null default now()

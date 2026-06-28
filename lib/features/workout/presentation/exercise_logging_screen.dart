@@ -184,6 +184,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                   _SetLogRow(
                     log: items[index],
                     assignedSetCount: exercise.sets,
+                    tracksWeight: exercise.tracksWeight,
                     showDivider: index != items.length - 1,
                     onChanged: (updated) {
                       ref
@@ -497,12 +498,14 @@ class _SetLogRow extends StatelessWidget {
   const _SetLogRow({
     required this.log,
     required this.assignedSetCount,
+    required this.tracksWeight,
     required this.showDivider,
     required this.onChanged,
   });
 
   final ExerciseLog log;
   final int assignedSetCount;
+  final bool tracksWeight;
   final bool showDivider;
   final ValueChanged<ExerciseLog> onChanged;
 
@@ -550,41 +553,43 @@ class _SetLogRow extends StatelessWidget {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  Expanded(
-                    child: isMandatory
-                        ? _ReadonlyMetricField(
-                            label: 'Weight (kg)',
-                            value: log.weight,
-                          )
-                        : _StepperField(
-                            label: 'Weight (kg)',
-                            value: log.weight,
-                            onMinus: () => onChanged(
-                              ExerciseLog(
-                                id: log.id,
-                                setNumber: log.setNumber,
-                                weight: (log.weight - 5).clamp(0, 500),
-                                reps: log.reps,
-                                completed: log.completed,
+                  if (tracksWeight) ...[
+                    Expanded(
+                      child: isMandatory
+                          ? _ReadonlyMetricField(
+                              label: 'Weight (kg)',
+                              value: log.weight,
+                            )
+                          : _StepperField(
+                              label: 'Weight (kg)',
+                              value: log.weight,
+                              onMinus: () => onChanged(
+                                ExerciseLog(
+                                  id: log.id,
+                                  setNumber: log.setNumber,
+                                  weight: (log.weight - 5).clamp(0, 500),
+                                  reps: log.reps,
+                                  completed: log.completed,
+                                ),
+                              ),
+                              onPlus: () => onChanged(
+                                ExerciseLog(
+                                  id: log.id,
+                                  setNumber: log.setNumber,
+                                  weight: log.weight + 5,
+                                  reps: log.reps,
+                                  completed: log.completed,
+                                ),
                               ),
                             ),
-                            onPlus: () => onChanged(
-                              ExerciseLog(
-                                id: log.id,
-                                setNumber: log.setNumber,
-                                weight: log.weight + 5,
-                                reps: log.reps,
-                                completed: log.completed,
-                              ),
-                            ),
-                          ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 46,
-                    margin: const EdgeInsets.symmetric(horizontal: 10),
-                    color: AppColors.divider(context),
-                  ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 46,
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                      color: AppColors.divider(context),
+                    ),
+                  ],
                   Expanded(
                     child: isMandatory
                         ? _ReadonlyMetricField(label: 'Reps', value: log.reps)
