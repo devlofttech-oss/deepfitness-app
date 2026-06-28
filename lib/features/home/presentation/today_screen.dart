@@ -64,6 +64,7 @@ class _TodayContent extends StatelessWidget {
     final nutritionPercent = nutrition.goalCalories == 0
         ? 0.0
         : (nutrition.calories / nutrition.goalCalories).clamp(0.0, 1.0);
+    final greeting = _greetingFor(DateTime.now());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +78,7 @@ class _TodayContent extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Good Morning,',
+                    '$greeting,',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: AppColors.muted,
                       fontWeight: FontWeight.w600,
@@ -97,7 +98,8 @@ class _TodayContent extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 IconButton(
-                  onPressed: () => _showNotifications(context),
+                  onPressed: () =>
+                      _showNotifications(context, workout, nutrition),
                   icon: const Icon(
                     Icons.notifications_none_rounded,
                     size: 26,
@@ -161,7 +163,7 @@ class _TodayContent extends StatelessWidget {
               ),
               const SizedBox(height: 22),
               Text(
-                '0% Completed',
+                '${(workout.completionPercent * 100).round()}% Completed',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(color: Colors.white70),
@@ -172,11 +174,11 @@ class _TodayContent extends StatelessWidget {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(100),
-                      child: const LinearProgressIndicator(
-                        value: .02,
+                      child: LinearProgressIndicator(
+                        value: workout.completionPercent,
                         minHeight: 10,
                         color: AppColors.goldBright,
-                        backgroundColor: Color(0xFF3A3A3A),
+                        backgroundColor: const Color(0xFF3A3A3A),
                       ),
                     ),
                   ),
@@ -277,7 +279,11 @@ class _TodayContent extends StatelessWidget {
   }
 }
 
-void _showNotifications(BuildContext context) {
+void _showNotifications(
+  BuildContext context,
+  WorkoutPlan workout,
+  NutritionPlan nutrition,
+) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -294,20 +300,44 @@ void _showNotifications(BuildContext context) {
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          const ListTile(
-            leading: Icon(Icons.fitness_center_rounded, color: AppColors.gold),
-            title: Text('Workout ready'),
-            subtitle: Text('Your plan is available for today.'),
+          ListTile(
+            leading: const Icon(
+              Icons.fitness_center_rounded,
+              color: AppColors.gold,
+            ),
+            title: Text(
+              workout.exercises.isEmpty ? 'No workout assigned' : workout.name,
+            ),
+            subtitle: Text(
+              workout.exercises.isEmpty
+                  ? 'Ask your trainer to assign a workout.'
+                  : '${workout.exercises.length} exercises available.',
+            ),
           ),
-          const ListTile(
-            leading: Icon(Icons.restaurant_rounded, color: AppColors.gold),
-            title: Text('Nutrition reminder'),
-            subtitle: Text('Log water and complete your meals.'),
+          ListTile(
+            leading: const Icon(
+              Icons.restaurant_rounded,
+              color: AppColors.gold,
+            ),
+            title: Text(
+              nutrition.meals.isEmpty ? 'No diet assigned' : 'Diet available',
+            ),
+            subtitle: Text(
+              nutrition.meals.isEmpty
+                  ? 'Ask your trainer to assign a diet plan.'
+                  : '${nutrition.meals.length} meals planned today.',
+            ),
           ),
         ],
       ),
     ),
   );
+}
+
+String _greetingFor(DateTime now) {
+  if (now.hour < 12) return 'Good Morning';
+  if (now.hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
 }
 
 class _Divider extends StatelessWidget {

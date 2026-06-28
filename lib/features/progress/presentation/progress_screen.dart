@@ -36,6 +36,7 @@ class _ProgressContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final deltaPrefix = progress.weightDelta > 0 ? '+' : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -102,7 +103,7 @@ class _ProgressContent extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '+${progress.weightDelta.toStringAsFixed(1)} kg  this month',
+                      '$deltaPrefix${progress.weightDelta.toStringAsFixed(1)} kg  this month',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.success,
                         fontWeight: FontWeight.w700,
@@ -142,9 +143,7 @@ class _ProgressContent extends StatelessWidget {
                     ),
                     Text(
                       'this month',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.secondaryText(context),
                       ),
                     ),
@@ -283,9 +282,7 @@ class _Metric extends StatelessWidget {
         Text(
           item.label,
           textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppColors.secondaryText(context),
           ),
         ),

@@ -43,7 +43,7 @@ class _WorkoutDetailContent extends ConsumerWidget {
       children: [
         _TopBar(
           title: 'Workout Details',
-          onBack: () => context.pop(),
+          onBack: () => _goBackOr(context, '/'),
           onMore: () => _showWorkoutOptions(context, ref, workout),
         ),
         const SizedBox(height: 22),
@@ -105,12 +105,16 @@ class _WorkoutDetailContent extends ConsumerWidget {
                   ),
                   _WorkoutStatTile(
                     icon: Icons.local_fire_department_outlined,
-                    value: '${workout.estimatedCalories} kcal',
+                    value: workout.estimatedCalories <= 0
+                        ? 'Not set'
+                        : '${workout.estimatedCalories} kcal',
                     label: 'Calories',
                   ),
                   _WorkoutStatTile(
                     icon: Icons.trending_up_rounded,
-                    value: workout.level,
+                    value: workout.level.trim().isEmpty
+                        ? 'Not set'
+                        : workout.level,
                     label: 'Level',
                   ),
                 ],
@@ -564,5 +568,13 @@ class _InlineEmptyState extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+void _goBackOr(BuildContext context, String fallbackRoute) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go(fallbackRoute);
   }
 }

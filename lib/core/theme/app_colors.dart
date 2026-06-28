@@ -29,7 +29,8 @@ class AppColors {
   static Color canvas(BuildContext context) =>
       isDark(context) ? night : background;
 
-  static Color subtle(BuildContext context) => isDark(context) ? night : background;
+  static Color subtle(BuildContext context) =>
+      isDark(context) ? night : background;
 
   static Color secondaryText(BuildContext context) =>
       isDark(context) ? mutedDark : muted;

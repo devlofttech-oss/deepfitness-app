@@ -31,18 +31,16 @@ class DietScreen extends ConsumerWidget {
   }
 }
 
-class _DietContent extends StatefulWidget {
+class _DietContent extends ConsumerStatefulWidget {
   const _DietContent({required this.nutrition});
 
   final NutritionPlan nutrition;
 
   @override
-  State<_DietContent> createState() => _DietContentState();
+  ConsumerState<_DietContent> createState() => _DietContentState();
 }
 
-class _DietContentState extends State<_DietContent> {
-  double _waterLiters = 1.6;
-
+class _DietContentState extends ConsumerState<_DietContent> {
   @override
   Widget build(BuildContext context) {
     final nutrition = widget.nutrition;
@@ -161,9 +159,7 @@ class _DietContentState extends State<_DietContent> {
           ),
         const SizedBox(height: 10),
         InkWell(
-          onTap: () => setState(() {
-            _waterLiters = (_waterLiters + .25).clamp(0, 3);
-          }),
+          onTap: () => _addWater(nutrition),
           child: PremiumCard(
             color: AppColors.goldSoft,
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -187,7 +183,9 @@ class _DietContentState extends State<_DietContent> {
                   ),
                 ),
                 Text(
-                  '${_waterLiters.toStringAsFixed(2)}L / 3L',
+                  nutrition.waterGoalLiters <= 0
+                      ? '${nutrition.waterLiters.toStringAsFixed(2)}L'
+                      : '${nutrition.waterLiters.toStringAsFixed(2)}L / ${nutrition.waterGoalLiters.toStringAsFixed(2)}L',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.gold,
                     fontWeight: FontWeight.w700,
@@ -200,6 +198,16 @@ class _DietContentState extends State<_DietContent> {
         ),
       ],
     );
+  }
+
+  Future<void> _addWater(NutritionPlan nutrition) async {
+    final next = nutrition.waterGoalLiters <= 0
+        ? nutrition.waterLiters + .25
+        : (nutrition.waterLiters + .25)
+              .clamp(0, nutrition.waterGoalLiters)
+              .toDouble();
+    await ref.read(appDataRepositoryProvider).addWater(next);
+    ref.invalidate(nutritionProvider);
   }
 }
 

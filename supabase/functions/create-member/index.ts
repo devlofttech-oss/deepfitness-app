@@ -42,12 +42,13 @@ Deno.serve(async (req) => {
     const email = String(body.email ?? '').trim() || undefined;
     const phone = normalizePhone(String(body.phone ?? '').trim()) || undefined;
     const password = String(body.password ?? '');
-    const goal = String(body.goal ?? 'Fitness').trim();
+    const goal = String(body.goal ?? '').trim();
+    const age = Number(body.age ?? 0) || null;
     const heightCm = Number(body.height_cm ?? 0) || null;
     const weight = Number(body.weight ?? 0) || null;
 
-    if (!name || (!email && !phone) || password.length < 6) {
-      throw new Error('Name, email or phone, and a 6+ character password are required.');
+    if (!name || (!email && !phone) || password.length < 6 || !goal) {
+      throw new Error('Name, email or phone, goal, and a 6+ character password are required.');
     }
 
     const { data: authData, error: createError } =
@@ -62,6 +63,7 @@ Deno.serve(async (req) => {
           role: 'member',
           trainer_id: user.id,
           goal,
+          age,
           height_cm: heightCm,
         },
       });
@@ -79,6 +81,7 @@ Deno.serve(async (req) => {
       id: memberId,
       trainer_id: user.id,
       goal,
+      age,
       height_cm: heightCm,
     });
     if (weight !== null) {
@@ -105,6 +108,7 @@ Deno.serve(async (req) => {
         email: email ?? '',
         phone: phone ?? '',
         goal,
+        age,
         height_cm: heightCm,
         weight,
         trainer_name: trainerProfile.name,

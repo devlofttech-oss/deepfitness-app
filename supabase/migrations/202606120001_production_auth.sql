@@ -50,16 +50,18 @@ begin
     on conflict (id) do update set name = excluded.name;
   else
     trainer_uuid := nullif(new.raw_user_meta_data ->> 'trainer_id', '')::uuid;
-    insert into public.members (id, trainer_id, goal, height_cm)
+    insert into public.members (id, trainer_id, goal, age, height_cm)
     values (
       new.id,
       trainer_uuid,
       new.raw_user_meta_data ->> 'goal',
+      nullif(new.raw_user_meta_data ->> 'age', '')::integer,
       nullif(new.raw_user_meta_data ->> 'height_cm', '')::numeric
     )
     on conflict (id) do update set
       trainer_id = excluded.trainer_id,
       goal = excluded.goal,
+      age = excluded.age,
       height_cm = excluded.height_cm;
   end if;
 

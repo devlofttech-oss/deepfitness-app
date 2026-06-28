@@ -6,6 +6,7 @@ class AppUser {
     required this.name,
     required this.email,
     required this.role,
+    required this.createdAt,
     this.phone,
     this.avatarUrl,
     this.trainerName,
@@ -18,6 +19,7 @@ class AppUser {
   final String name;
   final String email;
   final UserRole role;
+  final DateTime createdAt;
   final String? phone;
   final String? avatarUrl;
   final String? trainerName;
@@ -78,6 +80,7 @@ class WorkoutPlan {
     required this.durationMinutes,
     required this.estimatedCalories,
     required this.level,
+    required this.completionPercent,
     required this.exercises,
   });
 
@@ -87,6 +90,7 @@ class WorkoutPlan {
   final int durationMinutes;
   final int estimatedCalories;
   final String level;
+  final double completionPercent;
   final List<Exercise> exercises;
 }
 
@@ -181,6 +185,8 @@ class NutritionPlan {
     required this.carbs,
     required this.fats,
     required this.caloriesLeft,
+    required this.waterLiters,
+    required this.waterGoalLiters,
     required this.meals,
   });
 
@@ -190,6 +196,8 @@ class NutritionPlan {
   final int carbs;
   final int fats;
   final int caloriesLeft;
+  final double waterLiters;
+  final double waterGoalLiters;
   final List<DietMeal> meals;
 }
 
@@ -199,6 +207,7 @@ class MemberProgress {
     required this.weightDelta,
     required this.workoutsThisMonth,
     required this.goalCompletion,
+    required this.dayStreak,
     required this.muscleProgress,
     required this.personalBests,
   });
@@ -207,6 +216,7 @@ class MemberProgress {
   final double weightDelta;
   final int workoutsThisMonth;
   final double goalCompletion;
+  final int dayStreak;
   final Map<String, int> muscleProgress;
   final Map<String, int> personalBests;
 }

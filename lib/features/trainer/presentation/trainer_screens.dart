@@ -305,9 +305,10 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
-  final _goal = TextEditingController(text: 'Muscle Gain');
-  final _height = TextEditingController(text: '175');
-  final _weight = TextEditingController(text: '70');
+  final _goal = TextEditingController();
+  final _age = TextEditingController();
+  final _height = TextEditingController();
+  final _weight = TextEditingController();
   CreatedMemberInvite? _createdInvite;
   bool _saving = false;
 
@@ -318,6 +319,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     _phone.dispose();
     _password.dispose();
     _goal.dispose();
+    _age.dispose();
     _height.dispose();
     _weight.dispose();
     super.dispose();
@@ -351,6 +353,11 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             obscureText: true,
           ),
           _LabeledField(label: 'Goal', controller: _goal),
+          _LabeledField(
+            label: 'Age',
+            controller: _age,
+            keyboardType: TextInputType.number,
+          ),
           _LabeledField(
             label: 'Height',
             controller: _height,
@@ -386,13 +393,20 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     final email = _email.text.trim();
     final phone = _normalizePhone(_phone.text.trim());
     final password = _password.text;
+    final goal = _goal.text.trim();
+    final height = double.tryParse(_height.text.trim());
+    final weight = double.tryParse(_weight.text.trim());
+    final age = int.tryParse(_age.text.trim());
     if (name.isEmpty ||
         (email.isEmpty && phone == null) ||
-        password.length < 6) {
+        password.length < 6 ||
+        goal.isEmpty ||
+        height == null ||
+        weight == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Enter name, email or phone, and 6+ character password.',
+            'Enter name, email or phone, password, goal, height, and weight.',
           ),
         ),
       );
@@ -407,9 +421,10 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             email: email.isEmpty ? null : email,
             phone: phone,
             password: password,
-            goal: _goal.text.trim().isEmpty ? 'Fitness' : _goal.text.trim(),
-            heightCm: double.tryParse(_height.text.trim()) ?? 175,
-            weight: double.tryParse(_weight.text.trim()) ?? 70,
+            goal: goal,
+            age: age,
+            heightCm: height,
+            weight: weight,
           );
       ref.invalidate(membersProvider);
       ref.invalidate(trainerMembersProvider);
@@ -1522,7 +1537,7 @@ class _BackHeader extends StatelessWidget {
     return Row(
       children: [
         IconButton.filled(
-          onPressed: () => context.pop(),
+          onPressed: () => _goBackOr(context, '/trainer'),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.white,
             foregroundColor: AppColors.black,
@@ -2260,10 +2275,10 @@ Future<void> _saveDiet(
           name: draft.mode == TrainerPlanMode.saved
               ? 'Assigned Diet'
               : '${member.name} Custom Diet',
-          dailyCalories: calories + 400,
-          protein: 160,
-          carbs: 280,
-          fats: 70,
+          dailyCalories: calories,
+          protein: 0,
+          carbs: 0,
+          fats: 0,
           meals: meals,
         );
     if (context.mounted) {
@@ -2343,4 +2358,12 @@ void _showTrainerSetting(BuildContext context, String label) {
       ),
     ),
   );
+}
+
+void _goBackOr(BuildContext context, String fallbackRoute) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go(fallbackRoute);
+  }
 }

@@ -91,7 +91,7 @@ class AppDataRepository {
 
     final row = await _supabaseService.client
         .from('users')
-        .select('id,name,email,phone,avatar_url,role')
+        .select('id,name,email,phone,avatar_url,role,created_at')
         .eq('id', authUser.id)
         .maybeSingle();
 
@@ -105,13 +105,27 @@ class AppDataRepository {
     if (role == UserRole.member) {
       final memberRow = await _supabaseService.client
           .from('members')
-          .select('goal,height_cm,trainers(name)')
+          .select('goal,height_cm,age,trainers(name)')
           .eq('id', authUser.id)
           .maybeSingle();
       goal = memberRow?['goal']?.toString();
-      heightCm = _toDouble(memberRow?['height_cm']);
+      heightCm = _toNullableDouble(memberRow?['height_cm']);
+      final age = _toNullableInt(memberRow?['age']);
       final trainer = memberRow?['trainers'];
       if (trainer is Map) trainerName = trainer['name']?.toString();
+      return AppUser(
+        id: row['id'].toString(),
+        name: row['name'].toString(),
+        email: (row['email'] ?? '').toString(),
+        role: role,
+        createdAt: _toDateTime(row['created_at']),
+        phone: row['phone']?.toString(),
+        avatarUrl: row['avatar_url']?.toString(),
+        trainerName: trainerName,
+        goal: goal,
+        heightCm: heightCm,
+        age: age,
+      );
     }
 
     return AppUser(
@@ -119,12 +133,12 @@ class AppDataRepository {
       name: row['name'].toString(),
       email: (row['email'] ?? '').toString(),
       role: role,
+      createdAt: _toDateTime(row['created_at']),
       phone: row['phone']?.toString(),
       avatarUrl: row['avatar_url']?.toString(),
       trainerName: trainerName,
       goal: goal,
       heightCm: heightCm,
-      age: null,
     );
   }
 
@@ -171,13 +185,27 @@ class AppDataRepository {
       );
     }).toList();
 
+    final workoutExerciseIds = exercises
+        .map((exercise) => exercise.workoutExerciseId)
+        .whereType<String>()
+        .toList();
+    final totalSets = exercises.fold<int>(
+      0,
+      (sum, exercise) => sum + exercise.sets,
+    );
+
     return WorkoutPlan(
       id: plan['id'].toString(),
       name: (day['title'] ?? plan['name']).toString(),
       focus: (plan['focus'] ?? 'Assigned Program').toString(),
-      durationMinutes: _toInt(day['duration_minutes'], fallback: 52),
-      estimatedCalories: 450,
-      level: 'Intermediate',
+      durationMinutes: _toInt(day['duration_minutes']),
+      estimatedCalories: _toInt(plan['estimated_calories']),
+      level: (plan['level'] ?? '').toString(),
+      completionPercent: await _workoutCompletion(
+        userId,
+        workoutExerciseIds,
+        totalSets,
+      ),
       exercises: exercises,
     );
   }
@@ -186,6 +214,8 @@ class AppDataRepository {
     _requireClient();
     final userId = memberId ?? _authUserId;
     if (userId == null) throw StateError('You are not logged in.');
+    final waterGoal = await _fetchWaterGoal(userId);
+    final waterLiters = await _fetchWaterLitersForDate(userId, DateTime.now());
 
     final plan = await _supabaseService.client
         .from('diet_plans')
@@ -194,7 +224,12 @@ class AppDataRepository {
         .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
-    if (plan == null) return _emptyNutrition();
+    if (plan == null) {
+      return _emptyNutrition(
+        waterLiters: waterLiters,
+        waterGoalLiters: waterGoal,
+      );
+    }
 
     final mealRows = await _supabaseService.client
         .from('diet_meals')
@@ -222,6 +257,8 @@ class AppDataRepository {
       carbs: _toInt(plan['carbs_g']),
       fats: _toInt(plan['fats_g']),
       caloriesLeft: (goal - consumed).clamp(0, goal),
+      waterLiters: waterLiters,
+      waterGoalLiters: waterGoal,
       meals: meals,
     );
   }
@@ -246,21 +283,25 @@ class AppDataRepository {
 
     final logs = await _supabaseService.client
         .from('exercise_logs')
-        .select('weight,reps,logged_at,exercises(name,muscle_group)')
+        .select('weight,reps,completed,logged_at,exercises(name,muscle_group)')
         .eq('member_id', userId)
         .order('logged_at', ascending: false);
 
     final now = DateTime.now();
-    final workoutsThisMonth = logs.where((row) {
+    final completedLogs = logs.where((row) => row['completed'] != false);
+    final workoutDatesThisMonth = <String>{};
+    for (final row in completedLogs) {
       final loggedAt = DateTime.tryParse(row['logged_at'].toString());
-      return loggedAt != null &&
+      if (loggedAt != null &&
           loggedAt.year == now.year &&
-          loggedAt.month == now.month;
-    }).length;
+          loggedAt.month == now.month) {
+        workoutDatesThisMonth.add(loggedAt.toIso8601String().substring(0, 10));
+      }
+    }
 
     final personalBests = <String, int>{};
     final muscleCounts = <String, int>{};
-    for (final row in logs) {
+    for (final row in completedLogs) {
       final exercise = row['exercises'];
       if (exercise is! Map) continue;
       final name = exercise['name'].toString();
@@ -277,8 +318,9 @@ class AppDataRepository {
       weightDelta: double.parse(
         (currentWeight - previousWeight).toStringAsFixed(1),
       ),
-      workoutsThisMonth: workoutsThisMonth,
-      goalCompletion: 0,
+      workoutsThisMonth: workoutDatesThisMonth.length,
+      goalCompletion: await _latestWorkoutCompletion(userId),
+      dayStreak: _dayStreakFromLogs(logs),
       muscleProgress: muscleCounts.map(
         (key, value) => MapEntry(key, (value * 7).clamp(8, 28)),
       ),
@@ -316,6 +358,18 @@ class AppDataRepository {
         .from('users')
         .update({'preferred_unit': unit})
         .eq('id', _authUserId!);
+  }
+
+  Future<void> addWater(double liters) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    await _supabaseService.client.from('water_logs').upsert({
+      'member_id': _authUserId,
+      'logged_date': today,
+      'liters': liters.clamp(0, 20),
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'member_id,logged_date');
   }
 
   Future<List<MemberSummary>> fetchMembers() async {
@@ -360,8 +414,8 @@ class AppDataRepository {
     return rows.map<Exercise>((row) {
       return _exerciseFromRow(
         row,
-        sets: 3,
-        reps: '10-12',
+        sets: _toInt(row['default_sets']),
+        reps: (row['default_reps'] ?? '').toString(),
         notes: '',
         isAssigned: false,
       );
@@ -514,9 +568,13 @@ class AppDataRepository {
     final buffer = StringBuffer()
       ..writeln(workout.name)
       ..writeln(workout.focus)
-      ..writeln(
-        '${workout.durationMinutes} min - ${workout.exercises.length} exercises - ${workout.estimatedCalories} kcal',
+      ..write(
+        '${workout.durationMinutes} min - ${workout.exercises.length} exercises',
       );
+    if (workout.estimatedCalories > 0) {
+      buffer.write(' - ${workout.estimatedCalories} kcal');
+    }
+    buffer.writeln();
     for (final exercise in workout.exercises) {
       buffer.writeln(
         '- ${exercise.name}: ${exercise.sets} sets x ${exercise.reps}, rest ${exercise.restSeconds}s',
@@ -648,6 +706,7 @@ class AppDataRepository {
     required String? phone,
     required String password,
     required String goal,
+    required int? age,
     required double heightCm,
     required double weight,
   }) async {
@@ -660,6 +719,7 @@ class AppDataRepository {
         'phone': phone,
         'password': password,
         'goal': goal,
+        'age': age,
         'height_cm': heightCm,
         'weight': weight,
       },
@@ -715,7 +775,7 @@ class AppDataRepository {
     final reps = int.tryParse(exercise.reps.split('-').first) ?? 10;
     return [
       for (var i = 1; i <= exercise.sets.clamp(1, 5); i++)
-        ExerciseLog(setNumber: i, weight: 60, reps: reps),
+        ExerciseLog(setNumber: i, weight: 0, reps: reps),
     ];
   }
 
@@ -728,6 +788,114 @@ class AppDataRepository {
   static double _toDouble(Object? value, {double fallback = 0}) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? fallback;
+  }
+
+  static double? _toNullableDouble(Object? value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
+  }
+
+  static int? _toNullableInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.round();
+    return int.tryParse(value.toString());
+  }
+
+  static DateTime _toDateTime(Object? value) {
+    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  }
+
+  Future<double> _latestWorkoutCompletion(String memberId) async {
+    final plan = await _supabaseService.client
+        .from('workout_plans')
+        .select('id')
+        .eq('member_id', memberId)
+        .order('created_at', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (plan == null) return 0;
+    final day = await _supabaseService.client
+        .from('workout_days')
+        .select('id')
+        .eq('workout_plan_id', plan['id'])
+        .order('scheduled_date', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (day == null) return 0;
+    final rows = await _supabaseService.client
+        .from('workout_exercises')
+        .select('id,sets')
+        .eq('workout_day_id', day['id']);
+    final ids = rows.map<String>((row) => row['id'].toString()).toList();
+    final totalSets = rows.fold<int>(
+      0,
+      (sum, row) => sum + _toInt(row['sets']),
+    );
+    return _workoutCompletion(memberId, ids, totalSets);
+  }
+
+  Future<double> _workoutCompletion(
+    String memberId,
+    List<String> workoutExerciseIds,
+    int totalSets,
+  ) async {
+    if (workoutExerciseIds.isEmpty || totalSets <= 0) return 0;
+    final logs = await _supabaseService.client
+        .from('exercise_logs')
+        .select('set_number,completed,workout_exercise_id')
+        .eq('member_id', memberId)
+        .inFilter('workout_exercise_id', workoutExerciseIds);
+    final completed = logs.where((row) => row['completed'] != false).length;
+    return (completed / totalSets).clamp(0.0, 1.0);
+  }
+
+  Future<double> _fetchWaterLitersForDate(
+    String memberId,
+    DateTime date,
+  ) async {
+    final loggedDate = date.toIso8601String().substring(0, 10);
+    final row = await _supabaseService.client
+        .from('water_logs')
+        .select('liters')
+        .eq('member_id', memberId)
+        .eq('logged_date', loggedDate)
+        .maybeSingle();
+    return _toDouble(row?['liters']);
+  }
+
+  Future<double> _fetchWaterGoal(String memberId) async {
+    final row = await _supabaseService.client
+        .from('members')
+        .select('water_goal_liters')
+        .eq('id', memberId)
+        .maybeSingle();
+    return _toDouble(row?['water_goal_liters']);
+  }
+
+  int _dayStreakFromLogs(List<dynamic> logs) {
+    final dates = <DateTime>{};
+    for (final row in logs) {
+      if (row is! Map || row['completed'] == false) continue;
+      final loggedAt = DateTime.tryParse(row['logged_at'].toString());
+      if (loggedAt == null) continue;
+      dates.add(DateTime(loggedAt.year, loggedAt.month, loggedAt.day));
+    }
+    if (dates.isEmpty) return 0;
+    var cursor = DateTime.now();
+    cursor = DateTime(cursor.year, cursor.month, cursor.day);
+    if (!dates.contains(cursor)) {
+      final yesterday = cursor.subtract(const Duration(days: 1));
+      if (!dates.contains(yesterday)) return 0;
+      cursor = yesterday;
+    }
+    var streak = 0;
+    while (dates.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
   }
 
   static String _formatTime(String? value) {
@@ -793,9 +961,10 @@ class AppDataRepository {
       id: plan['id'].toString(),
       name: (day['title'] ?? plan['name']).toString(),
       focus: (plan['focus'] ?? 'Assigned Program').toString(),
-      durationMinutes: _toInt(day['duration_minutes'], fallback: 52),
-      estimatedCalories: 450,
-      level: 'Intermediate',
+      durationMinutes: _toInt(day['duration_minutes']),
+      estimatedCalories: _toInt(plan['estimated_calories']),
+      level: (plan['level'] ?? '').toString(),
+      completionPercent: 0,
       exercises: exercises,
     );
   }
@@ -829,6 +998,8 @@ class AppDataRepository {
       carbs: _toInt(plan['carbs_g']),
       fats: _toInt(plan['fats_g']),
       caloriesLeft: (goal - consumed).clamp(0, goal),
+      waterLiters: 0,
+      waterGoalLiters: 0,
       meals: meals,
     );
   }
@@ -840,7 +1011,8 @@ class AppDataRepository {
       focus: 'Ask your trainer to assign a plan',
       durationMinutes: 0,
       estimatedCalories: 0,
-      level: 'Not assigned',
+      level: '',
+      completionPercent: 0,
       exercises: const [],
     );
   }
@@ -896,15 +1068,20 @@ class AppDataRepository {
     return const [];
   }
 
-  NutritionPlan _emptyNutrition() {
-    return const NutritionPlan(
+  NutritionPlan _emptyNutrition({
+    double waterLiters = 0,
+    double waterGoalLiters = 0,
+  }) {
+    return NutritionPlan(
       calories: 0,
       goalCalories: 0,
       protein: 0,
       carbs: 0,
       fats: 0,
       caloriesLeft: 0,
-      meals: [],
+      waterLiters: waterLiters,
+      waterGoalLiters: waterGoalLiters,
+      meals: const [],
     );
   }
 }
@@ -927,7 +1104,7 @@ class ExerciseLogsController extends AsyncNotifier<List<ExerciseLog>> {
     final last = current.isEmpty ? 0 : current.last.setNumber;
     state = AsyncData([
       ...current,
-      ExerciseLog(setNumber: last + 1, weight: 40, reps: 10),
+      ExerciseLog(setNumber: last + 1, weight: 0, reps: 0),
     ]);
   }
 

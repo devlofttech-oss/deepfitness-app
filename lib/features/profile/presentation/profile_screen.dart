@@ -194,7 +194,7 @@ class _ProfileContent extends ConsumerWidget {
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         Text(
-                          'Member since Jan 2026',
+                          'Member since ${_formatMonthYear(user.createdAt)}',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: AppColors.secondaryText(context),
@@ -246,9 +246,9 @@ class _ProfileContent extends ConsumerWidget {
                     height: 58,
                     color: AppColors.divider(context),
                   ),
-                  const _ProfileMetric(
+                  _ProfileMetric(
                     icon: Icons.local_fire_department_outlined,
-                    value: '320',
+                    value: '${progress.dayStreak}',
                     label: 'Day Streak',
                   ),
                 ],
@@ -272,22 +272,24 @@ class _ProfileContent extends ConsumerWidget {
               _InfoRow(
                 icon: Icons.person_outline_rounded,
                 label: 'Age',
-                value: '${user.age ?? 24}',
+                value: user.age == null ? 'Not set' : '${user.age}',
               ),
               _InfoRow(
                 icon: Icons.straighten_rounded,
                 label: 'Height',
-                value: '${(user.heightCm ?? 178).round()} cm',
+                value: user.heightCm == null
+                    ? 'Not set'
+                    : '${user.heightCm!.round()} cm',
               ),
               _InfoRow(
                 icon: Icons.track_changes_rounded,
                 label: 'Goal',
-                value: user.goal ?? 'Muscle Gain',
+                value: _displayValue(user.goal),
               ),
               _InfoRow(
                 icon: Icons.engineering_outlined,
                 label: 'Trainer',
-                value: user.trainerName ?? 'Unassigned',
+                value: _displayValue(user.trainerName),
                 showDivider: false,
               ),
             ],
@@ -383,6 +385,29 @@ class _ProfileContent extends ConsumerWidget {
       ],
     );
   }
+}
+
+String _displayValue(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? 'Not set' : trimmed;
+}
+
+String _formatMonthYear(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.year}';
 }
 
 class _ProfileMetric extends StatelessWidget {

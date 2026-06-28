@@ -22,7 +22,9 @@ create table public.members (
   id uuid primary key references public.users(id) on delete cascade,
   trainer_id uuid references public.trainers(id) on delete restrict,
   goal text,
+  age integer check (age between 1 and 120),
   height_cm numeric(5, 2),
+  water_goal_liters numeric(4, 2) not null default 3.00,
   created_at timestamptz not null default now()
 );
 
@@ -31,6 +33,8 @@ create table public.exercises (
   name text not null,
   description text,
   muscle_group text not null,
+  default_sets integer not null default 3,
+  default_reps text not null default '10-12',
   rest_seconds integer not null default 60,
   created_by uuid references public.trainers(id) on delete set null,
   created_at timestamptz not null default now()
@@ -42,6 +46,8 @@ create table public.workout_plans (
   member_id uuid not null references public.members(id) on delete cascade,
   name text not null,
   focus text,
+  estimated_calories integer,
+  level text,
   created_at timestamptz not null default now()
 );
 
@@ -91,6 +97,16 @@ create table public.exercise_notes (
 create unique index exercise_notes_member_workout_exercise_idx
   on public.exercise_notes (member_id, workout_exercise_id, exercise_id)
   where workout_exercise_id is not null;
+
+create table public.water_logs (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  logged_date date not null,
+  liters numeric(4, 2) not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (member_id, logged_date)
+);
 
 create table public.diet_plans (
   id uuid primary key default gen_random_uuid(),
@@ -168,6 +184,7 @@ alter table public.workout_days enable row level security;
 alter table public.workout_exercises enable row level security;
 alter table public.exercise_logs enable row level security;
 alter table public.exercise_notes enable row level security;
+alter table public.water_logs enable row level security;
 alter table public.diet_plans enable row level security;
 alter table public.diet_meals enable row level security;
 alter table public.measurements enable row level security;
@@ -284,6 +301,15 @@ with check (member_id = auth.uid());
 
 create policy "trainers read assigned exercise notes"
 on public.exercise_notes for select
+using (public.is_member_trainer(member_id));
+
+create policy "members manage own water logs"
+on public.water_logs for all
+using (member_id = auth.uid())
+with check (member_id = auth.uid());
+
+create policy "trainers read assigned water logs"
+on public.water_logs for select
 using (public.is_member_trainer(member_id));
 
 create policy "read assigned diet plans"

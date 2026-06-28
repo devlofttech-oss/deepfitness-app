@@ -66,7 +66,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           children: [
             _SquareButton(
               icon: Icons.chevron_left_rounded,
-              onTap: () => context.pop(),
+              onTap: () => _goBackOr(context, '/workout'),
             ),
             const SizedBox(width: 22),
             Expanded(
@@ -285,7 +285,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                   .select(workout.exercises[currentIndex + 1]);
               ref.invalidate(exerciseLogsProvider);
             } else {
-              context.pop();
+              _goBackOr(context, '/workout');
             }
           },
         ),
@@ -987,5 +987,13 @@ class _RestTimerSheetState extends State<_RestTimerSheet> {
         ],
       ),
     );
+  }
+}
+
+void _goBackOr(BuildContext context, String fallbackRoute) {
+  if (context.canPop()) {
+    context.pop();
+  } else {
+    context.go(fallbackRoute);
   }
 }
