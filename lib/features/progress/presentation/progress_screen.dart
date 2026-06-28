@@ -29,30 +29,46 @@ class ProgressScreen extends ConsumerWidget {
   }
 }
 
-class _ProgressContent extends StatelessWidget {
+class _ProgressContent extends ConsumerWidget {
   const _ProgressContent({required this.progress});
 
   final MemberProgress progress;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedRange = ref.watch(progressDateRangeProvider);
+    final rangeLabel = selectedRange == null
+        ? 'This month'
+        : '${_formatShortDate(selectedRange.start)} - ${_formatShortDate(selectedRange.end)}';
     final deltaPrefix = progress.weightDelta > 0 ? '+' : '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         PageHeader(
           title: 'Progress',
-          subtitle: 'Your journey so far.',
+          subtitle: rangeLabel,
           action: IconButton(
-            onPressed: () => showDateRangePicker(
-              context: context,
-              firstDate: DateTime.now().subtract(const Duration(days: 365)),
-              lastDate: DateTime.now(),
-              initialDateRange: DateTimeRange(
-                start: DateTime.now().subtract(const Duration(days: 30)),
-                end: DateTime.now(),
-              ),
-            ),
+            onPressed: () async {
+              final now = DateTime.now();
+              final picked = await showDateRangePicker(
+                context: context,
+                firstDate: now.subtract(const Duration(days: 365)),
+                lastDate: now,
+                initialDateRange: selectedRange == null
+                    ? DateTimeRange(
+                        start: DateTime(now.year, now.month, 1),
+                        end: now,
+                      )
+                    : DateTimeRange(
+                        start: selectedRange.start,
+                        end: selectedRange.end,
+                      ),
+              );
+              if (picked == null) return;
+              ref
+                  .read(progressDateRangeProvider.notifier)
+                  .select(picked.start, picked.end);
+            },
             icon: const Icon(
               Icons.calendar_month_rounded,
               color: AppColors.gold,
@@ -142,7 +158,7 @@ class _ProgressContent extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'this month',
+                      selectedRange == null ? 'this month' : 'selected range',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.secondaryText(context),
                       ),
@@ -199,6 +215,24 @@ class _ProgressContent extends StatelessWidget {
       _ => Icons.horizontal_rule_rounded,
     };
   }
+}
+
+String _formatShortDate(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.day}';
 }
 
 class _ProgressItem {

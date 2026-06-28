@@ -469,13 +469,15 @@ class _InfoRow extends StatelessWidget {
       children: [
         InkWell(
           onTap: onTap,
-          child: SizedBox(
-            height: 48,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(icon, color: AppColors.gold, size: 20),
                 const SizedBox(width: 18),
                 Expanded(
+                  flex: 2,
                   child: Text(
                     label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -484,12 +486,19 @@ class _InfoRow extends StatelessWidget {
                   ),
                 ),
                 if (value.isNotEmpty)
-                  Text(
-                    value,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.secondaryText(context),
+                  Flexible(
+                    flex: 3,
+                    child: Text(
+                      value,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                   ),
+                if (value.isNotEmpty && onTap != null) const SizedBox(width: 4),
                 if (onTap != null) const Icon(Icons.chevron_right_rounded),
               ],
             ),

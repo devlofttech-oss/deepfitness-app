@@ -20,7 +20,7 @@ class TodayScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final workout = ref.watch(workoutProvider);
-    final nutrition = ref.watch(nutritionProvider);
+    final nutrition = ref.watch(todayNutritionProvider);
 
     return PremiumScaffold(
       bottomPadding: 132,
@@ -35,7 +35,7 @@ class TodayScreen extends ConsumerWidget {
           data: (workoutData) => AsyncStateView(
             value: nutrition,
             errorTitle: 'Could not load your nutrition',
-            onRetry: () => ref.invalidate(nutritionProvider),
+            onRetry: () => ref.invalidate(todayNutritionProvider),
             data: (nutritionData) => _TodayContent(
               user: userData,
               workout: workoutData,

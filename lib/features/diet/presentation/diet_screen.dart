@@ -44,6 +44,10 @@ class _DietContentState extends ConsumerState<_DietContent> {
   @override
   Widget build(BuildContext context) {
     final nutrition = widget.nutrition;
+    final selectedDate = ref.watch(nutritionDateProvider);
+    final dayLabel = _isSameDay(selectedDate, DateTime.now())
+        ? "Today's"
+        : _formatShortDate(selectedDate);
     final percent = nutrition.goalCalories == 0
         ? 0.0
         : (nutrition.calories / nutrition.goalCalories).clamp(0.0, 1.0);
@@ -53,14 +57,18 @@ class _DietContentState extends ConsumerState<_DietContent> {
       children: [
         PageHeader(
           title: 'Diet',
-          subtitle: 'Fuel your body. Reach your goals.',
+          subtitle: '${_formatShortDate(selectedDate)} nutrition log',
           action: IconButton(
-            onPressed: () => showDatePicker(
-              context: context,
-              firstDate: DateTime.now().subtract(const Duration(days: 30)),
-              lastDate: DateTime.now().add(const Duration(days: 30)),
-              initialDate: DateTime.now(),
-            ),
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                lastDate: DateTime.now().add(const Duration(days: 30)),
+                initialDate: selectedDate,
+              );
+              if (picked == null) return;
+              ref.read(nutritionDateProvider.notifier).select(picked);
+            },
             icon: const Icon(
               Icons.calendar_month_rounded,
               color: AppColors.gold,
@@ -81,7 +89,7 @@ class _DietContentState extends ConsumerState<_DietContent> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Today's Nutrition",
+                          '$dayLabel Nutrition',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
@@ -142,7 +150,7 @@ class _DietContentState extends ConsumerState<_DietContent> {
           ),
         ),
         const SizedBox(height: 24),
-        const SectionTitle(title: "Today's Meals"),
+        SectionTitle(title: '$dayLabel Meals'),
         const SizedBox(height: 16),
         if (nutrition.meals.isEmpty)
           const AppEmptyState(
@@ -209,13 +217,19 @@ class _DietContentState extends ConsumerState<_DietContent> {
         : (nutrition.waterLiters + .25)
               .clamp(0, nutrition.waterGoalLiters)
               .toDouble();
-    await ref.read(appDataRepositoryProvider).addWater(next);
+    final selectedDate = ref.read(nutritionDateProvider);
+    await ref
+        .read(appDataRepositoryProvider)
+        .addWater(next, date: selectedDate);
     ref.invalidate(nutritionProvider);
   }
 
   Future<void> _toggleMeal(DietMeal meal, bool logged) async {
     try {
-      await ref.read(appDataRepositoryProvider).setMealLogged(meal, logged);
+      final selectedDate = ref.read(nutritionDateProvider);
+      await ref
+          .read(appDataRepositoryProvider)
+          .setMealLogged(meal, logged, date: selectedDate);
       ref.invalidate(nutritionProvider);
     } catch (error) {
       if (!mounted) return;
@@ -320,34 +334,68 @@ class _MealCard extends StatelessWidget {
 void _showMealDetails(BuildContext context, DietMeal meal) {
   showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            meal.name,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+    constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width),
+    builder: (context) => SafeArea(
+      child: SizedBox(
+        width: double.infinity,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                meal.name,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(meal.time, style: const TextStyle(color: AppColors.muted)),
+              const SizedBox(height: 12),
+              Text(
+                meal.description,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(height: 1.4),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '${meal.calories} kcal',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(meal.time, style: const TextStyle(color: AppColors.muted)),
-          const SizedBox(height: 12),
-          Text(meal.description),
-          const SizedBox(height: 12),
-          Text(
-            '${meal.calories} kcal',
-            style: Theme.of(
-              context,
-            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-          ),
-        ],
+        ),
       ),
     ),
   );
+}
+
+bool _isSameDay(DateTime a, DateTime b) {
+  return a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+String _formatShortDate(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.day}';
 }
 
 class _Divider extends StatelessWidget {

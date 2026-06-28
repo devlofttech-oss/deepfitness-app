@@ -14,13 +14,32 @@ final workoutProvider = FutureProvider<WorkoutPlan>(
   (ref) => ref.watch(appDataRepositoryProvider).fetchTodayWorkout(),
 );
 
-final nutritionProvider = FutureProvider<NutritionPlan>(
+final nutritionProvider = FutureProvider<NutritionPlan>((ref) {
+  final date = ref.watch(nutritionDateProvider);
+  return ref.watch(appDataRepositoryProvider).fetchNutritionPlan(date: date);
+});
+
+final todayNutritionProvider = FutureProvider<NutritionPlan>(
   (ref) => ref.watch(appDataRepositoryProvider).fetchNutritionPlan(),
 );
 
-final progressProvider = FutureProvider<MemberProgress>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchProgress(),
-);
+final nutritionDateProvider =
+    NotifierProvider<NutritionDateController, DateTime>(
+      NutritionDateController.new,
+    );
+
+final progressProvider = FutureProvider<MemberProgress>((ref) {
+  final range = ref.watch(progressDateRangeProvider);
+  return ref
+      .watch(appDataRepositoryProvider)
+      .fetchProgress(startDate: range?.start, endDate: range?.end);
+});
+
+final progressDateRangeProvider =
+    NotifierProvider<
+      ProgressDateRangeController,
+      ({DateTime start, DateTime end})?
+    >(ProgressDateRangeController.new);
 
 final appSettingsProvider = FutureProvider<AppSettings>(
   (ref) => ref.watch(appDataRepositoryProvider).fetchSettings(),
@@ -60,6 +79,21 @@ class SelectedExerciseController extends Notifier<Exercise?> {
   Exercise? build() => null;
 
   void select(Exercise exercise) => state = exercise;
+}
+
+class NutritionDateController extends Notifier<DateTime> {
+  @override
+  DateTime build() => DateTime.now();
+
+  void select(DateTime date) => state = date;
+}
+
+class ProgressDateRangeController
+    extends Notifier<({DateTime start, DateTime end})?> {
+  @override
+  ({DateTime start, DateTime end})? build() => null;
+
+  void select(DateTime start, DateTime end) => state = (start: start, end: end);
 }
 
 final exerciseLogsProvider =
@@ -110,7 +144,7 @@ class AppDataRepository {
     if (role == UserRole.member) {
       final memberRow = await _supabaseService.client
           .from('members')
-          .select('goal,height_cm,age,trainers(name)')
+          .select('goal,height_cm,age,trainer_id,trainers(name)')
           .eq('id', authUser.id)
           .maybeSingle();
       goal = memberRow?['goal']?.toString();
@@ -118,6 +152,17 @@ class AppDataRepository {
       final age = _toNullableInt(memberRow?['age']);
       final trainer = memberRow?['trainers'];
       if (trainer is Map) trainerName = trainer['name']?.toString();
+      final trainerId = memberRow?['trainer_id']?.toString();
+      if ((trainerName == null || trainerName.trim().isEmpty) &&
+          trainerId != null &&
+          trainerId.isNotEmpty) {
+        final trainerRow = await _supabaseService.client
+            .from('trainers')
+            .select('name')
+            .eq('id', trainerId)
+            .maybeSingle();
+        trainerName = trainerRow?['name']?.toString();
+      }
       return AppUser(
         id: row['id'].toString(),
         name: row['name'].toString(),
@@ -224,12 +269,16 @@ class AppDataRepository {
     );
   }
 
-  Future<NutritionPlan> fetchNutritionPlan({String? memberId}) async {
+  Future<NutritionPlan> fetchNutritionPlan({
+    String? memberId,
+    DateTime? date,
+  }) async {
     _requireClient();
     final userId = memberId ?? _authUserId;
     if (userId == null) throw StateError('You are not logged in.');
+    final selectedDate = date ?? DateTime.now();
     final waterGoal = await _fetchWaterGoal(userId);
-    final waterLiters = await _fetchWaterLitersForDate(userId, DateTime.now());
+    final waterLiters = await _fetchWaterLitersForDate(userId, selectedDate);
 
     final plan = await _supabaseService.client
         .from('diet_plans')
@@ -251,7 +300,7 @@ class AppDataRepository {
         .eq('diet_plan_id', plan['id'])
         .order('sort_order');
 
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final selectedDay = _dateKey(selectedDate);
     final mealIds = mealRows
         .map<String>((row) => row['id'].toString())
         .toList();
@@ -261,7 +310,7 @@ class AppDataRepository {
                   .from('diet_logs')
                   .select('diet_meal_id')
                   .eq('member_id', userId)
-                  .eq('logged_date', today)
+                  .eq('logged_date', selectedDay)
                   .eq('consumed', true)
                   .inFilter('diet_meal_id', mealIds))
               .map<String>((row) => row['diet_meal_id'].toString())
@@ -298,7 +347,11 @@ class AppDataRepository {
     );
   }
 
-  Future<MemberProgress> fetchProgress({String? memberId}) async {
+  Future<MemberProgress> fetchProgress({
+    String? memberId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     _requireClient();
     final userId = memberId ?? _authUserId;
     if (userId == null) throw StateError('You are not logged in.');
@@ -316,31 +369,32 @@ class AppDataRepository {
         ? _toDouble(measurements[1]['weight'], fallback: currentWeight)
         : currentWeight;
 
-    final logs = await _supabaseService.client
+    var logsQuery = _supabaseService.client
         .from('exercise_logs')
         .select(
           'weight,reps,completed,logged_at,exercises(name,muscle_group,tracks_weight)',
         )
-        .eq('member_id', userId)
-        .order('logged_at', ascending: false);
+        .eq('member_id', userId);
+
+    if (startDate != null) {
+      logsQuery = logsQuery.gte('logged_at', _startOfDay(startDate));
+    }
+    if (endDate != null) {
+      logsQuery = logsQuery.lt('logged_at', _dayAfter(endDate));
+    }
+
+    final logs = await logsQuery.order('logged_at', ascending: false);
 
     final now = DateTime.now();
-    final firstOfMonth = DateTime(
-      now.year,
-      now.month,
-      1,
-    ).toIso8601String().substring(0, 10);
-    final nextMonth = DateTime(
-      now.year,
-      now.month + 1,
-      1,
-    ).toIso8601String().substring(0, 10);
+    final firstOfMonth = DateTime(now.year, now.month, 1);
+    final rangeStart = startDate ?? firstOfMonth;
+    final rangeEnd = endDate ?? DateTime(now.year, now.month + 1, 0);
     final completions = await _supabaseService.client
         .from('workout_completions')
         .select('id')
         .eq('member_id', userId)
-        .gte('completed_date', firstOfMonth)
-        .lt('completed_date', nextMonth);
+        .gte('completed_date', _dateKey(rangeStart))
+        .lt('completed_date', _dateKey(rangeEnd.add(const Duration(days: 1))));
     final completedLogs = logs.where((row) => row['completed'] != false);
 
     final personalBests = <String, int>{};
@@ -406,13 +460,13 @@ class AppDataRepository {
         .eq('id', _authUserId!);
   }
 
-  Future<void> addWater(double liters) async {
+  Future<void> addWater(double liters, {DateTime? date}) async {
     _requireClient();
     if (_authUserId == null) throw StateError('You are not logged in.');
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final selectedDay = _dateKey(date ?? DateTime.now());
     await _supabaseService.client.from('water_logs').upsert({
       'member_id': _authUserId,
-      'logged_date': today,
+      'logged_date': selectedDay,
       'liters': liters.clamp(0, 20),
       'updated_at': DateTime.now().toIso8601String(),
     }, onConflict: 'member_id,logged_date');
@@ -545,7 +599,13 @@ class AppDataRepository {
   ) async {
     _requireClient();
     if (_authUserId == null) throw StateError('You are not logged in.');
-    final payload = logs.map((log) {
+    final uniqueLogs = <int, ExerciseLog>{};
+    for (final log in logs) {
+      uniqueLogs[log.setNumber] = log;
+    }
+    final sortedLogs = uniqueLogs.values.toList()
+      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    final payload = sortedLogs.map((log) {
       return {
         'member_id': _authUserId,
         'workout_exercise_id': exercise.workoutExerciseId,
@@ -576,7 +636,7 @@ class AppDataRepository {
         .limit(1)
         .maybeSingle();
     if (latestDay == null) return;
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final today = _dateKey(DateTime.now());
     await _supabaseService.client.from('workout_completions').upsert({
       'member_id': _authUserId,
       'workout_plan_id': workout.id,
@@ -586,7 +646,11 @@ class AppDataRepository {
     }, onConflict: 'member_id,workout_plan_id,workout_day_id,completed_date');
   }
 
-  Future<void> setMealLogged(DietMeal meal, bool logged) async {
+  Future<void> setMealLogged(
+    DietMeal meal,
+    bool logged, {
+    DateTime? date,
+  }) async {
     _requireClient();
     if (_authUserId == null) throw StateError('You are not logged in.');
     final mealId = meal.id;
@@ -596,12 +660,12 @@ class AppDataRepository {
         .select('diet_plan_id')
         .eq('id', mealId)
         .single();
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final selectedDay = _dateKey(date ?? DateTime.now());
     await _supabaseService.client.from('diet_logs').upsert({
       'member_id': _authUserId,
       'diet_plan_id': row['diet_plan_id'],
       'diet_meal_id': mealId,
-      'logged_date': today,
+      'logged_date': selectedDay,
       'consumed': logged,
       'consumed_at': logged ? DateTime.now().toIso8601String() : null,
       'updated_at': DateTime.now().toIso8601String(),
@@ -704,6 +768,7 @@ class AppDataRepository {
   }) async {
     _requireClient();
     if (_authUserId == null) throw StateError('You are not logged in.');
+    final durationMinutes = _estimatedDurationMinutes(exercises);
     final plan = await _supabaseService.client
         .from('workout_plans')
         .insert({
@@ -711,6 +776,7 @@ class AppDataRepository {
           'member_id': memberId,
           'name': name,
           'focus': focus,
+          'estimated_calories': durationMinutes * 8,
         })
         .select('id')
         .single();
@@ -720,7 +786,7 @@ class AppDataRepository {
           'workout_plan_id': plan['id'],
           'scheduled_date': DateTime.now().toIso8601String().substring(0, 10),
           'title': name,
-          'duration_minutes': exercises.length * 12,
+          'duration_minutes': durationMinutes,
         })
         .select('id')
         .single();
@@ -977,6 +1043,35 @@ class AppDataRepository {
 
   static DateTime _toDateTime(Object? value) {
     return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  }
+
+  static String _dateKey(DateTime date) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).toIso8601String().substring(0, 10);
+  }
+
+  static String _startOfDay(DateTime date) {
+    return DateTime(date.year, date.month, date.day).toIso8601String();
+  }
+
+  static String _dayAfter(DateTime date) {
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).add(const Duration(days: 1)).toIso8601String();
+  }
+
+  static int _estimatedDurationMinutes(List<Exercise> exercises) {
+    final seconds = exercises.fold<int>(0, (sum, exercise) {
+      final sets = exercise.sets <= 0 ? 1 : exercise.sets;
+      final restSeconds = exercise.restSeconds <= 0 ? 60 : exercise.restSeconds;
+      return sum + (sets * 45) + ((sets - 1) * restSeconds);
+    });
+    return seconds <= 0 ? 0 : (seconds + 59) ~/ 60;
   }
 
   Future<double> _latestWorkoutCompletion(String memberId) async {
