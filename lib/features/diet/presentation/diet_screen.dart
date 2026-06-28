@@ -154,7 +154,10 @@ class _DietContentState extends ConsumerState<_DietContent> {
           ...nutrition.meals.map(
             (meal) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: _MealCard(meal: meal),
+              child: _MealCard(
+                meal: meal,
+                onChanged: (logged) => _toggleMeal(meal, logged),
+              ),
             ),
           ),
         const SizedBox(height: 10),
@@ -209,22 +212,44 @@ class _DietContentState extends ConsumerState<_DietContent> {
     await ref.read(appDataRepositoryProvider).addWater(next);
     ref.invalidate(nutritionProvider);
   }
+
+  Future<void> _toggleMeal(DietMeal meal, bool logged) async {
+    try {
+      await ref.read(appDataRepositoryProvider).setMealLogged(meal, logged);
+      ref.invalidate(nutritionProvider);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+    }
+  }
 }
 
 class _MealCard extends StatelessWidget {
-  const _MealCard({required this.meal});
+  const _MealCard({required this.meal, required this.onChanged});
 
   final DietMeal meal;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => _showMealDetails(context, meal),
+      onTap: () => onChanged(!meal.logged),
       child: PremiumCard(
         padding: const EdgeInsets.all(18),
         child: Row(
           children: [
-            IconTile(icon: _mealIcon(meal.icon), size: 48),
+            IconTile(
+              icon: meal.logged
+                  ? Icons.check_circle_rounded
+                  : _mealIcon(meal.icon),
+              background: meal.logged
+                  ? AppColors.success.withValues(alpha: .14)
+                  : null,
+              iconColor: meal.logged ? AppColors.success : null,
+              size: 48,
+            ),
             const SizedBox(width: 18),
             Expanded(
               child: Column(
@@ -261,7 +286,20 @@ class _MealCard extends StatelessWidget {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded),
+            IconButton(
+              onPressed: () => _showMealDetails(context, meal),
+              icon: const Icon(Icons.info_outline_rounded, size: 20),
+              color: AppColors.secondaryText(context),
+              visualDensity: VisualDensity.compact,
+            ),
+            Icon(
+              meal.logged
+                  ? Icons.check_circle_rounded
+                  : Icons.radio_button_unchecked_rounded,
+              color: meal.logged
+                  ? AppColors.success
+                  : AppColors.secondaryText(context),
+            ),
           ],
         ),
       ),

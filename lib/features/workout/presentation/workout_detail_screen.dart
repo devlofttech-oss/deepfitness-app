@@ -184,7 +184,7 @@ class _ExercisePreviewContent extends ConsumerWidget {
           onPressed: () {
             ref
                 .read(selectedExerciseProvider.notifier)
-                .select(workout.exercises.first);
+                .select(_firstIncompleteExercise(workout));
             context.go('/exercise-log');
           },
         ),
@@ -383,7 +383,7 @@ class _WorkoutDetailContent extends ConsumerWidget {
             }
             ref
                 .read(selectedExerciseProvider.notifier)
-                .select(workout.exercises.first);
+                .select(_firstIncompleteExercise(workout));
             context.push('/exercise-log');
           },
         ),
@@ -486,6 +486,13 @@ Exercise _selectedWorkoutExercise(WorkoutPlan workout, Exercise? selected) {
     if (index >= 0) return workout.exercises[index];
   }
   return workout.exercises.first;
+}
+
+Exercise _firstIncompleteExercise(WorkoutPlan workout) {
+  return workout.exercises.firstWhere(
+    (exercise) => !exercise.isCompleted,
+    orElse: () => workout.exercises.first,
+  );
 }
 
 void _showWorkoutOptions(
@@ -646,7 +653,14 @@ class _ExerciseRow extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, size: 22),
+                if (exercise.isCompleted)
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    size: 22,
+                  )
+                else
+                  const Icon(Icons.chevron_right_rounded, size: 22),
               ],
             ),
           ),

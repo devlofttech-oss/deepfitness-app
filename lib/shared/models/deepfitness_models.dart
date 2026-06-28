@@ -51,6 +51,7 @@ class Exercise {
     this.secondaryMuscles = const [],
     this.instructions = const [],
     this.imageUrls = const [],
+    this.completedSetCount = 0,
   });
 
   final String id;
@@ -74,6 +75,9 @@ class Exercise {
   final List<String> secondaryMuscles;
   final List<String> instructions;
   final List<String> imageUrls;
+  final int completedSetCount;
+
+  bool get isCompleted => completedSetCount >= sets && sets > 0;
 }
 
 class WorkoutPlan {
@@ -172,13 +176,17 @@ class DietMeal {
     required this.description,
     required this.calories,
     required this.icon,
+    this.id,
+    this.logged = false,
   });
 
+  final String? id;
   final String name;
   final String time;
   final String description;
   final int calories;
   final String icon;
+  final bool logged;
 }
 
 class NutritionPlan {

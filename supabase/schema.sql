@@ -147,6 +147,29 @@ create table public.diet_meals (
   sort_order integer not null default 0
 );
 
+create table public.workout_completions (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  workout_plan_id uuid not null references public.workout_plans(id) on delete cascade,
+  workout_day_id uuid references public.workout_days(id) on delete cascade,
+  completed_date date not null default current_date,
+  completed_at timestamptz not null default now(),
+  unique (member_id, workout_plan_id, workout_day_id, completed_date)
+);
+
+create table public.diet_logs (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  diet_plan_id uuid not null references public.diet_plans(id) on delete cascade,
+  diet_meal_id uuid not null references public.diet_meals(id) on delete cascade,
+  logged_date date not null default current_date,
+  consumed boolean not null default true,
+  consumed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (member_id, diet_meal_id, logged_date)
+);
+
 create table public.measurements (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id) on delete cascade,
@@ -204,6 +227,8 @@ alter table public.exercise_notes enable row level security;
 alter table public.water_logs enable row level security;
 alter table public.diet_plans enable row level security;
 alter table public.diet_meals enable row level security;
+alter table public.workout_completions enable row level security;
+alter table public.diet_logs enable row level security;
 alter table public.measurements enable row level security;
 
 create policy "users read own profile"
@@ -362,6 +387,24 @@ with check (
     where dp.id = diet_plan_id and dp.trainer_id = auth.uid()
   )
 );
+
+create policy "members manage own workout completions"
+on public.workout_completions for all
+using (member_id = auth.uid())
+with check (member_id = auth.uid());
+
+create policy "trainers read assigned workout completions"
+on public.workout_completions for select
+using (public.is_member_trainer(member_id));
+
+create policy "members manage own diet logs"
+on public.diet_logs for all
+using (member_id = auth.uid())
+with check (member_id = auth.uid());
+
+create policy "trainers read assigned diet logs"
+on public.diet_logs for select
+using (public.is_member_trainer(member_id));
 
 create policy "read assigned measurements"
 on public.measurements for select

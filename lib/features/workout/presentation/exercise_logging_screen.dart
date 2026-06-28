@@ -327,25 +327,29 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           errorTitle: 'Could not load your sets',
           loading: const AppLoadingState(rows: 2),
           onRetry: () => ref.invalidate(exerciseLogsProvider),
-          data: (items) => PremiumCard(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-            child: Column(
-              children: [
-                for (var index = 0; index < items.length; index++)
-                  _SetLogRow(
-                    log: items[index],
-                    assignedSetCount: exercise.sets,
-                    tracksWeight: exercise.tracksWeight,
-                    showDivider: index != items.length - 1,
-                    onChanged: (updated) {
-                      ref
-                          .read(exerciseLogsProvider.notifier)
-                          .updateAt(index, updated);
-                    },
-                  ),
-              ],
-            ),
-          ),
+          data: (items) {
+            final sortedItems = [...items]
+              ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+            return PremiumCard(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+              child: Column(
+                children: [
+                  for (var index = 0; index < sortedItems.length; index++)
+                    _SetLogRow(
+                      log: sortedItems[index],
+                      assignedSetCount: exercise.sets,
+                      tracksWeight: exercise.tracksWeight,
+                      showDivider: index != sortedItems.length - 1,
+                      onChanged: (updated) {
+                        ref
+                            .read(exerciseLogsProvider.notifier)
+                            .updateBySetNumber(updated);
+                      },
+                    ),
+                ],
+              ),
+            );
+          },
         ),
         const SizedBox(height: 22),
         Row(
@@ -428,7 +432,9 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           outline: true,
           onPressed: () async {
             try {
-              await ref.read(exerciseLogsProvider.notifier).save(exercise);
+              await ref
+                  .read(exerciseLogsProvider.notifier)
+                  .completeAllAndSave(exercise);
             } catch (error) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -444,7 +450,20 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                   .read(selectedExerciseProvider.notifier)
                   .select(workout.exercises[currentIndex + 1]);
               ref.invalidate(exerciseLogsProvider);
+              ref.invalidate(workoutProvider);
             } else {
+              try {
+                await ref
+                    .read(appDataRepositoryProvider)
+                    .completeWorkout(workout);
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(friendlyErrorMessage(error))),
+                  );
+                }
+                return;
+              }
               ref.invalidate(workoutProvider);
               ref.invalidate(progressProvider);
               if (context.mounted) context.go('/workout-complete');
@@ -714,6 +733,9 @@ class _SetLogRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMandatory = log.setNumber <= assignedSetCount;
+    final markerColor = log.completed
+        ? AppColors.success
+        : AppColors.goldBright;
     return Column(
       children: [
         Padding(
@@ -724,10 +746,15 @@ class _SetLogRow extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: AppColors.goldBright,
+                    backgroundColor: markerColor,
                     child: Text(
                       '${log.setNumber}',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
+                      style: TextStyle(
+                        color: log.completed
+                            ? AppColors.white
+                            : AppColors.black,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -835,7 +862,7 @@ class _SetLogRow extends StatelessWidget {
                       height: 42,
                       decoration: BoxDecoration(
                         color: log.completed
-                            ? AppColors.goldBright
+                            ? AppColors.success
                             : AppColors.subtle(context),
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -843,6 +870,7 @@ class _SetLogRow extends StatelessWidget {
                         log.completed
                             ? Icons.check_rounded
                             : Icons.circle_outlined,
+                        color: log.completed ? AppColors.white : null,
                         size: 20,
                       ),
                     ),

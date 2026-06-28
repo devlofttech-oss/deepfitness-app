@@ -68,6 +68,8 @@ begin
 
   delete from public.exercise_notes;
   delete from public.exercise_logs;
+  delete from public.workout_completions;
+  delete from public.diet_logs;
   delete from public.water_logs;
   delete from public.measurements;
   delete from public.diet_plans;

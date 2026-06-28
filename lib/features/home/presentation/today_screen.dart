@@ -200,6 +200,10 @@ class _TodayContent extends StatelessWidget {
                         Text(
                           workout.exercises.isEmpty
                               ? 'Not Assigned'
+                              : workout.completionPercent >= 1
+                              ? 'Completed'
+                              : workout.completionPercent > 0
+                              ? 'Continue'
                               : 'Start Workout',
                           style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
@@ -233,7 +237,7 @@ class _TodayContent extends StatelessWidget {
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),
                         Text(
-                          '${nutrition.meals.length} Meals Planned',
+                          '${nutrition.meals.where((meal) => meal.logged).length} of ${nutrition.meals.length} Meals Logged',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(color: AppColors.muted),
                         ),

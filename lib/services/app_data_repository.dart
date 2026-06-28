@@ -195,6 +195,18 @@ class AppDataRepository {
         .map((exercise) => exercise.workoutExerciseId)
         .whereType<String>()
         .toList();
+    final completedSetsByExercise = await _completedSetsByWorkoutExercise(
+      userId,
+      workoutExerciseIds,
+    );
+    final enrichedExercises = exercises
+        .map(
+          (exercise) => _exerciseWithCompletedSets(
+            exercise,
+            completedSetsByExercise[exercise.workoutExerciseId] ?? 0,
+          ),
+        )
+        .toList();
     final totalSets = exercises.fold<int>(
       0,
       (sum, exercise) => sum + exercise.sets,
@@ -207,12 +219,8 @@ class AppDataRepository {
       durationMinutes: _toInt(day['duration_minutes']),
       estimatedCalories: _toInt(plan['estimated_calories']),
       level: (plan['level'] ?? '').toString(),
-      completionPercent: await _workoutCompletion(
-        userId,
-        workoutExerciseIds,
-        totalSets,
-      ),
-      exercises: exercises,
+      completionPercent: _completionFromCounts(enrichedExercises, totalSets),
+      exercises: enrichedExercises,
     );
   }
 
@@ -243,25 +251,46 @@ class AppDataRepository {
         .eq('diet_plan_id', plan['id'])
         .order('sort_order');
 
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final mealIds = mealRows
+        .map<String>((row) => row['id'].toString())
+        .toList();
+    final loggedMealIds = mealIds.isEmpty
+        ? <String>{}
+        : (await _supabaseService.client
+                  .from('diet_logs')
+                  .select('diet_meal_id')
+                  .eq('member_id', userId)
+                  .eq('logged_date', today)
+                  .eq('consumed', true)
+                  .inFilter('diet_meal_id', mealIds))
+              .map<String>((row) => row['diet_meal_id'].toString())
+              .toSet();
+
     final meals = mealRows.map<DietMeal>((row) {
+      final mealId = row['id'].toString();
       return DietMeal(
+        id: mealId,
         name: row['name'].toString(),
         time: _formatTime(row['meal_time']?.toString()),
         description: (row['description'] ?? '').toString(),
         calories: _toInt(row['calories']),
         icon: row['name'].toString().toLowerCase(),
+        logged: loggedMealIds.contains(mealId),
       );
     }).toList();
 
-    final consumed = meals.fold<int>(0, (sum, meal) => sum + meal.calories);
+    final consumed = meals
+        .where((meal) => meal.logged)
+        .fold<int>(0, (sum, meal) => sum + meal.calories);
     final goal = _toInt(plan['daily_calories']);
 
     return NutritionPlan(
       calories: consumed,
       goalCalories: goal,
-      protein: _toInt(plan['protein_g']),
-      carbs: _toInt(plan['carbs_g']),
-      fats: _toInt(plan['fats_g']),
+      protein: _macroConsumed(_toInt(plan['protein_g']), consumed, goal),
+      carbs: _macroConsumed(_toInt(plan['carbs_g']), consumed, goal),
+      fats: _macroConsumed(_toInt(plan['fats_g']), consumed, goal),
       caloriesLeft: (goal - consumed).clamp(0, goal),
       waterLiters: waterLiters,
       waterGoalLiters: waterGoal,
@@ -296,16 +325,23 @@ class AppDataRepository {
         .order('logged_at', ascending: false);
 
     final now = DateTime.now();
+    final firstOfMonth = DateTime(
+      now.year,
+      now.month,
+      1,
+    ).toIso8601String().substring(0, 10);
+    final nextMonth = DateTime(
+      now.year,
+      now.month + 1,
+      1,
+    ).toIso8601String().substring(0, 10);
+    final completions = await _supabaseService.client
+        .from('workout_completions')
+        .select('id')
+        .eq('member_id', userId)
+        .gte('completed_date', firstOfMonth)
+        .lt('completed_date', nextMonth);
     final completedLogs = logs.where((row) => row['completed'] != false);
-    final workoutDatesThisMonth = <String>{};
-    for (final row in completedLogs) {
-      final loggedAt = DateTime.tryParse(row['logged_at'].toString());
-      if (loggedAt != null &&
-          loggedAt.year == now.year &&
-          loggedAt.month == now.month) {
-        workoutDatesThisMonth.add(loggedAt.toIso8601String().substring(0, 10));
-      }
-    }
 
     final personalBests = <String, int>{};
     final muscleCounts = <String, int>{};
@@ -328,7 +364,7 @@ class AppDataRepository {
       weightDelta: double.parse(
         (currentWeight - previousWeight).toStringAsFixed(1),
       ),
-      workoutsThisMonth: workoutDatesThisMonth.length,
+      workoutsThisMonth: completions.length,
       goalCompletion: await _latestWorkoutCompletion(userId),
       dayStreak: _dayStreakFromLogs(logs),
       muscleProgress: muscleCounts.map(
@@ -478,14 +514,19 @@ class AppDataRepository {
   Future<List<ExerciseLog>> fetchExerciseLogs(Exercise exercise) async {
     _requireClient();
     if (_authUserId == null) throw StateError('You are not logged in.');
-    final rows = await _supabaseService.client
+    var query = _supabaseService.client
         .from('exercise_logs')
         .select()
-        .eq('member_id', _authUserId!)
-        .eq('exercise_id', exercise.id)
-        .order('set_number');
+        .eq('member_id', _authUserId!);
+    final workoutExerciseId = exercise.workoutExerciseId;
+    if (workoutExerciseId != null) {
+      query = query.eq('workout_exercise_id', workoutExerciseId);
+    } else {
+      query = query.eq('exercise_id', exercise.id);
+    }
+    final rows = await query.order('set_number', ascending: true);
     if (rows.isEmpty) return _defaultLogs(exercise);
-    return rows.map<ExerciseLog>((row) {
+    final logs = rows.map<ExerciseLog>((row) {
       return ExerciseLog(
         id: row['id'].toString(),
         setNumber: _toInt(row['set_number']),
@@ -494,6 +535,8 @@ class AppDataRepository {
         completed: row['completed'] != false,
       );
     }).toList();
+    logs.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    return logs;
   }
 
   Future<void> saveExerciseLogs(
@@ -519,6 +562,50 @@ class AppDataRepository {
           payload,
           onConflict: 'member_id,workout_exercise_id,set_number',
         );
+  }
+
+  Future<void> completeWorkout(WorkoutPlan workout) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    if (workout.id == 'empty') return;
+    final latestDay = await _supabaseService.client
+        .from('workout_days')
+        .select('id')
+        .eq('workout_plan_id', workout.id)
+        .order('scheduled_date', ascending: false)
+        .limit(1)
+        .maybeSingle();
+    if (latestDay == null) return;
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    await _supabaseService.client.from('workout_completions').upsert({
+      'member_id': _authUserId,
+      'workout_plan_id': workout.id,
+      'workout_day_id': latestDay['id'],
+      'completed_date': today,
+      'completed_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'member_id,workout_plan_id,workout_day_id,completed_date');
+  }
+
+  Future<void> setMealLogged(DietMeal meal, bool logged) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    final mealId = meal.id;
+    if (mealId == null) throw StateError('Open an assigned meal first.');
+    final row = await _supabaseService.client
+        .from('diet_meals')
+        .select('diet_plan_id')
+        .eq('id', mealId)
+        .single();
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    await _supabaseService.client.from('diet_logs').upsert({
+      'member_id': _authUserId,
+      'diet_plan_id': row['diet_plan_id'],
+      'diet_meal_id': mealId,
+      'logged_date': today,
+      'consumed': logged,
+      'consumed_at': logged ? DateTime.now().toIso8601String() : null,
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'member_id,diet_meal_id,logged_date');
   }
 
   Future<void> saveExerciseNote(Exercise exercise, String note) async {
@@ -572,6 +659,11 @@ class AppDataRepository {
         .delete()
         .eq('member_id', _authUserId!)
         .inFilter('workout_exercise_id', workoutExerciseIds);
+    await _supabaseService.client
+        .from('workout_completions')
+        .delete()
+        .eq('member_id', _authUserId!)
+        .eq('workout_plan_id', workout.id);
   }
 
   String workoutShareText(WorkoutPlan workout) {
@@ -792,8 +884,71 @@ class AppDataRepository {
           setNumber: i,
           weight: exercise.tracksWeight ? exercise.targetWeight : 0,
           reps: reps,
+          completed: false,
         ),
     ];
+  }
+
+  Future<Map<String, int>> _completedSetsByWorkoutExercise(
+    String memberId,
+    List<String> workoutExerciseIds,
+  ) async {
+    if (workoutExerciseIds.isEmpty) return const {};
+    final rows = await _supabaseService.client
+        .from('exercise_logs')
+        .select('workout_exercise_id,completed')
+        .eq('member_id', memberId)
+        .inFilter('workout_exercise_id', workoutExerciseIds);
+    final counts = <String, int>{};
+    for (final row in rows) {
+      if (row['completed'] == false) continue;
+      final id = row['workout_exercise_id']?.toString();
+      if (id == null) continue;
+      counts[id] = (counts[id] ?? 0) + 1;
+    }
+    return counts;
+  }
+
+  Exercise _exerciseWithCompletedSets(Exercise exercise, int completedSets) {
+    return Exercise(
+      id: exercise.id,
+      name: exercise.name,
+      description: exercise.description,
+      muscleGroup: exercise.muscleGroup,
+      sets: exercise.sets,
+      reps: exercise.reps,
+      restSeconds: exercise.restSeconds,
+      icon: exercise.icon,
+      notes: exercise.notes,
+      tracksWeight: exercise.tracksWeight,
+      targetWeight: exercise.targetWeight,
+      workoutExerciseId: exercise.workoutExerciseId,
+      isAssigned: exercise.isAssigned,
+      sourceId: exercise.sourceId,
+      equipment: exercise.equipment,
+      level: exercise.level,
+      category: exercise.category,
+      primaryMuscles: exercise.primaryMuscles,
+      secondaryMuscles: exercise.secondaryMuscles,
+      instructions: exercise.instructions,
+      imageUrls: exercise.imageUrls,
+      completedSetCount: completedSets.clamp(0, exercise.sets),
+    );
+  }
+
+  double _completionFromCounts(List<Exercise> exercises, int totalSets) {
+    if (exercises.isEmpty || totalSets <= 0) return 0;
+    final completed = exercises.fold<int>(
+      0,
+      (sum, exercise) =>
+          sum + exercise.completedSetCount.clamp(0, exercise.sets),
+    );
+    return (completed / totalSets).clamp(0.0, 1.0);
+  }
+
+  int _macroConsumed(int planned, int consumedCalories, int goalCalories) {
+    if (planned <= 0 || consumedCalories <= 0 || goalCalories <= 0) return 0;
+    return (planned * (consumedCalories / goalCalories)).round();
   }
 
   static int _toInt(Object? value, {int fallback = 0}) {
@@ -1120,6 +1275,15 @@ class ExerciseLogsController extends AsyncNotifier<List<ExerciseLog>> {
     state = AsyncData([...current]..[index] = log);
   }
 
+  void updateBySetNumber(ExerciseLog log) {
+    final current = [...(state.value ?? const <ExerciseLog>[])];
+    final index = current.indexWhere((item) => item.setNumber == log.setNumber);
+    if (index < 0) return;
+    current[index] = log;
+    current.sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    state = AsyncData(current);
+  }
+
   void addExtraSet() {
     final current = state.value ?? const <ExerciseLog>[];
     final last = current.isEmpty ? 0 : current.last.setNumber;
@@ -1130,9 +1294,30 @@ class ExerciseLogsController extends AsyncNotifier<List<ExerciseLog>> {
   }
 
   Future<void> save(Exercise exercise) async {
-    final current = state.value ?? const <ExerciseLog>[];
+    final current = [...(state.value ?? const <ExerciseLog>[])]
+      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
     await ref
         .watch(appDataRepositoryProvider)
         .saveExerciseLogs(exercise, current);
+  }
+
+  Future<void> completeAllAndSave(Exercise exercise) async {
+    final current = [...(state.value ?? const <ExerciseLog>[])]
+      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    final completed = current
+        .map(
+          (log) => ExerciseLog(
+            id: log.id,
+            setNumber: log.setNumber,
+            weight: log.weight,
+            reps: log.reps,
+            completed: true,
+          ),
+        )
+        .toList();
+    state = AsyncData(completed);
+    await ref
+        .watch(appDataRepositoryProvider)
+        .saveExerciseLogs(exercise, completed);
   }
 }
