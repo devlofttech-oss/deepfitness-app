@@ -89,7 +89,7 @@ class _ProgressContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Current Weight',
+                      'Weight',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.secondaryText(context),
                         fontWeight: FontWeight.w600,
@@ -104,11 +104,11 @@ class _ProgressContent extends ConsumerWidget {
                           style: Theme.of(context).textTheme.displayLarge
                               ?.copyWith(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 38,
+                                fontSize: 32,
                               ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 12, left: 8),
+                          padding: const EdgeInsets.only(bottom: 9, left: 8),
                           child: Text(
                             'kg',
                             style: Theme.of(context).textTheme.titleLarge
@@ -121,7 +121,7 @@ class _ProgressContent extends ConsumerWidget {
                     ),
                     Text(
                       '$deltaPrefix${progress.weightDelta.toStringAsFixed(1)} kg  this month',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.success,
                         fontWeight: FontWeight.w700,
                       ),
@@ -145,22 +145,22 @@ class _ProgressContent extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Workouts Completed',
+                      'Workouts',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppColors.secondaryText(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
-                      '${progress.workoutsThisMonth}',
+                      '${progress.workoutsCompleted}',
                       style: Theme.of(context).textTheme.displayLarge?.copyWith(
                         fontWeight: FontWeight.w800,
-                        fontSize: 38,
+                        fontSize: 32,
                       ),
                     ),
                     Text(
-                      selectedRange == null ? 'this month' : 'selected range',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      'total completed',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.secondaryText(context),
                       ),
                     ),

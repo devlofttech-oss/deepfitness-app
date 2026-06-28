@@ -77,6 +77,8 @@ class _DietContentState extends ConsumerState<_DietContent> {
           ),
         ),
         const SizedBox(height: 26),
+        SectionTitle(title: '$dayLabel Nutrition'),
+        const SizedBox(height: 16),
         PremiumCard(
           child: Column(
             children: [
@@ -88,11 +90,6 @@ class _DietContentState extends ConsumerState<_DietContent> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '$dayLabel Nutrition',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
                         Text(
                           '${nutrition.calories} kcal',
                           style: Theme.of(context).textTheme.headlineMedium

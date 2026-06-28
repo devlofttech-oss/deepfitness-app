@@ -385,16 +385,10 @@ class AppDataRepository {
 
     final logs = await logsQuery.order('logged_at', ascending: false);
 
-    final now = DateTime.now();
-    final firstOfMonth = DateTime(now.year, now.month, 1);
-    final rangeStart = startDate ?? firstOfMonth;
-    final rangeEnd = endDate ?? DateTime(now.year, now.month + 1, 0);
-    final completions = await _supabaseService.client
+    final allCompletions = await _supabaseService.client
         .from('workout_completions')
         .select('id')
-        .eq('member_id', userId)
-        .gte('completed_date', _dateKey(rangeStart))
-        .lt('completed_date', _dateKey(rangeEnd.add(const Duration(days: 1))));
+        .eq('member_id', userId);
     final completedLogs = logs.where((row) => row['completed'] != false);
 
     final personalBests = <String, int>{};
@@ -422,7 +416,7 @@ class AppDataRepository {
       weightDelta: double.parse(
         (currentWeight - previousWeight).toStringAsFixed(1),
       ),
-      workoutsThisMonth: completions.length,
+      workoutsCompleted: allCompletions.length,
       goalCompletion: await _latestWorkoutCompletion(userId),
       dayStreak: _dayStreakFromLogs(logs),
       muscleProgress: Map.fromEntries(

@@ -217,7 +217,7 @@ class MemberProgress {
   const MemberProgress({
     required this.currentWeight,
     required this.weightDelta,
-    required this.workoutsThisMonth,
+    required this.workoutsCompleted,
     required this.goalCompletion,
     required this.dayStreak,
     required this.muscleProgress,
@@ -226,7 +226,7 @@ class MemberProgress {
 
   final double currentWeight;
   final double weightDelta;
-  final int workoutsThisMonth;
+  final int workoutsCompleted;
   final double goalCompletion;
   final int dayStreak;
   final Map<String, int> muscleProgress;

@@ -229,7 +229,7 @@ class _ProfileContent extends ConsumerWidget {
                   _ProfileMetric(
                     icon: Icons.monitor_weight_outlined,
                     value: '${progress.currentWeight.toStringAsFixed(1)} kg',
-                    label: 'Current Weight',
+                    label: 'Weight',
                   ),
                   Container(
                     width: 1,
@@ -238,8 +238,8 @@ class _ProfileContent extends ConsumerWidget {
                   ),
                   _ProfileMetric(
                     icon: Icons.fitness_center_rounded,
-                    value: '${progress.workoutsThisMonth}',
-                    label: 'Workouts This Month',
+                    value: '${progress.workoutsCompleted}',
+                    label: 'Workouts',
                   ),
                   Container(
                     width: 1,
@@ -249,7 +249,7 @@ class _ProfileContent extends ConsumerWidget {
                   _ProfileMetric(
                     icon: Icons.local_fire_department_outlined,
                     value: '${progress.dayStreak}',
-                    label: 'Day Streak',
+                    label: 'Streak',
                   ),
                 ],
               ),
