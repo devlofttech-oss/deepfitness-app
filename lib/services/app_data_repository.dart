@@ -95,7 +95,12 @@ class AppDataRepository {
         .eq('id', authUser.id)
         .maybeSingle();
 
-    if (row == null) throw StateError('Your profile is not ready yet.');
+    if (row == null) {
+      await _supabaseService.client.auth.signOut();
+      throw StateError(
+        'Your saved session no longer matches an active profile. Please sign in again.',
+      );
+    }
 
     final role = row['role'] == 'trainer' ? UserRole.trainer : UserRole.member;
     String? trainerName;

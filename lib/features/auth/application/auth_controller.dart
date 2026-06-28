@@ -40,6 +40,14 @@ class AuthController extends AsyncNotifier<AuthSessionState> {
     final user = repository.currentUser;
     final role = await repository.fetchCurrentRole();
 
+    if (user != null && role == null) {
+      await repository.signOut();
+      return AuthSessionState(
+        isAuthenticated: false,
+        isSupabaseConfigured: repository.isConfigured,
+      );
+    }
+
     return AuthSessionState(
       isAuthenticated: user != null,
       isSupabaseConfigured: repository.isConfigured,
