@@ -86,11 +86,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                       return Transform.scale(
                         scale: _scale.value,
                         child: Container(
-                          width: 132,
-                          height: 132,
-                          padding: const EdgeInsets.all(18),
+                          width: 188,
+                          height: 188,
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: AppColors.white,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -111,9 +110,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                         ),
                       );
                     },
-                    child: const BrandMark(size: 92),
+                    child: const BrandMark(size: 172),
                   ),
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 14),
                   RichText(
                     text: TextSpan(
                       style: Theme.of(context).textTheme.headlineSmall
