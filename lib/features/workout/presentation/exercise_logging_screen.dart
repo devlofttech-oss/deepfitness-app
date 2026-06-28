@@ -109,7 +109,7 @@ class WorkoutCompletionScreen extends ConsumerWidget {
                 ],
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 36),
             PrimaryButton(
               label: 'Back to Today',
               icon: Icons.home_rounded,
