@@ -11,6 +11,124 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+class WorkoutCompletionScreen extends ConsumerWidget {
+  const WorkoutCompletionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workout = ref.watch(workoutProvider);
+
+    return PremiumScaffold(
+      child: AsyncStateView(
+        value: workout,
+        errorTitle: 'Could not load workout summary',
+        onRetry: () => ref.invalidate(workoutProvider),
+        data: (workoutData) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: _SquareButton(
+                icon: Icons.close_rounded,
+                onTap: () => context.go('/'),
+              ),
+            ),
+            const SizedBox(height: 54),
+            Center(
+              child: Container(
+                width: 92,
+                height: 92,
+                decoration: BoxDecoration(
+                  color: AppColors.goldBright.withValues(alpha: .18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.verified_rounded,
+                  color: AppColors.goldBright,
+                  size: 54,
+                ),
+              ),
+            ),
+            const SizedBox(height: 26),
+            Center(
+              child: Text(
+                'All exercises completed',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  height: 1.05,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Center(
+              child: Text(
+                workoutData.name,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.secondaryText(context),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            PremiumCard(
+              color: AppColors.chipBackground(context),
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                'Small wins, repeated with intent, become the strength people notice later.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+            PremiumCard(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _CompletionMetric(
+                      label: 'Exercises',
+                      value: '${workoutData.exercises.length}',
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 46,
+                    color: AppColors.divider(context),
+                  ),
+                  Expanded(
+                    child: _CompletionMetric(
+                      label: 'Duration',
+                      value: '${workoutData.durationMinutes} min',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Spacer(),
+            PrimaryButton(
+              label: 'Back to Today',
+              icon: Icons.home_rounded,
+              onPressed: () => context.go('/'),
+            ),
+            const SizedBox(height: 12),
+            PrimaryButton(
+              label: 'View Progress',
+              icon: Icons.bar_chart_rounded,
+              outline: true,
+              onPressed: () => context.go('/progress'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ExerciseLoggingScreen extends ConsumerWidget {
   const ExerciseLoggingScreen({super.key});
 
@@ -33,7 +151,10 @@ class ExerciseLoggingScreen extends ConsumerWidget {
               icon: Icons.fitness_center_rounded,
             );
           }
-          final exercise = selectedExercise ?? workoutData.exercises.first;
+          final exercise = _selectedWorkoutExercise(
+            workoutData,
+            selectedExercise,
+          );
           final logs = ref.watch(exerciseLogsProvider);
           return _ExerciseLoggingContent(
             workout: workoutData,
@@ -42,6 +163,36 @@ class ExerciseLoggingScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+class _CompletionMetric extends StatelessWidget {
+  const _CompletionMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.secondaryText(context),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -81,7 +232,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '${workout.exercises.indexWhere((item) => item.id == exercise.id) + 1} of ${workout.exercises.length} Exercises',
+                    '${_exerciseIndex(workout, exercise) + 1} of ${workout.exercises.length} Exercises',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.secondaryText(context),
                       fontSize: 13,
@@ -275,10 +426,18 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           label: 'Complete Exercise',
           icon: Icons.sports_score_rounded,
           outline: true,
-          onPressed: () {
-            final currentIndex = workout.exercises.indexWhere(
-              (item) => item.id == exercise.id,
-            );
+          onPressed: () async {
+            try {
+              await ref.read(exerciseLogsProvider.notifier).save(exercise);
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(friendlyErrorMessage(error))),
+                );
+              }
+              return;
+            }
+            final currentIndex = _exerciseIndex(workout, exercise);
             if (currentIndex >= 0 &&
                 currentIndex < workout.exercises.length - 1) {
               ref
@@ -286,7 +445,9 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                   .select(workout.exercises[currentIndex + 1]);
               ref.invalidate(exerciseLogsProvider);
             } else {
-              _goBackOr(context, '/workout');
+              ref.invalidate(workoutProvider);
+              ref.invalidate(progressProvider);
+              if (context.mounted) context.go('/workout-complete');
             }
           },
         ),
@@ -896,6 +1057,30 @@ void _showHelp(BuildContext context) {
       ],
     ),
   );
+}
+
+int _exerciseIndex(WorkoutPlan workout, Exercise exercise) {
+  final workoutExerciseId = exercise.workoutExerciseId;
+  if (workoutExerciseId != null) {
+    final assignedIndex = workout.exercises.indexWhere(
+      (item) => item.workoutExerciseId == workoutExerciseId,
+    );
+    if (assignedIndex >= 0) return assignedIndex;
+  }
+  return workout.exercises.indexWhere((item) => item.id == exercise.id);
+}
+
+Exercise _selectedWorkoutExercise(WorkoutPlan workout, Exercise? selected) {
+  if (selected != null) {
+    final workoutExerciseId = selected.workoutExerciseId;
+    final index = workout.exercises.indexWhere(
+      (exercise) =>
+          workoutExerciseId != null &&
+          exercise.workoutExerciseId == workoutExerciseId,
+    );
+    if (index >= 0) return workout.exercises[index];
+  }
+  return workout.exercises.first;
 }
 
 Future<void> _showNoteDialog(

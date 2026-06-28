@@ -108,6 +108,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/exercise-preview',
+        pageBuilder: (context, state) => _smoothPage(
+          state: state,
+          child: const _RoleGuard(
+            role: UserRole.member,
+            fallbackRoute: '/login',
+            child: ExercisePreviewScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
         path: '/exercise-log',
         pageBuilder: (context, state) => _smoothPage(
           state: state,
@@ -115,6 +126,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             role: UserRole.member,
             fallbackRoute: '/login',
             child: ExerciseLoggingScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/workout-complete',
+        pageBuilder: (context, state) => _smoothPage(
+          state: state,
+          child: const _RoleGuard(
+            role: UserRole.member,
+            fallbackRoute: '/login',
+            child: WorkoutCompletionScreen(),
           ),
         ),
       ),

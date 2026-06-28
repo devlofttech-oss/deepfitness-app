@@ -2220,9 +2220,10 @@ Future<void> _saveWorkout(
   }
   final exercises = draft.mode == TrainerPlanMode.saved
       ? available
-      : available
-            .where((exercise) => draft.exerciseIds.contains(exercise.id))
-            .toList();
+      : [
+          for (final id in draft.exerciseIds)
+            available.firstWhere((exercise) => exercise.id == id),
+        ];
   if (exercises.isEmpty) {
     _showSnack(context, 'Select at least one exercise.');
     return;
