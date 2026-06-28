@@ -403,7 +403,7 @@ class AppDataRepository {
       final exercise = row['exercises'];
       if (exercise is! Map) continue;
       final name = exercise['name'].toString();
-      final muscle = exercise['muscle_group'].toString();
+      final muscle = _mainMuscleGroup(exercise['muscle_group'].toString());
       final weight = _toInt(row['weight']);
       if (exercise['tracks_weight'] != false &&
           weight > 0 &&
@@ -412,6 +412,10 @@ class AppDataRepository {
       }
       muscleCounts[muscle] = (muscleCounts[muscle] ?? 0) + 1;
     }
+    final sortedMuscles = muscleCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final sortedBests = personalBests.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return MemberProgress(
       currentWeight: currentWeight,
@@ -421,10 +425,14 @@ class AppDataRepository {
       workoutsThisMonth: completions.length,
       goalCompletion: await _latestWorkoutCompletion(userId),
       dayStreak: _dayStreakFromLogs(logs),
-      muscleProgress: muscleCounts.map(
-        (key, value) => MapEntry(key, (value * 7).clamp(8, 28)),
+      muscleProgress: Map.fromEntries(
+        sortedMuscles
+            .take(6)
+            .map(
+              (entry) => MapEntry(entry.key, (entry.value * 7).clamp(8, 100)),
+            ),
       ),
-      personalBests: Map.fromEntries(personalBests.entries.take(3)),
+      personalBests: Map.fromEntries(sortedBests.take(6)),
     );
   }
 
@@ -1072,6 +1080,55 @@ class AppDataRepository {
       return sum + (sets * 45) + ((sets - 1) * restSeconds);
     });
     return seconds <= 0 ? 0 : (seconds + 59) ~/ 60;
+  }
+
+  static String _mainMuscleGroup(String value) {
+    final muscle = value.toLowerCase();
+    if (muscle.contains('chest') || muscle.contains('pector')) {
+      return 'Chest';
+    }
+    if (muscle.contains('back') ||
+        muscle.contains('lat') ||
+        muscle.contains('trap') ||
+        muscle.contains('neck')) {
+      return 'Back';
+    }
+    if (muscle.contains('quad') ||
+        muscle.contains('hamstring') ||
+        muscle.contains('glute') ||
+        muscle.contains('calf') ||
+        muscle.contains('leg') ||
+        muscle.contains('abductor') ||
+        muscle.contains('adductor')) {
+      return 'Legs';
+    }
+    if (muscle.contains('shoulder') || muscle.contains('delt')) {
+      return 'Shoulders';
+    }
+    if (muscle.contains('bicep') ||
+        muscle.contains('tricep') ||
+        muscle.contains('forearm')) {
+      return 'Arms';
+    }
+    if (muscle.contains('ab') ||
+        muscle.contains('core') ||
+        muscle.contains('oblique')) {
+      return 'Core';
+    }
+    if (muscle.contains('cardio')) return 'Cardio';
+    return value.trim().isEmpty ? 'Full Body' : _titleCase(value);
+  }
+
+  static String _titleCase(String value) {
+    return value
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) => part.length == 1
+              ? part.toUpperCase()
+              : '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
   }
 
   Future<double> _latestWorkoutCompletion(String memberId) async {

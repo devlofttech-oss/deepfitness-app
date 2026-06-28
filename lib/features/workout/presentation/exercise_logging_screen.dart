@@ -330,147 +330,227 @@ class _ExerciseLoggingContent extends ConsumerWidget {
           data: (items) {
             final sortedItems = [...items]
               ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
-            return PremiumCard(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-              child: Column(
-                children: [
-                  for (var index = 0; index < sortedItems.length; index++)
-                    _SetLogRow(
-                      log: sortedItems[index],
-                      assignedSetCount: exercise.sets,
-                      tracksWeight: exercise.tracksWeight,
-                      showDivider: index != sortedItems.length - 1,
-                      onChanged: (updated) {
-                        ref
-                            .read(exerciseLogsProvider.notifier)
-                            .updateBySetNumber(updated);
-                      },
+            final requiredLogs = sortedItems
+                .where((log) => log.setNumber <= exercise.sets)
+                .toList();
+            final isExerciseComplete =
+                requiredLogs.length >= exercise.sets &&
+                requiredLogs.every((log) => log.completed);
+            return Column(
+              children: [
+                PremiumCard(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 8,
+                  ),
+                  child: Column(
+                    children: [
+                      for (var index = 0; index < sortedItems.length; index++)
+                        _SetLogRow(
+                          log: sortedItems[index],
+                          assignedSetCount: exercise.sets,
+                          tracksWeight: exercise.tracksWeight,
+                          showDivider: index != sortedItems.length - 1,
+                          locked: isExerciseComplete,
+                          onChanged: (updated) {
+                            ref
+                                .read(exerciseLogsProvider.notifier)
+                                .updateBySetNumber(updated);
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 22),
+                if (isExerciseComplete)
+                  _ExerciseCompleteState(
+                    onBack: () => _goBackOr(context, '/workout'),
+                  )
+                else ...[
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: Text(
+                          'Add Extra Sets (Optional)',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: AppColors.secondaryText(context),
+                                fontSize: 13,
+                              ),
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  PremiumCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
                     ),
+                    child: InkWell(
+                      onTap: () =>
+                          ref.read(exerciseLogsProvider.notifier).addExtraSet(),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 22,
+                            backgroundColor: AppColors.subtle(context),
+                            child: Icon(
+                              Icons.add_rounded,
+                              color: AppColors.secondaryText(context),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: Text(
+                              'Extra Set',
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          Text(
+                            'Tap to log',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: AppColors.secondaryText(context),
+                                  fontSize: 13,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  PrimaryButton(
+                    label: 'Save Sets',
+                    icon: Icons.save_outlined,
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(exerciseLogsProvider.notifier)
+                            .save(exercise);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Sets saved to Supabase.'),
+                            ),
+                          );
+                        }
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(friendlyErrorMessage(error)),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  PrimaryButton(
+                    label: 'Complete Exercise',
+                    icon: Icons.sports_score_rounded,
+                    outline: true,
+                    onPressed: () async {
+                      try {
+                        await ref
+                            .read(exerciseLogsProvider.notifier)
+                            .completeAllAndSave(exercise);
+                      } catch (error) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(friendlyErrorMessage(error)),
+                            ),
+                          );
+                        }
+                        return;
+                      }
+                      final currentIndex = _exerciseIndex(workout, exercise);
+                      if (currentIndex >= 0 &&
+                          currentIndex < workout.exercises.length - 1) {
+                        ref
+                            .read(selectedExerciseProvider.notifier)
+                            .select(workout.exercises[currentIndex + 1]);
+                        ref.invalidate(exerciseLogsProvider);
+                        ref.invalidate(workoutProvider);
+                      } else {
+                        try {
+                          await ref
+                              .read(appDataRepositoryProvider)
+                              .completeWorkout(workout);
+                        } catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(friendlyErrorMessage(error)),
+                              ),
+                            );
+                          }
+                          return;
+                        }
+                        ref.invalidate(workoutProvider);
+                        ref.invalidate(progressProvider);
+                        if (context.mounted) context.go('/workout-complete');
+                      }
+                    },
+                  ),
                 ],
-              ),
+              ],
             );
           },
         ),
-        const SizedBox(height: 22),
-        Row(
-          children: [
-            const Expanded(child: Divider()),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'Add Extra Sets (Optional)',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.secondaryText(context),
-                  fontSize: 13,
-                ),
-              ),
-            ),
-            const Expanded(child: Divider()),
-          ],
-        ),
-        const SizedBox(height: 12),
-        PremiumCard(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-          child: InkWell(
-            onTap: () => ref.read(exerciseLogsProvider.notifier).addExtraSet(),
-            child: Row(
+      ],
+    );
+  }
+}
+
+class _ExerciseCompleteState extends StatelessWidget {
+  const _ExerciseCompleteState({required this.onBack});
+
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      color: AppColors.success.withValues(alpha: .10),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            radius: 22,
+            backgroundColor: AppColors.success,
+            child: Icon(Icons.check_rounded, color: AppColors.white),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: AppColors.subtle(context),
-                  child: Icon(
-                    Icons.add_rounded,
-                    color: AppColors.secondaryText(context),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Text(
-                    'Extra Set',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
                 Text(
-                  'Tap to log',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  'Exercise Completed',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'Your completed sets are saved.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.secondaryText(context),
-                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 20),
-        PrimaryButton(
-          label: 'Save Sets',
-          icon: Icons.save_outlined,
-          onPressed: () async {
-            try {
-              await ref.read(exerciseLogsProvider.notifier).save(exercise);
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Sets saved to Supabase.')),
-                );
-              }
-            } catch (error) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(friendlyErrorMessage(error))),
-                );
-              }
-            }
-          },
-        ),
-        const SizedBox(height: 14),
-        PrimaryButton(
-          label: 'Complete Exercise',
-          icon: Icons.sports_score_rounded,
-          outline: true,
-          onPressed: () async {
-            try {
-              await ref
-                  .read(exerciseLogsProvider.notifier)
-                  .completeAllAndSave(exercise);
-            } catch (error) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(friendlyErrorMessage(error))),
-                );
-              }
-              return;
-            }
-            final currentIndex = _exerciseIndex(workout, exercise);
-            if (currentIndex >= 0 &&
-                currentIndex < workout.exercises.length - 1) {
-              ref
-                  .read(selectedExerciseProvider.notifier)
-                  .select(workout.exercises[currentIndex + 1]);
-              ref.invalidate(exerciseLogsProvider);
-              ref.invalidate(workoutProvider);
-            } else {
-              try {
-                await ref
-                    .read(appDataRepositoryProvider)
-                    .completeWorkout(workout);
-              } catch (error) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(friendlyErrorMessage(error))),
-                  );
-                }
-                return;
-              }
-              ref.invalidate(workoutProvider);
-              ref.invalidate(progressProvider);
-              if (context.mounted) context.go('/workout-complete');
-            }
-          },
-        ),
-      ],
+          TextButton(onPressed: onBack, child: const Text('Workout')),
+        ],
+      ),
     );
   }
 }
@@ -721,6 +801,7 @@ class _SetLogRow extends StatelessWidget {
     required this.assignedSetCount,
     required this.tracksWeight,
     required this.showDivider,
+    required this.locked,
     required this.onChanged,
   });
 
@@ -728,6 +809,7 @@ class _SetLogRow extends StatelessWidget {
   final int assignedSetCount;
   final bool tracksWeight;
   final bool showDivider;
+  final bool locked;
   final ValueChanged<ExerciseLog> onChanged;
 
   @override
@@ -792,24 +874,28 @@ class _SetLogRow extends StatelessWidget {
                           : _StepperField(
                               label: 'Weight (kg)',
                               value: log.weight,
-                              onMinus: () => onChanged(
-                                ExerciseLog(
-                                  id: log.id,
-                                  setNumber: log.setNumber,
-                                  weight: (log.weight - 5).clamp(0, 500),
-                                  reps: log.reps,
-                                  completed: log.completed,
-                                ),
-                              ),
-                              onPlus: () => onChanged(
-                                ExerciseLog(
-                                  id: log.id,
-                                  setNumber: log.setNumber,
-                                  weight: log.weight + 5,
-                                  reps: log.reps,
-                                  completed: log.completed,
-                                ),
-                              ),
+                              onMinus: locked
+                                  ? null
+                                  : () => onChanged(
+                                      ExerciseLog(
+                                        id: log.id,
+                                        setNumber: log.setNumber,
+                                        weight: (log.weight - 5).clamp(0, 500),
+                                        reps: log.reps,
+                                        completed: log.completed,
+                                      ),
+                                    ),
+                              onPlus: locked
+                                  ? null
+                                  : () => onChanged(
+                                      ExerciseLog(
+                                        id: log.id,
+                                        setNumber: log.setNumber,
+                                        weight: log.weight + 5,
+                                        reps: log.reps,
+                                        completed: log.completed,
+                                      ),
+                                    ),
                             ),
                     ),
                     Container(
@@ -825,37 +911,43 @@ class _SetLogRow extends StatelessWidget {
                         : _StepperField(
                             label: 'Reps',
                             value: log.reps,
-                            onMinus: () => onChanged(
-                              ExerciseLog(
-                                id: log.id,
-                                setNumber: log.setNumber,
-                                weight: log.weight,
-                                reps: (log.reps - 1).clamp(0, 100),
-                                completed: log.completed,
-                              ),
-                            ),
-                            onPlus: () => onChanged(
-                              ExerciseLog(
-                                id: log.id,
-                                setNumber: log.setNumber,
-                                weight: log.weight,
-                                reps: log.reps + 1,
-                                completed: log.completed,
-                              ),
-                            ),
+                            onMinus: locked
+                                ? null
+                                : () => onChanged(
+                                    ExerciseLog(
+                                      id: log.id,
+                                      setNumber: log.setNumber,
+                                      weight: log.weight,
+                                      reps: (log.reps - 1).clamp(0, 100),
+                                      completed: log.completed,
+                                    ),
+                                  ),
+                            onPlus: locked
+                                ? null
+                                : () => onChanged(
+                                    ExerciseLog(
+                                      id: log.id,
+                                      setNumber: log.setNumber,
+                                      weight: log.weight,
+                                      reps: log.reps + 1,
+                                      completed: log.completed,
+                                    ),
+                                  ),
                           ),
                   ),
                   const SizedBox(width: 10),
                   InkWell(
-                    onTap: () => onChanged(
-                      ExerciseLog(
-                        id: log.id,
-                        setNumber: log.setNumber,
-                        weight: log.weight,
-                        reps: log.reps,
-                        completed: !log.completed,
-                      ),
-                    ),
+                    onTap: locked || log.completed
+                        ? null
+                        : () => onChanged(
+                            ExerciseLog(
+                              id: log.id,
+                              setNumber: log.setNumber,
+                              weight: log.weight,
+                              reps: log.reps,
+                              completed: !log.completed,
+                            ),
+                          ),
                     borderRadius: BorderRadius.circular(14),
                     child: Container(
                       width: 48,
@@ -896,8 +988,8 @@ class _StepperField extends StatelessWidget {
 
   final String label;
   final int value;
-  final VoidCallback onMinus;
-  final VoidCallback onPlus;
+  final VoidCallback? onMinus;
+  final VoidCallback? onPlus;
 
   @override
   Widget build(BuildContext context) {
@@ -984,7 +1076,7 @@ class _RoundIcon extends StatelessWidget {
   const _RoundIcon({required this.icon, required this.onTap});
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -992,7 +1084,9 @@ class _RoundIcon extends StatelessWidget {
       onPressed: onTap,
       style: IconButton.styleFrom(
         backgroundColor: AppColors.subtle(context),
-        foregroundColor: AppColors.text(context),
+        foregroundColor: onTap == null
+            ? AppColors.secondaryText(context)
+            : AppColors.text(context),
         minimumSize: const Size(32, 32),
         fixedSize: const Size(32, 32),
         padding: EdgeInsets.zero,

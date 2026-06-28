@@ -18,7 +18,7 @@ class ProgressScreen extends ConsumerWidget {
     final progress = ref.watch(progressProvider);
 
     return PremiumScaffold(
-      bottomPadding: 132,
+      bottomPadding: 176,
       child: AsyncStateView(
         value: progress,
         errorTitle: 'Could not load your progress',
@@ -171,8 +171,9 @@ class _ProgressContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 24),
-        _ThreeMetricCard(
+        _ProgressGridCard(
           title: 'Muscle Progress',
+          emptyMessage: 'Complete workouts to build muscle group history.',
           items: progress.muscleProgress.entries
               .map(
                 (entry) => _ProgressItem(
@@ -184,8 +185,9 @@ class _ProgressContent extends ConsumerWidget {
               .toList(),
         ),
         const SizedBox(height: 24),
-        _ThreeMetricCard(
+        _ProgressGridCard(
           title: 'Personal Bests',
+          emptyMessage: 'Log weighted sets to unlock personal bests.',
           items: progress.personalBests.entries
               .map(
                 (entry) => _ProgressItem(
@@ -196,24 +198,45 @@ class _ProgressContent extends ConsumerWidget {
               )
               .toList(),
         ),
+        const SizedBox(height: 24),
       ],
     );
   }
 
   IconData _muscleIcon(String key) {
     return switch (key) {
+      'Chest' => Icons.favorite_border_rounded,
       'Back' => Icons.accessibility_new_rounded,
       'Legs' => Icons.directions_walk_rounded,
-      _ => Icons.self_improvement_rounded,
+      'Shoulders' => Icons.fitness_center_rounded,
+      'Arms' => Icons.sports_mma_rounded,
+      'Core' => Icons.self_improvement_rounded,
+      'Cardio' => Icons.directions_run_rounded,
+      _ => Icons.fitness_center_rounded,
     };
   }
 
   IconData _bestIcon(String key) {
-    return switch (key) {
-      'Squat' => Icons.accessibility_new_rounded,
-      'Deadlift' => Icons.fitness_center_rounded,
-      _ => Icons.horizontal_rule_rounded,
-    };
+    final name = key.toLowerCase();
+    if (name.contains('squat') ||
+        name.contains('leg') ||
+        name.contains('lunge')) {
+      return Icons.directions_walk_rounded;
+    }
+    if (name.contains('row') ||
+        name.contains('pull') ||
+        name.contains('deadlift')) {
+      return Icons.fitness_center_rounded;
+    }
+    if (name.contains('press') ||
+        name.contains('chest') ||
+        name.contains('bench')) {
+      return Icons.trending_up_rounded;
+    }
+    if (name.contains('curl') || name.contains('tricep')) {
+      return Icons.sports_mma_rounded;
+    }
+    return Icons.emoji_events_outlined;
   }
 }
 
@@ -247,15 +270,21 @@ class _ProgressItem {
   final String value;
 }
 
-class _ThreeMetricCard extends StatelessWidget {
-  const _ThreeMetricCard({required this.title, required this.items});
+class _ProgressGridCard extends StatelessWidget {
+  const _ProgressGridCard({
+    required this.title,
+    required this.items,
+    required this.emptyMessage,
+  });
 
   final String title;
   final List<_ProgressItem> items;
+  final String emptyMessage;
 
   @override
   Widget build(BuildContext context) {
     return PremiumCard(
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -263,10 +292,11 @@ class _ThreeMetricCard extends StatelessWidget {
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.secondaryText(context),
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w800,
+              fontSize: 18,
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           if (items.isEmpty)
             Row(
               children: [
@@ -274,7 +304,7 @@ class _ThreeMetricCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Complete workouts and add measurements to fill this in.',
+                    emptyMessage,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: AppColors.secondaryText(context),
                     ),
@@ -283,18 +313,21 @@ class _ThreeMetricCard extends StatelessWidget {
               ],
             )
           else
-            Row(
-              children: [
-                for (var index = 0; index < items.length; index++) ...[
-                  Expanded(child: _Metric(item: items[index])),
-                  if (index != items.length - 1)
-                    Container(
-                      width: 1,
-                      height: 72,
-                      color: AppColors.divider(context),
-                    ),
-                ],
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final tileWidth = (constraints.maxWidth - 10) / 2;
+                return Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final item in items)
+                      SizedBox(
+                        width: tileWidth,
+                        child: _Metric(item: item),
+                      ),
+                  ],
+                );
+              },
             ),
         ],
       ),
@@ -309,25 +342,42 @@ class _Metric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Icon(item.icon, color: AppColors.gold, size: 26),
-        const SizedBox(height: 8),
-        Text(
-          item.label,
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: AppColors.secondaryText(context),
+    return Container(
+      constraints: const BoxConstraints(minHeight: 104),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.subtle(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider(context)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(item.icon, color: AppColors.gold, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            item.label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.secondaryText(context),
+              fontWeight: FontWeight.w600,
+              height: 1.15,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          item.value,
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-        ),
-      ],
+          const SizedBox(height: 6),
+          Text(
+            item.value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w900,
+              fontSize: 19,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
