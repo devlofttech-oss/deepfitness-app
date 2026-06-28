@@ -15,7 +15,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final authState = ref.watch(authControllerProvider).value;
+  final authAsync = ref.watch(authControllerProvider);
+  final authState = authAsync.value;
 
   return GoRouter(
     initialLocation: '/splash',
@@ -27,8 +28,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/trainer-login',
       }.contains(state.uri.path);
       final isTrainerRoute = state.uri.path.startsWith('/trainer');
+      final isAuthLoading = authAsync.isLoading && !authAsync.hasValue;
       final isAuthenticated = authState?.isAuthenticated ?? false;
       final role = authState?.role;
+
+      if (isAuthLoading) {
+        return isSplash ? null : '/splash';
+      }
 
       if (isSplash) return null;
 

@@ -14,63 +14,148 @@ class SplashScreen extends ConsumerStatefulWidget {
 }
 
 class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
+    with TickerProviderStateMixin {
+  late final AnimationController _introController;
+  late final AnimationController _pulseController;
   late final Animation<double> _scale;
   late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+  bool _minimumSplashDone = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _introController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 820),
     )..forward();
-    _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
-    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future<void>.delayed(const Duration(milliseconds: 1250), _goNext);
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _scale = Tween<double>(begin: .94, end: 1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOutCubic),
+    );
+    _fade = CurvedAnimation(
+      parent: _introController,
+      curve: Curves.easeOutCubic,
+    );
+    _slide = Tween<Offset>(begin: const Offset(0, .08), end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _introController, curve: Curves.easeOutCubic),
+        );
+    Future<void>.delayed(const Duration(milliseconds: 1200), () {
+      if (!mounted) return;
+      _minimumSplashDone = true;
+      _goNext(ref.read(authControllerProvider));
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _introController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<AuthSessionState>>(authControllerProvider, (
+      previous,
+      next,
+    ) {
+      _goNext(next);
+    });
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Center(
-        child: FadeTransition(
-          opacity: _fade,
-          child: ScaleTransition(
-            scale: _scale,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const BrandMark(size: 104),
-                const SizedBox(height: 18),
-                RichText(
-                  text: TextSpan(
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                    children: const [
-                      TextSpan(
-                        text: 'DEEP ',
-                        style: TextStyle(color: AppColors.black),
-                      ),
-                      TextSpan(
-                        text: 'FITNESS',
-                        style: TextStyle(color: AppColors.goldBright),
-                      ),
-                    ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 34),
+          child: FadeTransition(
+            opacity: _fade,
+            child: SlideTransition(
+              position: _slide,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, child) {
+                      final pulse = .10 + (_pulseController.value * .10);
+                      return Transform.scale(
+                        scale: _scale.value,
+                        child: Container(
+                          width: 132,
+                          height: 132,
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            color: AppColors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.goldBright.withValues(
+                                  alpha: pulse,
+                                ),
+                                blurRadius: 38,
+                                spreadRadius: 4,
+                              ),
+                              BoxShadow(
+                                color: AppColors.black.withValues(alpha: .06),
+                                blurRadius: 24,
+                                offset: const Offset(0, 14),
+                              ),
+                            ],
+                          ),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: const BrandMark(size: 92),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 22),
+                  RichText(
+                    text: TextSpan(
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0,
+                          ),
+                      children: const [
+                        TextSpan(
+                          text: 'DEEP ',
+                          style: TextStyle(color: AppColors.black),
+                        ),
+                        TextSpan(
+                          text: 'FITNESS',
+                          style: TextStyle(color: AppColors.goldBright),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Preparing your plan',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.muted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 26),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(99),
+                    child: SizedBox(
+                      width: 168,
+                      height: 4,
+                      child: LinearProgressIndicator(
+                        backgroundColor: AppColors.border,
+                        color: AppColors.goldBright,
+                        minHeight: 4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -78,13 +163,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
   }
 
-  void _goNext() {
-    if (!mounted) return;
-    final session = ref.read(authControllerProvider).value;
-    if (session?.isAuthenticated != true) {
+  void _goNext(AsyncValue<AuthSessionState> authState) {
+    if (!mounted || !_minimumSplashDone) return;
+    final session = authState.value;
+    if (authState.hasError) {
       context.go('/login');
       return;
     }
-    context.go(session?.role == UserRole.trainer ? '/trainer' : '/');
+    if (session == null) return;
+    if (!session.isAuthenticated) {
+      context.go('/login');
+      return;
+    }
+    context.go(session.role == UserRole.trainer ? '/trainer' : '/');
   }
 }
