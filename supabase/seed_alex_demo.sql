@@ -10,9 +10,9 @@ declare
   workout_plan_uuid uuid := gen_random_uuid();
   workout_day_uuid uuid := gen_random_uuid();
   diet_plan_uuid uuid := gen_random_uuid();
-  squat_uuid uuid := gen_random_uuid();
-  row_uuid uuid := gen_random_uuid();
-  skipping_uuid uuid := gen_random_uuid();
+  squat_uuid uuid;
+  row_uuid uuid;
+  skipping_uuid uuid;
 begin
   delete from auth.identities where user_id = old_member_uuid;
   delete from auth.users where id = old_member_uuid;
@@ -72,7 +72,6 @@ begin
   delete from public.measurements;
   delete from public.diet_plans;
   delete from public.workout_plans;
-  delete from public.exercises;
   delete from public.members where id <> alex_uuid;
 
   insert into public.users (id, name, email, phone, role)
@@ -108,89 +107,21 @@ begin
   insert into public.measurements (member_id, trainer_id, weight, notes)
   values (alex_uuid, trainer_uuid, 76.5, 'Starting measurement for Alex');
 
-  insert into public.exercises (
-    id,
-    source_id,
-    name,
-    description,
-    muscle_group,
-    default_sets,
-    default_reps,
-    tracks_weight,
-    rest_seconds,
-    equipment,
-    level,
-    category,
-    instructions,
-    image_urls
-  )
-  values
-    (
-      squat_uuid,
-      'seed-barbell-squat',
-      'Barbell Back Squat',
-      'Compound lower-body strength exercise using a barbell.',
-      'Legs',
-      3,
-      '10',
-      true,
-      90,
-      'Barbell',
-      'Intermediate',
-      'Strength',
-      array[
-        'Set the bar across your upper back and brace your core.',
-        'Squat until thighs are near parallel, then drive through your heels.'
-      ],
-      array[
-        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Barbell_Squat/0.jpg',
-        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Barbell_Squat/1.jpg'
-      ]
-    ),
-    (
-      row_uuid,
-      'seed-seated-cable-row',
-      'Seated Cable Row',
-      'Weighted pulling exercise for back and posture.',
-      'Back',
-      3,
-      '12',
-      true,
-      75,
-      'Cable',
-      'Beginner',
-      'Strength',
-      array[
-        'Sit tall with a neutral spine.',
-        'Pull the handle toward your torso and squeeze your shoulder blades.'
-      ],
-      array[
-        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Seated_Cable_Rows/0.jpg',
-        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Seated_Cable_Rows/1.jpg'
-      ]
-    ),
-    (
-      skipping_uuid,
-      'seed-skipping-rope',
-      'Skipping Rope',
-      'Conditioning exercise that tracks reps or time, not external weight.',
-      'Cardio',
-      3,
-      '60',
-      false,
-      45,
-      'Jump Rope',
-      'Beginner',
-      'Cardio',
-      array[
-        'Keep elbows close and rotate the rope with your wrists.',
-        'Land softly and keep a steady rhythm.'
-      ],
-      array[
-        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Rope_Jumping/0.jpg',
-        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Rope_Jumping/1.jpg'
-      ]
-    );
+  select id into squat_uuid
+  from public.exercises
+  where source_id = 'free-exercise-db:Barbell_Squat';
+
+  select id into row_uuid
+  from public.exercises
+  where source_id = 'free-exercise-db:Seated_Cable_Rows';
+
+  select id into skipping_uuid
+  from public.exercises
+  where source_id = 'free-exercise-db:Rope_Jumping';
+
+  if squat_uuid is null or row_uuid is null or skipping_uuid is null then
+    raise exception 'Run the free-exercise-db import migration before seeding Alex.';
+  end if;
 
   insert into public.workout_plans (
     id,
