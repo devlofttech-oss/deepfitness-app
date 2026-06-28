@@ -86,6 +86,9 @@ create table public.exercise_logs (
   logged_at timestamptz not null default now()
 );
 
+create unique index exercise_logs_member_workout_set_unique_idx
+  on public.exercise_logs (member_id, workout_exercise_id, set_number);
+
 create table public.exercise_notes (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id) on delete cascade,

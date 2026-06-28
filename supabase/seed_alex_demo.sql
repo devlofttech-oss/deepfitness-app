@@ -142,7 +142,10 @@ begin
         'Set the bar across your upper back and brace your core.',
         'Squat until thighs are near parallel, then drive through your heels.'
       ],
-      '{}'
+      array[
+        'https://placehold.co/900x600/f6c90e/111111.png?text=Barbell+Back+Squat',
+        'https://placehold.co/900x600/111111/f6c90e.png?text=Squat+Form'
+      ]
     ),
     (
       row_uuid,
@@ -161,7 +164,10 @@ begin
         'Sit tall with a neutral spine.',
         'Pull the handle toward your torso and squeeze your shoulder blades.'
       ],
-      '{}'
+      array[
+        'https://placehold.co/900x600/f6c90e/111111.png?text=Seated+Cable+Row',
+        'https://placehold.co/900x600/111111/f6c90e.png?text=Cable+Row+Form'
+      ]
     ),
     (
       skipping_uuid,
@@ -180,7 +186,10 @@ begin
         'Keep elbows close and rotate the rope with your wrists.',
         'Land softly and keep a steady rhythm.'
       ],
-      '{}'
+      array[
+        'https://placehold.co/900x600/f6c90e/111111.png?text=Skipping+Rope',
+        'https://placehold.co/900x600/111111/f6c90e.png?text=Cardio+Rhythm'
+      ]
     );
 
   insert into public.workout_plans (

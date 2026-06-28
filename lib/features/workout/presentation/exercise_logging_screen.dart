@@ -357,7 +357,7 @@ class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
           fit: StackFit.expand,
           children: [
             if (images.isEmpty)
-              const _ExerciseImageFallback()
+              _ExerciseImageFallback(exercise: widget.exercise)
             else
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 420),
@@ -367,10 +367,11 @@ class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
                   images[_index % images.length],
                   key: ValueKey('${widget.exercise.id}-$_index'),
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const _ExerciseImageFallback(),
+                  errorBuilder: (_, _, _) =>
+                      _ExerciseImageFallback(exercise: widget.exercise),
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
-                    return const _ExerciseImageFallback();
+                    return _ExerciseImageFallback(exercise: widget.exercise);
                   },
                 ),
               ),
@@ -403,15 +404,55 @@ class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
 }
 
 class _ExerciseImageFallback extends StatelessWidget {
-  const _ExerciseImageFallback();
+  const _ExerciseImageFallback({required this.exercise});
+
+  final Exercise exercise;
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Center(
-      child: Icon(
-        Icons.fitness_center_rounded,
-        color: AppColors.secondaryText(context),
-        size: 30,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 58,
+              height: 58,
+              decoration: BoxDecoration(
+                color: AppColors.goldBright.withValues(alpha: .18),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.fitness_center_rounded,
+                color: AppColors.goldBright,
+                size: 30,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              exercise.name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.text(context),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              exercise.muscleGroup,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(
+                color: AppColors.secondaryText(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
