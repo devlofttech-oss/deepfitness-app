@@ -30,6 +30,7 @@ create table public.members (
 
 create table public.exercises (
   id uuid primary key default gen_random_uuid(),
+  source_id text,
   name text not null,
   description text,
   muscle_group text not null,
@@ -38,8 +39,19 @@ create table public.exercises (
   tracks_weight boolean not null default true,
   rest_seconds integer not null default 60,
   created_by uuid references public.trainers(id) on delete set null,
+  equipment text,
+  level text,
+  category text,
+  primary_muscles text[] not null default '{}',
+  secondary_muscles text[] not null default '{}',
+  instructions text[] not null default '{}',
+  image_urls text[] not null default '{}',
   created_at timestamptz not null default now()
 );
+
+create unique index exercises_source_id_unique_idx
+  on public.exercises (source_id)
+  where source_id is not null;
 
 create table public.workout_plans (
   id uuid primary key default gen_random_uuid(),

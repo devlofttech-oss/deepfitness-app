@@ -143,8 +143,8 @@ begin
         'Squat until thighs are near parallel, then drive through your heels.'
       ],
       array[
-        'https://placehold.co/900x600/f6c90e/111111.png?text=Barbell+Back+Squat',
-        'https://placehold.co/900x600/111111/f6c90e.png?text=Squat+Form'
+        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Barbell_Squat/0.jpg',
+        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Barbell_Squat/1.jpg'
       ]
     ),
     (
@@ -165,8 +165,8 @@ begin
         'Pull the handle toward your torso and squeeze your shoulder blades.'
       ],
       array[
-        'https://placehold.co/900x600/f6c90e/111111.png?text=Seated+Cable+Row',
-        'https://placehold.co/900x600/111111/f6c90e.png?text=Cable+Row+Form'
+        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Seated_Cable_Rows/0.jpg',
+        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Seated_Cable_Rows/1.jpg'
       ]
     ),
     (
@@ -187,8 +187,8 @@ begin
         'Land softly and keep a steady rhythm.'
       ],
       array[
-        'https://placehold.co/900x600/f6c90e/111111.png?text=Skipping+Rope',
-        'https://placehold.co/900x600/111111/f6c90e.png?text=Cardio+Rhythm'
+        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Rope_Jumping/0.jpg',
+        'https://iqhrhxxvhtokqltqkqoz.supabase.co/storage/v1/object/public/exercise-images/free-exercise-db/exercises/Rope_Jumping/1.jpg'
       ]
     );
 
