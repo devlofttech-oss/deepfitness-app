@@ -2,7 +2,6 @@ import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/async_state.dart';
-import 'package:deepfitness/shared/widgets/brand_mark.dart';
 import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,7 +33,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     return _AuthScaffold(
       title: 'Welcome Back',
-      subtitle: 'Log in to continue your fitness journey',
       error: _authError(authState),
       isSupabaseConfigured: authState.value?.isSupabaseConfigured,
       children: [
@@ -287,14 +285,14 @@ class _TrainerLoginScreenState extends ConsumerState<TrainerLoginScreen> {
 class _AuthScaffold extends StatelessWidget {
   const _AuthScaffold({
     required this.title,
-    required this.subtitle,
     required this.children,
+    this.subtitle,
     this.error,
     this.isSupabaseConfigured,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final List<Widget> children;
   final String? error;
   final bool? isSupabaseConfigured;
@@ -302,41 +300,50 @@ class _AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 44, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const _AuthHeader(),
-              const SizedBox(height: 46),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w800,
-                ),
+      backgroundColor: AppColors.white,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const CustomPaint(painter: _AuthBackgroundPainter()),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const _AuthHeader(),
+                  const SizedBox(height: 34),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      subtitle!,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                    ),
+                  ],
+                  const SizedBox(height: 26),
+                  if (isSupabaseConfigured == false) ...[
+                    const _AuthError('Supabase is not configured.'),
+                    const SizedBox(height: 14),
+                  ],
+                  if (error != null) ...[
+                    _AuthError(error!),
+                    const SizedBox(height: 14),
+                  ],
+                  ...children,
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                subtitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
-              ),
-              const SizedBox(height: 30),
-              if (isSupabaseConfigured == false) ...[
-                const _AuthError('Supabase is not configured.'),
-                const SizedBox(height: 14),
-              ],
-              if (error != null) ...[
-                _AuthError(error!),
-                const SizedBox(height: 14),
-              ],
-              ...children,
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -347,16 +354,22 @@ class _AuthHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const Center(child: BrandMark(size: 88)),
-        const SizedBox(height: 18),
-        Center(
-          child: RichText(
+    return Center(
+      child: Column(
+        children: [
+          Image.asset(
+            'assets/logo2.png',
+            width: 92,
+            height: 92,
+            fit: BoxFit.contain,
+            filterQuality: FilterQuality.high,
+          ),
+          const SizedBox(height: 10),
+          RichText(
             text: TextSpan(
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                letterSpacing: .2,
               ),
               children: const [
                 TextSpan(
@@ -370,20 +383,39 @@ class _AuthHeader extends StatelessWidget {
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Center(
-          child: Text(
-            'Stronger Every Day',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: AppColors.muted,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+}
+
+class _AuthBackgroundPainter extends CustomPainter {
+  const _AuthBackgroundPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glow = Paint()
+      ..shader =
+          RadialGradient(
+            colors: [
+              const Color(0xFFF8EBCB).withValues(alpha: .18),
+              AppColors.white.withValues(alpha: 0),
+            ],
+          ).createShader(
+            Rect.fromCircle(
+              center: Offset(size.width * .50, size.height * .18),
+              radius: size.width * .55,
+            ),
+          );
+    canvas.drawCircle(
+      Offset(size.width * .50, size.height * .18),
+      size.width * .55,
+      glow,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class _CredentialFields extends StatelessWidget {
@@ -410,7 +442,7 @@ class _CredentialFields extends StatelessWidget {
           keyboardType: TextInputType.emailAddress,
           textInputAction: TextInputAction.next,
           decoration: const InputDecoration(
-            hintText: 'email@domain.com or +91 phone',
+            hintText: 'Enter your Email or Phone',
             prefixIcon: Icon(Icons.person_outline_rounded),
           ),
         ),
