@@ -1,15 +1,27 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/features/auth/application/auth_controller.dart';
+import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/pressable_scale.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class MemberShell extends StatelessWidget {
+class MemberShell extends ConsumerWidget {
   const MemberShell({super.key, required this.child});
 
   final Widget child;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
+    final session = auth.maybeWhen(data: (value) => value, orElse: () => null);
+    if (session?.isAuthenticated != true || session?.role != UserRole.member) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/login');
+      });
+      return const Scaffold(body: SizedBox.shrink());
+    }
+
     final location = GoRouterState.of(context).uri.path;
 
     return Scaffold(

@@ -1,9 +1,15 @@
 import 'package:deepfitness/features/auth/data/auth_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 final authControllerProvider =
     AsyncNotifierProvider<AuthController, AuthSessionState>(AuthController.new);
+
+final authStateChangesProvider = StreamProvider<AuthState>((ref) {
+  final repository = ref.watch(authRepositoryProvider);
+  return repository.authStateChanges;
+});
 
 class AuthSessionState {
   const AuthSessionState({
@@ -37,6 +43,7 @@ class AuthController extends AsyncNotifier<AuthSessionState> {
   @override
   Future<AuthSessionState> build() async {
     final repository = ref.watch(authRepositoryProvider);
+    ref.watch(authStateChangesProvider);
     final user = repository.currentUser;
     final role = await repository.fetchCurrentRole();
 

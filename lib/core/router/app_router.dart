@@ -98,87 +98,110 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/workout',
-        pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const WorkoutDetailScreen()),
+        pageBuilder: (context, state) => _smoothPage(
+          state: state,
+          child: const _RoleGuard(
+            role: UserRole.member,
+            fallbackRoute: '/login',
+            child: WorkoutDetailScreen(),
+          ),
+        ),
       ),
       GoRoute(
         path: '/exercise-log',
-        pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const ExerciseLoggingScreen()),
+        pageBuilder: (context, state) => _smoothPage(
+          state: state,
+          child: const _RoleGuard(
+            role: UserRole.member,
+            fallbackRoute: '/login',
+            child: ExerciseLoggingScreen(),
+          ),
+        ),
       ),
       GoRoute(
         path: '/trainer',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const TrainerDashboardScreen()),
+            _trainerPage(state, const TrainerDashboardScreen()),
       ),
       GoRoute(
         path: '/trainer/members',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const MembersListScreen()),
+            _trainerPage(state, const MembersListScreen()),
       ),
       GoRoute(
         path: '/trainer/members/add',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AddMemberScreen()),
+            _trainerPage(state, const AddMemberScreen()),
       ),
       GoRoute(
         path: '/trainer/member',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const MemberDetailScreen()),
+            _trainerPage(state, const MemberDetailScreen()),
       ),
       GoRoute(
         path: '/trainer/workout-plan',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const CreateWorkoutPlanScreen()),
+            _trainerPage(state, const CreateWorkoutPlanScreen()),
       ),
       GoRoute(
         path: '/trainer/exercises',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const ExerciseLibraryScreen()),
+            _trainerPage(state, const ExerciseLibraryScreen()),
       ),
       GoRoute(
         path: '/trainer/diet-plan',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const CreateDietPlanScreen()),
+            _trainerPage(state, const CreateDietPlanScreen()),
       ),
       GoRoute(
         path: '/trainer/assign',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AssignPlanScreen()),
+            _trainerPage(state, const AssignPlanScreen()),
       ),
       GoRoute(
         path: '/trainer/assign/member',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AssignMemberScreen()),
+            _trainerPage(state, const AssignMemberScreen()),
       ),
       GoRoute(
         path: '/trainer/assign/source',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AssignSourceScreen()),
+            _trainerPage(state, const AssignSourceScreen()),
       ),
       GoRoute(
         path: '/trainer/assign/saved',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AssignSavedPlanScreen()),
+            _trainerPage(state, const AssignSavedPlanScreen()),
       ),
       GoRoute(
         path: '/trainer/assign/exercises',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AssignExercisesScreen()),
+            _trainerPage(state, const AssignExercisesScreen()),
       ),
       GoRoute(
         path: '/trainer/assign/meals',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const AssignMealsScreen()),
+            _trainerPage(state, const AssignMealsScreen()),
       ),
       GoRoute(
         path: '/trainer/profile',
         pageBuilder: (context, state) =>
-            _smoothPage(state: state, child: const TrainerProfileScreen()),
+            _trainerPage(state, const TrainerProfileScreen()),
       ),
     ],
   );
 });
+
+CustomTransitionPage<void> _trainerPage(GoRouterState state, Widget child) {
+  return _smoothPage(
+    state: state,
+    child: _RoleGuard(
+      role: UserRole.trainer,
+      fallbackRoute: '/trainer-login',
+      child: child,
+    ),
+  );
+}
 
 CustomTransitionPage<void> _smoothPage({
   required GoRouterState state,
@@ -207,4 +230,29 @@ CustomTransitionPage<void> _smoothPage({
       );
     },
   );
+}
+
+class _RoleGuard extends ConsumerWidget {
+  const _RoleGuard({
+    required this.role,
+    required this.fallbackRoute,
+    required this.child,
+  });
+
+  final UserRole role;
+  final String fallbackRoute;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
+    final session = auth.maybeWhen(data: (value) => value, orElse: () => null);
+    if (session?.isAuthenticated != true || session?.role != role) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go(fallbackRoute);
+      });
+      return const SizedBox.shrink();
+    }
+    return child;
+  }
 }

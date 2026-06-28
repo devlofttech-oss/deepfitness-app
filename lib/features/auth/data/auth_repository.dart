@@ -19,6 +19,11 @@ class AuthRepository {
     return _supabaseService.client.auth.currentUser;
   }
 
+  Stream<AuthState> get authStateChanges {
+    if (!isConfigured) return const Stream.empty();
+    return _supabaseService.client.auth.onAuthStateChange;
+  }
+
   Future<AuthResponse?> signInWithPassword({
     required String identifier,
     required String password,
