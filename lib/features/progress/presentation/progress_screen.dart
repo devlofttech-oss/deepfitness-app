@@ -73,7 +73,7 @@ class _ProgressContent extends StatelessWidget {
                     Text(
                       'Current Weight',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.muted,
+                        color: AppColors.secondaryText(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -94,7 +94,9 @@ class _ProgressContent extends StatelessWidget {
                           child: Text(
                             'kg',
                             style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(color: AppColors.muted),
+                                ?.copyWith(
+                                  color: AppColors.secondaryText(context),
+                                ),
                           ),
                         ),
                       ],
@@ -127,7 +129,7 @@ class _ProgressContent extends StatelessWidget {
                     Text(
                       'Workouts Completed',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.muted,
+                        color: AppColors.secondaryText(context),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -142,7 +144,9 @@ class _ProgressContent extends StatelessWidget {
                       'this month',
                       style: Theme.of(
                         context,
-                      ).textTheme.titleLarge?.copyWith(color: AppColors.muted),
+                      ).textTheme.titleLarge?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                   ],
                 ),
@@ -225,7 +229,7 @@ class _ThreeMetricCard extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.muted,
+              color: AppColors.secondaryText(context),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -281,7 +285,9 @@ class _Metric extends StatelessWidget {
           textAlign: TextAlign.center,
           style: Theme.of(
             context,
-          ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
+          ).textTheme.bodyLarge?.copyWith(
+            color: AppColors.secondaryText(context),
+          ),
         ),
         const SizedBox(height: 6),
         Text(

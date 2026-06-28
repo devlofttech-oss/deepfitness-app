@@ -106,6 +106,16 @@ class ExerciseLog {
   final bool completed;
 }
 
+class AppSettings {
+  const AppSettings({
+    required this.notificationsEnabled,
+    required this.preferredUnit,
+  });
+
+  final bool notificationsEnabled;
+  final String preferredUnit;
+}
+
 class MemberSummary {
   const MemberSummary({
     required this.id,

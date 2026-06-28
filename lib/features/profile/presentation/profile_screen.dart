@@ -121,6 +121,15 @@ class _ProfileContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final settings = ref
+        .watch(appSettingsProvider)
+        .maybeWhen(
+          data: (settings) => settings,
+          orElse: () => const AppSettings(
+            notificationsEnabled: true,
+            preferredUnit: 'kg',
+          ),
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +196,9 @@ class _ProfileContent extends ConsumerWidget {
                         Text(
                           'Member since Jan 2026',
                           style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(color: AppColors.secondaryText(context)),
+                              ?.copyWith(
+                                color: AppColors.secondaryText(context),
+                              ),
                         ),
                         const SizedBox(height: 6),
                         Row(
@@ -299,35 +310,60 @@ class _ProfileContent extends ConsumerWidget {
                 icon: Icons.dark_mode_outlined,
                 label: 'Dark Mode',
                 value: isDarkMode,
-                onChanged: (value) => ref
-                    .read(themeModeProvider.notifier)
-                    .setDarkMode(value),
+                onChanged: (value) =>
+                    ref.read(themeModeProvider.notifier).setDarkMode(value),
               ),
-              _InfoRow(
+              _SettingsSwitchRow(
                 icon: Icons.notifications_none_rounded,
                 label: 'Notifications',
-                value: '',
+                value: settings.notificationsEnabled,
+                onChanged: (value) async {
+                  await ref
+                      .read(appDataRepositoryProvider)
+                      .updateNotificationsEnabled(value);
+                  ref.invalidate(appSettingsProvider);
+                },
               ),
               _InfoRow(
                 icon: Icons.monitor_weight_outlined,
-                label: 'Units (kg)',
-                value: '',
+                label: 'Units',
+                value: settings.preferredUnit.toUpperCase(),
+                onTap: () =>
+                    _showUnitPicker(context, ref, settings.preferredUnit),
               ),
               _InfoRow(
                 icon: Icons.privacy_tip_outlined,
                 label: 'Privacy Policy',
                 value: '',
+                onTap: () => _showInfoSheet(
+                  context,
+                  title: 'Privacy Policy',
+                  message:
+                      'Your workout, diet, measurement, and note data is visible only to you and your assigned trainer.',
+                ),
               ),
               _InfoRow(
                 icon: Icons.support_agent_rounded,
                 label: 'Help & Support',
                 value: '',
+                onTap: () => _showInfoSheet(
+                  context,
+                  title: 'Help & Support',
+                  message:
+                      'Contact deepfitnessgym2025@gmail.com for app or gym support.',
+                ),
               ),
               _InfoRow(
                 icon: Icons.info_outline_rounded,
                 label: 'About Deep Fitness',
                 value: '',
                 showDivider: false,
+                onTap: () => _showInfoSheet(
+                  context,
+                  title: 'About Deep Fitness',
+                  message:
+                      'Deep Fitness helps members follow trainer-assigned workouts, diets, progress tracking, and exercise logs.',
+                ),
               ),
             ],
           ),
@@ -377,9 +413,9 @@ class _ProfileMetric extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.secondaryText(context)),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.secondaryText(context),
+            ),
           ),
         ],
       ),
@@ -393,39 +429,45 @@ class _InfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.showDivider = true,
+    this.onTap,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final bool showDivider;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SizedBox(
-          height: 48,
-          child: Row(
-            children: [
-              Icon(icon, color: AppColors.gold, size: 20),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+        InkWell(
+          onTap: onTap,
+          child: SizedBox(
+            height: 48,
+            child: Row(
+              children: [
+                Icon(icon, color: AppColors.gold, size: 20),
+                const SizedBox(width: 18),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              if (value.isNotEmpty)
-                Text(
-                  value,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(color: AppColors.secondaryText(context)),
-                ),
-            ],
+                if (value.isNotEmpty)
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                if (onTap != null) const Icon(Icons.chevron_right_rounded),
+              ],
+            ),
           ),
         ),
         if (showDivider) const Divider(height: 1),
@@ -478,4 +520,75 @@ class _SettingsSwitchRow extends StatelessWidget {
       ],
     );
   }
+}
+
+void _showUnitPicker(BuildContext context, WidgetRef ref, String currentUnit) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Units',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          for (final unit in const ['kg', 'lb'])
+            ListTile(
+              leading: Icon(
+                unit == currentUnit
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_unchecked_rounded,
+              ),
+              title: Text(unit.toUpperCase()),
+              onTap: () async {
+                await ref
+                    .read(appDataRepositoryProvider)
+                    .updatePreferredUnit(unit);
+                ref.invalidate(appSettingsProvider);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showInfoSheet(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          Text(message),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

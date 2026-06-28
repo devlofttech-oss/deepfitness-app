@@ -6,14 +6,14 @@ class IconTile extends StatelessWidget {
     super.key,
     required this.icon,
     this.size = 54,
-    this.background = AppColors.goldSoft,
-    this.iconColor = AppColors.gold,
+    this.background,
+    this.iconColor,
   });
 
   final IconData icon;
   final double size;
-  final Color background;
-  final Color iconColor;
+  final Color? background;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -21,10 +21,10 @@ class IconTile extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: background,
+        color: background ?? AppColors.chipBackground(context),
         borderRadius: BorderRadius.circular(size * .24),
       ),
-      child: Icon(icon, color: iconColor, size: size * .42),
+      child: Icon(icon, color: iconColor ?? AppColors.gold, size: size * .42),
     );
   }
 }

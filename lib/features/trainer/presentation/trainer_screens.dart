@@ -389,26 +389,28 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     if (name.isEmpty ||
         (email.isEmpty && phone == null) ||
         password.length < 6) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Enter name, email or phone, and 6+ character password.'),
+          content: Text(
+            'Enter name, email or phone, and 6+ character password.',
+          ),
         ),
       );
       return;
     }
     setState(() => _saving = true);
     try {
-      final invite = await ref.read(appDataRepositoryProvider).createMember(
-        name: name,
-        email: email.isEmpty ? null : email,
-        phone: phone,
-        password: password,
-        goal: _goal.text.trim().isEmpty ? 'Fitness' : _goal.text.trim(),
-        heightCm: double.tryParse(_height.text.trim()) ?? 175,
-        weight: double.tryParse(_weight.text.trim()) ?? 70,
-      );
+      final invite = await ref
+          .read(appDataRepositoryProvider)
+          .createMember(
+            name: name,
+            email: email.isEmpty ? null : email,
+            phone: phone,
+            password: password,
+            goal: _goal.text.trim().isEmpty ? 'Fitness' : _goal.text.trim(),
+            heightCm: double.tryParse(_height.text.trim()) ?? 175,
+            weight: double.tryParse(_weight.text.trim()) ?? 70,
+          );
       ref.invalidate(membersProvider);
       ref.invalidate(trainerMembersProvider);
       ref.invalidate(trainerStatsProvider);
@@ -708,15 +710,61 @@ class AssignSavedPlanScreen extends ConsumerWidget {
   }
 }
 
-class AssignExercisesScreen extends ConsumerWidget {
+class AssignExercisesScreen extends ConsumerStatefulWidget {
   const AssignExercisesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AssignExercisesScreen> createState() =>
+      _AssignExercisesScreenState();
+}
+
+class _AssignExercisesScreenState extends ConsumerState<AssignExercisesScreen> {
+  final _search = TextEditingController();
+  final _scrollController = ScrollController();
+  String? _selectedCategory;
+  int _visibleExerciseCount = 10;
+  bool _loadingMoreExercises = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_loadMoreExercisesNearBottom);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_loadMoreExercisesNearBottom)
+      ..dispose();
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _loadMoreExercisesNearBottom() {
+    if (!_scrollController.hasClients || _loadingMoreExercises) return;
+    final position = _scrollController.position;
+    if (position.maxScrollExtent - position.pixels > 260) return;
+    setState(() => _loadingMoreExercises = true);
+    Future<void>.delayed(const Duration(milliseconds: 260), () {
+      if (!mounted) return;
+      setState(() {
+        _visibleExerciseCount += 10;
+        _loadingMoreExercises = false;
+      });
+    });
+  }
+
+  void _resetExerciseList() {
+    setState(() => _visibleExerciseCount = 10);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final draft = ref.watch(assignmentDraftProvider);
     final exercises = ref.watch(exerciseLibraryProvider);
 
     return PremiumScaffold(
+      scrollController: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -733,25 +781,133 @@ class AssignExercisesScreen extends ConsumerWidget {
               if (items.isEmpty) {
                 return const AppEmptyState(
                   title: 'No exercises yet',
-                  message: 'Add exercises to the library before building a workout.',
+                  message:
+                      'Add exercises to the library before building a workout.',
                   icon: Icons.fitness_center_rounded,
                 );
               }
+              final query = _search.text.trim().toLowerCase();
+              final filteredItems = query.isEmpty
+                  ? items
+                  : items.where((exercise) {
+                      final haystack = [
+                        exercise.name,
+                        exercise.muscleGroup,
+                        exercise.category ?? '',
+                        exercise.equipment ?? '',
+                        exercise.level ?? '',
+                      ].join(' ').toLowerCase();
+                      return haystack.contains(query);
+                    }).toList();
+              if (filteredItems.isEmpty) {
+                return Column(
+                  children: [
+                    _SearchField(
+                      controller: _search,
+                      hintText: 'Search exercises',
+                      onChanged: (_) => _resetExerciseList(),
+                    ),
+                    const SizedBox(height: 16),
+                    const AppEmptyState(
+                      title: 'No exercises found',
+                      message:
+                          'Try another exercise, muscle, equipment, or category.',
+                      icon: Icons.search_off_rounded,
+                    ),
+                  ],
+                );
+              }
+              final grouped = <String, List<Exercise>>{};
+              for (final exercise in filteredItems) {
+                final category = _exerciseCategoryLabel(exercise);
+                grouped.putIfAbsent(category, () => []).add(exercise);
+              }
+              final categories = grouped.keys.toList()..sort();
+              final selectedCategory =
+                  _selectedCategory != null &&
+                      grouped.containsKey(_selectedCategory)
+                  ? _selectedCategory!
+                  : categories.first;
+              final selectedExercises = grouped[selectedCategory] ?? const [];
+              final visibleExercises = selectedExercises
+                  .take(_visibleExerciseCount)
+                  .toList();
+              final hasMore =
+                  visibleExercises.length < selectedExercises.length;
+
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final exercise in items)
-                    _SelectableRow(
+                  _SearchField(
+                    controller: _search,
+                    hintText: 'Search exercises',
+                    onChanged: (_) => _resetExerciseList(),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Categories',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.secondaryText(context),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final category in categories)
+                    _CategoryRow(
+                      title: category,
+                      count: grouped[category]?.length ?? 0,
+                      selectedCount:
+                          grouped[category]
+                              ?.where(
+                                (exercise) =>
+                                    draft.exerciseIds.contains(exercise.id),
+                              )
+                              .length ??
+                          0,
+                      active: category == selectedCategory,
+                      onTap: () => setState(() {
+                        _selectedCategory = category;
+                        _visibleExerciseCount = 10;
+                      }),
+                    ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          selectedCategory,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                              ),
+                        ),
+                      ),
+                      Text(
+                        '${visibleExercises.length} of ${selectedExercises.length}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.secondaryText(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  for (final exercise in visibleExercises)
+                    _SelectableExerciseRow(
                       active: draft.exerciseIds.contains(exercise.id),
-                      title: exercise.name,
-                      subtitle:
-                          '${exercise.muscleGroup} - ${exercise.sets} sets - ${exercise.reps} reps',
+                      exercise: exercise,
                       onTap: () => ref
                           .read(assignmentDraftProvider.notifier)
                           .toggleExercise(exercise.id),
                     ),
+                  if (hasMore || _loadingMoreExercises)
+                    const _ListLoadingIndicator(),
                   const SizedBox(height: 12),
                   PrimaryButton(
-                    label: 'Save Workout',
+                    label: draft.exerciseIds.isEmpty
+                        ? 'Save Workout'
+                        : 'Save ${draft.exerciseIds.length} Exercises',
                     icon: Icons.save_outlined,
                     onPressed: () => _saveWorkout(context, ref, draft, items),
                   ),
@@ -774,6 +930,39 @@ class AssignMealsScreen extends ConsumerStatefulWidget {
 
 class _AssignMealsScreenState extends ConsumerState<AssignMealsScreen> {
   final List<DietMeal> _customMeals = [];
+  final _search = TextEditingController();
+  final _scrollController = ScrollController();
+  int _visibleMealCount = 10;
+  bool _loadingMoreMeals = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_loadMoreMealsNearBottom);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_loadMoreMealsNearBottom)
+      ..dispose();
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _loadMoreMealsNearBottom() {
+    if (!_scrollController.hasClients || _loadingMoreMeals) return;
+    final position = _scrollController.position;
+    if (position.maxScrollExtent - position.pixels > 260) return;
+    setState(() => _loadingMoreMeals = true);
+    Future<void>.delayed(const Duration(milliseconds: 260), () {
+      if (!mounted) return;
+      setState(() {
+        _visibleMealCount += 10;
+        _loadingMoreMeals = false;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -781,6 +970,7 @@ class _AssignMealsScreenState extends ConsumerState<AssignMealsScreen> {
     final templates = ref.watch(mealTemplatesProvider);
 
     return PremiumScaffold(
+      scrollController: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -795,23 +985,54 @@ class _AssignMealsScreenState extends ConsumerState<AssignMealsScreen> {
             onRetry: () => ref.invalidate(mealTemplatesProvider),
             data: (templates) {
               final meals = [...templates, ..._customMeals];
+              final query = _search.text.trim().toLowerCase();
+              final filteredMeals = query.isEmpty
+                  ? meals
+                  : meals.where((meal) {
+                      final haystack = [
+                        meal.name,
+                        meal.time,
+                        meal.description,
+                        meal.calories.toString(),
+                      ].join(' ').toLowerCase();
+                      return haystack.contains(query);
+                    }).toList();
+              final visibleMeals = filteredMeals
+                  .take(_visibleMealCount)
+                  .toList();
+              final hasMore = visibleMeals.length < filteredMeals.length;
               return Column(
                 children: [
+                  _SearchField(
+                    controller: _search,
+                    hintText: 'Search meals',
+                    onChanged: (_) => setState(() => _visibleMealCount = 10),
+                  ),
+                  const SizedBox(height: 16),
                   if (meals.isEmpty)
                     const AppEmptyState(
                       title: 'No meal templates',
-                      message: 'Add a custom meal below to create this diet plan.',
+                      message:
+                          'Add a custom meal below to create this diet plan.',
                       icon: Icons.restaurant_menu_rounded,
+                    )
+                  else if (filteredMeals.isEmpty)
+                    const AppEmptyState(
+                      title: 'No meals found',
+                      message: 'Try another meal name, time, or calorie value.',
+                      icon: Icons.search_off_rounded,
                     ),
-                  for (final meal in meals)
+                  for (final meal in visibleMeals)
                     _SelectableRow(
                       active: draft.mealNames.contains(meal.name),
-                      title: meal.name,
+                      title: _titleCase(meal.name),
                       subtitle: '${meal.time} - ${meal.calories} kcal',
                       onTap: () => ref
                           .read(assignmentDraftProvider.notifier)
                           .toggleMeal(meal.name),
                     ),
+                  if (hasMore || _loadingMoreMeals)
+                    const _ListLoadingIndicator(),
                   const SizedBox(height: 12),
                   PrimaryButton(
                     label: 'Add Meal',
@@ -907,14 +1128,55 @@ class _AssignMealsScreenState extends ConsumerState<AssignMealsScreen> {
   }
 }
 
-class ExerciseLibraryScreen extends ConsumerWidget {
+class ExerciseLibraryScreen extends ConsumerStatefulWidget {
   const ExerciseLibraryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ExerciseLibraryScreen> createState() =>
+      _ExerciseLibraryScreenState();
+}
+
+class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
+  final _search = TextEditingController();
+  final _scrollController = ScrollController();
+  int _visibleCount = 10;
+  bool _loadingMore = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_loadMoreNearBottom);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_loadMoreNearBottom)
+      ..dispose();
+    _search.dispose();
+    super.dispose();
+  }
+
+  void _loadMoreNearBottom() {
+    if (!_scrollController.hasClients || _loadingMore) return;
+    final position = _scrollController.position;
+    if (position.maxScrollExtent - position.pixels > 260) return;
+    setState(() => _loadingMore = true);
+    Future<void>.delayed(const Duration(milliseconds: 260), () {
+      if (!mounted) return;
+      setState(() {
+        _visibleCount += 10;
+        _loadingMore = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final exercises = ref.watch(exerciseLibraryProvider);
 
     return PremiumScaffold(
+      scrollController: _scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -928,51 +1190,44 @@ class ExerciseLibraryScreen extends ConsumerWidget {
               if (exercises.isEmpty) {
                 return const AppEmptyState(
                   title: 'No exercises yet',
-                  message: 'Create exercises in Supabase to make them available here.',
+                  message:
+                      'Create exercises in Supabase to make them available here.',
                   icon: Icons.menu_book_outlined,
                 );
               }
+              final query = _search.text.trim().toLowerCase();
+              final filtered = query.isEmpty
+                  ? exercises
+                  : exercises.where((exercise) {
+                      final haystack = [
+                        exercise.name,
+                        exercise.muscleGroup,
+                        exercise.category ?? '',
+                        exercise.equipment ?? '',
+                      ].join(' ').toLowerCase();
+                      return haystack.contains(query);
+                    }).toList();
+              final visible = filtered.take(_visibleCount).toList();
+              final hasMore = visible.length < filtered.length;
               return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final exercise in exercises)
-                    PremiumCard(
-                      padding: const EdgeInsets.all(14),
-                      child: Row(
-                        children: [
-                          const IconTile(
-                            icon: Icons.fitness_center_rounded,
-                            size: 42,
-                          ),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  exercise.name,
-                                  style: Theme.of(context).textTheme.titleMedium
-                                      ?.copyWith(fontWeight: FontWeight.w800),
-                                ),
-                                Text(
-                                  exercise.muscleGroup,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        color: AppColors.secondaryText(context),
-                                      ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            '${exercise.restSeconds}s',
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: AppColors.secondaryText(context),
-                                ),
-                          ),
-                        ],
-                      ),
+                  _SearchField(
+                    controller: _search,
+                    hintText: 'Search exercise library',
+                    onChanged: (_) => setState(() => _visibleCount = 10),
+                  ),
+                  const SizedBox(height: 16),
+                  if (filtered.isEmpty)
+                    const AppEmptyState(
+                      title: 'No exercises found',
+                      message:
+                          'Try another exercise, muscle, equipment, or category.',
+                      icon: Icons.search_off_rounded,
                     ),
+                  for (final exercise in visible)
+                    _ExerciseLibraryRow(exercise: exercise),
+                  if (hasMore || _loadingMore) const _ListLoadingIndicator(),
                 ],
               );
             },
@@ -990,6 +1245,15 @@ class TrainerProfileScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final stats = ref.watch(trainerStatsProvider);
+    final settings = ref
+        .watch(appSettingsProvider)
+        .maybeWhen(
+          data: (settings) => settings,
+          orElse: () => const AppSettings(
+            notificationsEnabled: true,
+            preferredUnit: 'kg',
+          ),
+        );
 
     return PremiumScaffold(
       child: Column(
@@ -1059,20 +1323,29 @@ class TrainerProfileScreen extends ConsumerWidget {
           const SizedBox(height: 10),
           PremiumCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: const Column(
+            child: Column(
               children: [
-                _SettingsRow(
+                _TrainerSettingsSwitchRow(
                   icon: Icons.notifications_none_rounded,
                   label: 'Notifications',
+                  value: settings.notificationsEnabled,
+                  onChanged: (value) async {
+                    await ref
+                        .read(appDataRepositoryProvider)
+                        .updateNotificationsEnabled(value);
+                    ref.invalidate(appSettingsProvider);
+                  },
                 ),
                 _SettingsRow(
                   icon: Icons.privacy_tip_outlined,
                   label: 'Privacy Policy',
+                  onTap: () => _showTrainerSetting(context, 'Privacy Policy'),
                 ),
                 _SettingsRow(
                   icon: Icons.support_agent_rounded,
                   label: 'Help & Support',
                   showDivider: false,
+                  onTap: () => _showTrainerSetting(context, 'Help & Support'),
                 ),
               ],
             ),
@@ -1102,9 +1375,7 @@ class CreateWorkoutPlanScreen extends ConsumerWidget {
       ref.read(assignmentDraftProvider.notifier).start(AssignmentKind.workout);
       if (context.mounted) context.replace('/trainer/assign/member');
     });
-    return const PremiumScaffold(
-      child: AppLoadingState(rows: 2),
-    );
+    return const PremiumScaffold(child: AppLoadingState(rows: 2));
   }
 }
 
@@ -1117,9 +1388,7 @@ class CreateDietPlanScreen extends ConsumerWidget {
       ref.read(assignmentDraftProvider.notifier).start(AssignmentKind.diet);
       if (context.mounted) context.replace('/trainer/assign/member');
     });
-    return const PremiumScaffold(
-      child: AppLoadingState(rows: 2),
-    );
+    return const PremiumScaffold(child: AppLoadingState(rows: 2));
   }
 }
 
@@ -1324,7 +1593,7 @@ class _ChoiceCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      _titleCase(title),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -1465,6 +1734,299 @@ class _SelectableRow extends StatelessWidget {
   }
 }
 
+class _SearchField extends StatelessWidget {
+  const _SearchField({
+    required this.controller,
+    required this.hintText,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: hintText,
+        prefixIcon: const Icon(Icons.search_rounded),
+      ),
+    );
+  }
+}
+
+class _ListLoadingIndicator extends StatelessWidget {
+  const _ListLoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.6,
+            color: AppColors.gold,
+            backgroundColor: AppColors.divider(context),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExerciseLibraryRow extends StatelessWidget {
+  const _ExerciseLibraryRow({required this.exercise});
+
+  final Exercise exercise;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = exercise.imageUrls.isEmpty
+        ? null
+        : exercise.imageUrls.first;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PremiumCard(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: SizedBox(
+                width: 58,
+                height: 46,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: AppColors.subtle(context)),
+                  child: imageUrl == null
+                      ? Icon(
+                          Icons.fitness_center_rounded,
+                          color: AppColors.secondaryText(context),
+                          size: 24,
+                        )
+                      : Image.network(
+                          imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Icon(
+                            Icons.fitness_center_rounded,
+                            color: AppColors.secondaryText(context),
+                            size: 24,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _titleCase(exercise.name),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${_titleCase(exercise.muscleGroup)} • ${_titleCase(exercise.equipment ?? 'Body')}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${exercise.restSeconds}s',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.secondaryText(context),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryRow extends StatelessWidget {
+  const _CategoryRow({
+    required this.title,
+    required this.count,
+    required this.selectedCount,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String title;
+  final int count;
+  final int selectedCount;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PremiumCard(
+        padding: const EdgeInsets.all(14),
+        color: active ? AppColors.chipBackground(context) : null,
+        child: InkWell(
+          onTap: onTap,
+          child: Row(
+            children: [
+              IconTile(
+                icon: _categoryIcon(title),
+                size: 42,
+                background: active ? AppColors.goldBright : null,
+                iconColor: active ? AppColors.black : null,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      selectedCount == 0
+                          ? '$count exercises'
+                          : '$selectedCount selected • $count exercises',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                active
+                    ? Icons.keyboard_arrow_down_rounded
+                    : Icons.chevron_right_rounded,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  IconData _categoryIcon(String title) {
+    final lower = title.toLowerCase();
+    if (lower.contains('cardio')) return Icons.directions_run_rounded;
+    if (lower.contains('stretch')) return Icons.self_improvement_rounded;
+    if (lower.contains('strength')) return Icons.fitness_center_rounded;
+    if (lower.contains('power')) return Icons.bolt_rounded;
+    return Icons.category_outlined;
+  }
+}
+
+class _SelectableExerciseRow extends StatelessWidget {
+  const _SelectableExerciseRow({
+    required this.active,
+    required this.exercise,
+    required this.onTap,
+  });
+
+  final bool active;
+  final Exercise exercise;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = exercise.imageUrls.isEmpty
+        ? null
+        : exercise.imageUrls.first;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: PremiumCard(
+        padding: const EdgeInsets.all(12),
+        color: active ? AppColors.chipBackground(context) : null,
+        child: InkWell(
+          onTap: onTap,
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 58,
+                  height: 46,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(color: AppColors.subtle(context)),
+                    child: imageUrl == null
+                        ? Icon(
+                            Icons.fitness_center_rounded,
+                            color: AppColors.secondaryText(context),
+                            size: 24,
+                          )
+                        : Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Icon(
+                              Icons.fitness_center_rounded,
+                              color: AppColors.secondaryText(context),
+                              size: 24,
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _titleCase(exercise.name),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      '${_titleCase(exercise.muscleGroup)} • ${_titleCase(exercise.equipment ?? 'Body')}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(
+                active
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                color: AppColors.gold,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TrainerStat extends StatelessWidget {
   const _TrainerStat({
     required this.icon,
@@ -1507,18 +2069,20 @@ class _SettingsRow extends StatelessWidget {
     required this.icon,
     required this.label,
     this.showDivider = true,
+    required this.onTap,
   });
 
   final IconData icon;
   final String label;
   final bool showDivider;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         InkWell(
-          onTap: () => _showTrainerSetting(context, label),
+          onTap: onTap,
           child: SizedBox(
             height: 46,
             child: Row(
@@ -1539,6 +2103,52 @@ class _SettingsRow extends StatelessWidget {
           ),
         ),
         if (showDivider) const Divider(height: 1),
+      ],
+    );
+  }
+}
+
+class _TrainerSettingsSwitchRow extends StatelessWidget {
+  const _TrainerSettingsSwitchRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 46,
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.gold, size: 20),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Switch(
+                value: value,
+                activeThumbColor: AppColors.goldBright,
+                activeTrackColor: AppColors.gold.withValues(alpha: .38),
+                onChanged: onChanged,
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1),
       ],
     );
   }
@@ -1672,6 +2282,26 @@ int _safeIndex(int index, int length) {
 
 String _kindLabel(AssignmentKind kind) {
   return kind == AssignmentKind.workout ? 'Workout plan' : 'Diet plan';
+}
+
+String _exerciseCategoryLabel(Exercise exercise) {
+  final raw = (exercise.category?.trim().isNotEmpty ?? false)
+      ? exercise.category!.trim()
+      : exercise.muscleGroup.trim();
+  return _titleCase(raw.isEmpty ? 'Other' : raw);
+}
+
+String _titleCase(String value) {
+  final normalized = value.replaceAll(RegExp(r'[_-]+'), ' ').trim();
+  if (normalized.isEmpty) return '';
+  return normalized
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) {
+        if (part.length == 1) return part.toUpperCase();
+        return '${part[0].toUpperCase()}${part.substring(1)}';
+      })
+      .join(' ');
 }
 
 void _showSnack(BuildContext context, String message) {

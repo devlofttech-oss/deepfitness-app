@@ -22,6 +22,10 @@ final progressProvider = FutureProvider<MemberProgress>(
   (ref) => ref.watch(appDataRepositoryProvider).fetchProgress(),
 );
 
+final appSettingsProvider = FutureProvider<AppSettings>(
+  (ref) => ref.watch(appDataRepositoryProvider).fetchSettings(),
+);
+
 final membersProvider = FutureProvider<List<MemberSummary>>(
   (ref) => ref.watch(appDataRepositoryProvider).fetchMembers(),
 );
@@ -282,6 +286,38 @@ class AppDataRepository {
     );
   }
 
+  Future<AppSettings> fetchSettings() async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    final row = await _supabaseService.client
+        .from('users')
+        .select('notifications_enabled,preferred_unit')
+        .eq('id', _authUserId!)
+        .maybeSingle();
+    return AppSettings(
+      notificationsEnabled: row?['notifications_enabled'] != false,
+      preferredUnit: (row?['preferred_unit'] ?? 'kg').toString(),
+    );
+  }
+
+  Future<void> updateNotificationsEnabled(bool enabled) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    await _supabaseService.client
+        .from('users')
+        .update({'notifications_enabled': enabled})
+        .eq('id', _authUserId!);
+  }
+
+  Future<void> updatePreferredUnit(String unit) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    await _supabaseService.client
+        .from('users')
+        .update({'preferred_unit': unit})
+        .eq('id', _authUserId!);
+  }
+
   Future<List<MemberSummary>> fetchMembers() async {
     _requireClient();
 
@@ -391,6 +427,7 @@ class AppDataRepository {
         setNumber: _toInt(row['set_number']),
         weight: _toInt(row['weight']),
         reps: _toInt(row['reps']),
+        completed: row['completed'] != false,
       );
     }).toList();
   }
@@ -409,11 +446,83 @@ class AppDataRepository {
         'set_number': log.setNumber,
         'weight': log.weight,
         'reps': log.reps,
+        'completed': log.completed,
       };
     }).toList();
     await _supabaseService.client
         .from('exercise_logs')
-        .upsert(payload, onConflict: 'member_id,workout_exercise_id,set_number');
+        .upsert(
+          payload,
+          onConflict: 'member_id,workout_exercise_id,set_number',
+        );
+  }
+
+  Future<void> saveExerciseNote(Exercise exercise, String note) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    final workoutExerciseId = exercise.workoutExerciseId;
+    if (workoutExerciseId == null) {
+      throw StateError(
+        'Open an assigned workout exercise before saving notes.',
+      );
+    }
+    await _supabaseService.client.from('exercise_notes').upsert({
+      'member_id': _authUserId,
+      'workout_exercise_id': workoutExerciseId,
+      'exercise_id': exercise.id,
+      'note': note.trim(),
+      'updated_at': DateTime.now().toIso8601String(),
+    }, onConflict: 'member_id,workout_exercise_id,exercise_id');
+  }
+
+  Future<String> fetchExerciseNote(Exercise exercise) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    final workoutExerciseId = exercise.workoutExerciseId;
+    if (workoutExerciseId == null) return '';
+    final row = await _supabaseService.client
+        .from('exercise_notes')
+        .select('note')
+        .eq('member_id', _authUserId!)
+        .eq('exercise_id', exercise.id)
+        .eq('workout_exercise_id', workoutExerciseId)
+        .maybeSingle();
+    return (row?['note'] ?? '').toString();
+  }
+
+  Future<void> resetWorkoutProgress(WorkoutPlan workout) async {
+    _requireClient();
+    if (_authUserId == null) throw StateError('You are not logged in.');
+    final workoutExerciseIds = workout.exercises
+        .map((exercise) => exercise.workoutExerciseId)
+        .whereType<String>()
+        .toList();
+    if (workoutExerciseIds.isEmpty) return;
+    await _supabaseService.client
+        .from('exercise_logs')
+        .delete()
+        .eq('member_id', _authUserId!)
+        .inFilter('workout_exercise_id', workoutExerciseIds);
+    await _supabaseService.client
+        .from('exercise_notes')
+        .delete()
+        .eq('member_id', _authUserId!)
+        .inFilter('workout_exercise_id', workoutExerciseIds);
+  }
+
+  String workoutShareText(WorkoutPlan workout) {
+    final buffer = StringBuffer()
+      ..writeln(workout.name)
+      ..writeln(workout.focus)
+      ..writeln(
+        '${workout.durationMinutes} min - ${workout.exercises.length} exercises - ${workout.estimatedCalories} kcal',
+      );
+    for (final exercise in workout.exercises) {
+      buffer.writeln(
+        '- ${exercise.name}: ${exercise.sets} sets x ${exercise.reps}, rest ${exercise.restSeconds}s',
+      );
+    }
+    return buffer.toString().trim();
   }
 
   Future<void> createQuickWorkoutPlan(String memberId) async {
@@ -588,15 +697,18 @@ class AppDataRepository {
         .order('name')
         .limit(30);
     final seen = <String>{};
-    return rows.map<DietMeal>((row) {
-      return DietMeal(
-        name: row['name'].toString(),
-        time: _formatTime(row['meal_time']?.toString()),
-        description: (row['description'] ?? '').toString(),
-        calories: _toInt(row['calories']),
-        icon: row['name'].toString().toLowerCase(),
-      );
-    }).where((meal) => seen.add(meal.name.toLowerCase())).toList();
+    return rows
+        .map<DietMeal>((row) {
+          return DietMeal(
+            name: row['name'].toString(),
+            time: _formatTime(row['meal_time']?.toString()),
+            description: (row['description'] ?? '').toString(),
+            calories: _toInt(row['calories']),
+            icon: row['name'].toString().toLowerCase(),
+          );
+        })
+        .where((meal) => seen.add(meal.name.toLowerCase()))
+        .toList();
   }
 
   List<ExerciseLog> _defaultLogs(Exercise exercise) {

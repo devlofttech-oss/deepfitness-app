@@ -28,7 +28,8 @@ class ExerciseLoggingScreen extends ConsumerWidget {
           if (workoutData.exercises.isEmpty) {
             return const AppEmptyState(
               title: 'No exercises assigned',
-              message: 'Ask your trainer to assign a workout before logging sets.',
+              message:
+                  'Ask your trainer to assign a workout before logging sets.',
               icon: Icons.fitness_center_rounded,
             );
           }
@@ -81,9 +82,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                   ),
                   Text(
                     '${workout.exercises.indexWhere((item) => item.id == exercise.id) + 1} of ${workout.exercises.length} Exercises',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.secondaryText(context),
                       fontSize: 13,
                     ),
@@ -93,67 +92,51 @@ class _ExerciseLoggingContent extends ConsumerWidget {
             ),
             _SquareButton(
               icon: Icons.more_horiz_rounded,
-              onTap: () => _showExerciseMenu(context),
+              onTap: () => _showExerciseMenu(context, ref, exercise),
             ),
           ],
         ),
         const SizedBox(height: 22),
+        AspectRatio(
+          aspectRatio: 1.55,
+          child: _ExerciseMotionPreview(exercise: exercise, borderRadius: 20),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          exercise.name,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 19,
+            height: 1.12,
+          ),
+        ),
+        const SizedBox(height: 16),
         PremiumCard(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           child: Row(
             children: [
-              SizedBox(
-                width: 112,
-                height: 112,
-                child: _ExerciseMotionPreview(exercise: exercise),
-              ),
-              const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      exercise.name,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w800, fontSize: 18),
-                    ),
-                    Text(
-                      exercise.description,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(
-                        color: AppColors.secondaryText(context),
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _Prescription(
-                            icon: Icons.track_changes_rounded,
-                            label: exercise.isAssigned ? 'Target' : 'Free Log',
-                            value: exercise.isAssigned
-                                ? '${exercise.sets} Sets  •  ${exercise.reps} Reps'
-                                : 'Optional exercise',
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 48,
-                          color: AppColors.divider(context),
-                        ),
-                        Expanded(
-                          child: _Prescription(
-                            icon: Icons.schedule_rounded,
-                            label: 'Rest',
-                            value: '${exercise.restSeconds} sec',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+                child: _Prescription(
+                  icon: Icons.track_changes_rounded,
+                  label: exercise.isAssigned ? 'Target' : 'Free Log',
+                  value: exercise.isAssigned
+                      ? '${exercise.sets} Sets'
+                      : 'Optional exercise',
+                ),
+              ),
+              Container(
+                width: 1,
+                height: 54,
+                color: AppColors.divider(context),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 20),
+                  child: _Prescription(
+                    icon: Icons.schedule_rounded,
+                    label: 'Rest',
+                    value: '${exercise.restSeconds} sec',
+                  ),
                 ),
               ),
             ],
@@ -256,9 +239,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                 ),
                 Text(
                   'Tap to log',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: AppColors.secondaryText(context),
                     fontSize: 13,
                   ),
@@ -314,9 +295,13 @@ class _ExerciseLoggingContent extends ConsumerWidget {
 }
 
 class _ExerciseMotionPreview extends StatefulWidget {
-  const _ExerciseMotionPreview({required this.exercise});
+  const _ExerciseMotionPreview({
+    required this.exercise,
+    this.borderRadius = 18,
+  });
 
   final Exercise exercise;
+  final double borderRadius;
 
   @override
   State<_ExerciseMotionPreview> createState() => _ExerciseMotionPreviewState();
@@ -352,7 +337,7 @@ class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
   void _startTimer() {
     _timer?.cancel();
     if (_images.length < 2) return;
-    _timer = Timer.periodic(const Duration(milliseconds: 950), (_) {
+    _timer = Timer.periodic(const Duration(milliseconds: 2500), (_) {
       if (!mounted) return;
       setState(() => _index = (_index + 1) % _images.length);
     });
@@ -361,8 +346,10 @@ class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
   @override
   Widget build(BuildContext context) {
     final images = _images;
+    final dotCount = images.length > 2 ? 2 : images.length;
+    final activeDot = dotCount == 0 ? 0 : _index % dotCount;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(widget.borderRadius),
       child: DecoratedBox(
         decoration: BoxDecoration(color: AppColors.subtle(context)),
         child: Stack(
@@ -391,14 +378,14 @@ class _ExerciseMotionPreviewState extends State<_ExerciseMotionPreview> {
               bottom: 8,
               child: Row(
                 children: [
-                  for (var i = 0; i < images.length.clamp(0, 2); i++)
+                  for (var i = 0; i < dotCount; i++)
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 240),
-                      width: i == _index % images.length ? 14 : 6,
+                      width: i == activeDot ? 14 : 6,
                       height: 6,
                       margin: const EdgeInsets.only(left: 4),
                       decoration: BoxDecoration(
-                        color: i == _index % images.length
+                        color: i == activeDot
                             ? AppColors.goldBright
                             : AppColors.white.withValues(alpha: .72),
                         borderRadius: BorderRadius.circular(99),
@@ -475,30 +462,30 @@ class _Prescription extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppColors.gold, size: 17),
+            Icon(icon, color: AppColors.gold, size: 18),
             const SizedBox(width: 6),
             Text(
               label,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: AppColors.gold,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 9),
         Text(
           value,
-          style: Theme.of(
-            context,
-          ).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w500,
-            fontSize: 13,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 15,
           ),
         ),
       ],
@@ -564,28 +551,33 @@ class _SetLogRow extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _StepperField(
-                      label: 'Weight (kg)',
-                      value: log.weight,
-                      onMinus: () => onChanged(
-                        ExerciseLog(
-                          id: log.id,
-                          setNumber: log.setNumber,
-                          weight: (log.weight - 5).clamp(0, 500),
-                          reps: log.reps,
-                          completed: log.completed,
-                        ),
-                      ),
-                      onPlus: () => onChanged(
-                        ExerciseLog(
-                          id: log.id,
-                          setNumber: log.setNumber,
-                          weight: log.weight + 5,
-                          reps: log.reps,
-                          completed: log.completed,
-                        ),
-                      ),
-                    ),
+                    child: isMandatory
+                        ? _ReadonlyMetricField(
+                            label: 'Weight (kg)',
+                            value: log.weight,
+                          )
+                        : _StepperField(
+                            label: 'Weight (kg)',
+                            value: log.weight,
+                            onMinus: () => onChanged(
+                              ExerciseLog(
+                                id: log.id,
+                                setNumber: log.setNumber,
+                                weight: (log.weight - 5).clamp(0, 500),
+                                reps: log.reps,
+                                completed: log.completed,
+                              ),
+                            ),
+                            onPlus: () => onChanged(
+                              ExerciseLog(
+                                id: log.id,
+                                setNumber: log.setNumber,
+                                weight: log.weight + 5,
+                                reps: log.reps,
+                                completed: log.completed,
+                              ),
+                            ),
+                          ),
                   ),
                   Container(
                     width: 1,
@@ -594,28 +586,30 @@ class _SetLogRow extends StatelessWidget {
                     color: AppColors.divider(context),
                   ),
                   Expanded(
-                    child: _StepperField(
-                      label: 'Reps',
-                      value: log.reps,
-                      onMinus: () => onChanged(
-                        ExerciseLog(
-                          id: log.id,
-                          setNumber: log.setNumber,
-                          weight: log.weight,
-                          reps: (log.reps - 1).clamp(0, 100),
-                          completed: log.completed,
-                        ),
-                      ),
-                      onPlus: () => onChanged(
-                        ExerciseLog(
-                          id: log.id,
-                          setNumber: log.setNumber,
-                          weight: log.weight,
-                          reps: log.reps + 1,
-                          completed: log.completed,
-                        ),
-                      ),
-                    ),
+                    child: isMandatory
+                        ? _ReadonlyMetricField(label: 'Reps', value: log.reps)
+                        : _StepperField(
+                            label: 'Reps',
+                            value: log.reps,
+                            onMinus: () => onChanged(
+                              ExerciseLog(
+                                id: log.id,
+                                setNumber: log.setNumber,
+                                weight: log.weight,
+                                reps: (log.reps - 1).clamp(0, 100),
+                                completed: log.completed,
+                              ),
+                            ),
+                            onPlus: () => onChanged(
+                              ExerciseLog(
+                                id: log.id,
+                                setNumber: log.setNumber,
+                                weight: log.weight,
+                                reps: log.reps + 1,
+                                completed: log.completed,
+                              ),
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 10),
                   InkWell(
@@ -676,9 +670,7 @@ class _StepperField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
             color: AppColors.secondaryText(context),
             fontSize: 12,
           ),
@@ -706,6 +698,46 @@ class _StepperField extends StatelessWidget {
               ),
               _RoundIcon(icon: Icons.add_rounded, onTap: onPlus),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReadonlyMetricField extends StatelessWidget {
+  const _ReadonlyMetricField({required this.label, required this.value});
+
+  final String label;
+  final int value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: AppColors.secondaryText(context),
+            fontSize: 12,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.divider(context)),
+          ),
+          child: Text(
+            '$value',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+              fontSize: 17,
+            ),
           ),
         ),
       ],
@@ -752,7 +784,9 @@ class _Chip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: AppColors.isDark(context) ? AppColors.goldBright : const Color(0xFFC37E00),
+          color: AppColors.isDark(context)
+              ? AppColors.goldBright
+              : const Color(0xFFC37E00),
           fontWeight: FontWeight.w700,
           fontSize: 10,
         ),
@@ -761,7 +795,7 @@ class _Chip extends StatelessWidget {
   }
 }
 
-void _showExerciseMenu(BuildContext context) {
+void _showExerciseMenu(BuildContext context, WidgetRef ref, Exercise exercise) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -775,9 +809,7 @@ void _showExerciseMenu(BuildContext context) {
             title: const Text('Start rest timer'),
             onTap: () {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Rest timer started.')),
-              );
+              _showRestTimer(context, exercise.restSeconds);
             },
           ),
           ListTile(
@@ -785,12 +817,20 @@ void _showExerciseMenu(BuildContext context) {
             title: const Text('Add note'),
             onTap: () {
               Navigator.pop(context);
-              _showNoteDialog(context);
+              _showNoteDialog(context, ref, exercise);
             },
           ),
         ],
       ),
     ),
+  );
+}
+
+void _showRestTimer(BuildContext context, int totalSeconds) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => _RestTimerSheet(totalSeconds: totalSeconds),
   );
 }
 
@@ -812,8 +852,18 @@ void _showHelp(BuildContext context) {
   );
 }
 
-Future<void> _showNoteDialog(BuildContext context) async {
-  final note = TextEditingController();
+Future<void> _showNoteDialog(
+  BuildContext context,
+  WidgetRef ref,
+  Exercise exercise,
+) async {
+  final note = TextEditingController(
+    text: await ref.read(appDataRepositoryProvider).fetchExerciseNote(exercise),
+  );
+  if (!context.mounted) {
+    note.dispose();
+    return;
+  }
   await showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
@@ -828,11 +878,24 @@ Future<void> _showNoteDialog(BuildContext context) async {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: () {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Note saved locally.')),
-            );
+          onPressed: () async {
+            try {
+              await ref
+                  .read(appDataRepositoryProvider)
+                  .saveExerciseNote(exercise, note.text);
+              if (context.mounted) {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('Note saved.')));
+              }
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(friendlyErrorMessage(error))),
+                );
+              }
+            }
           },
           child: const Text('Save'),
         ),
@@ -840,4 +903,89 @@ Future<void> _showNoteDialog(BuildContext context) async {
     ),
   );
   note.dispose();
+}
+
+class _RestTimerSheet extends StatefulWidget {
+  const _RestTimerSheet({required this.totalSeconds});
+
+  final int totalSeconds;
+
+  @override
+  State<_RestTimerSheet> createState() => _RestTimerSheetState();
+}
+
+class _RestTimerSheetState extends State<_RestTimerSheet> {
+  Timer? _timer;
+  late int _secondsLeft;
+
+  @override
+  void initState() {
+    super.initState();
+    _secondsLeft = widget.totalSeconds.clamp(1, 900);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      if (_secondsLeft <= 1) {
+        _timer?.cancel();
+        setState(() => _secondsLeft = 0);
+        return;
+      }
+      setState(() => _secondsLeft--);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final minutes = (_secondsLeft ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_secondsLeft % 60).toString().padLeft(2, '0');
+    final progress = _secondsLeft / widget.totalSeconds.clamp(1, 900);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 8, 22, 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _secondsLeft == 0 ? 'Rest complete' : 'Rest Timer',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 132,
+            height: 132,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 10,
+                  color: AppColors.gold,
+                  backgroundColor: AppColors.divider(context),
+                ),
+                Center(
+                  child: Text(
+                    '$minutes:$seconds',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(_secondsLeft == 0 ? 'Done' : 'Stop Timer'),
+          ),
+        ],
+      ),
+    );
+  }
 }

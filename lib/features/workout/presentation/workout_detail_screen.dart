@@ -3,12 +3,12 @@ import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/icon_tile.dart';
-import 'package:deepfitness/shared/widgets/metric_cell.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
 import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:deepfitness/shared/widgets/section_title.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -41,72 +41,91 @@ class _WorkoutDetailContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _TopBar(title: 'Workout Details', onBack: () => context.pop()),
-        const SizedBox(height: 26),
-        Row(
-          children: [
-            const IconTile(icon: Icons.fitness_center_rounded, size: 58),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    workout.name,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  Text(
-                    'Build Strength  •  ${workout.focus}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        _TopBar(
+          title: 'Workout Details',
+          onBack: () => context.pop(),
+          onMore: () => _showWorkoutOptions(context, ref, workout),
         ),
         const SizedBox(height: 22),
         PremiumCard(
-          child: Row(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MetricCell(
-                icon: Icons.schedule_rounded,
-                value: '${workout.durationMinutes} min',
-                label: 'Duration',
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const IconTile(icon: Icons.fitness_center_rounded, size: 50),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          workout.name,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                height: 1.08,
+                              ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          workout.focus,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: AppColors.secondaryText(context),
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const _Divider(),
-              MetricCell(
-                icon: Icons.fitness_center_rounded,
-                value: '${workout.exercises.length}',
-                label: 'Exercises',
-              ),
-              const _Divider(),
-              MetricCell(
-                icon: Icons.local_fire_department_outlined,
-                value: '${workout.estimatedCalories} kcal',
-                label: 'Est. Calories',
-              ),
-              const _Divider(),
-              MetricCell(
-                icon: Icons.trending_up_rounded,
-                value: workout.level,
-                label: 'Level',
+              const SizedBox(height: 18),
+              GridView.count(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 2.8,
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                children: [
+                  _WorkoutStatTile(
+                    icon: Icons.schedule_rounded,
+                    value: '${workout.durationMinutes} min',
+                    label: 'Duration',
+                  ),
+                  _WorkoutStatTile(
+                    icon: Icons.fitness_center_rounded,
+                    value: '${workout.exercises.length}',
+                    label: 'Exercises',
+                  ),
+                  _WorkoutStatTile(
+                    icon: Icons.local_fire_department_outlined,
+                    value: '${workout.estimatedCalories} kcal',
+                    label: 'Calories',
+                  ),
+                  _WorkoutStatTile(
+                    icon: Icons.trending_up_rounded,
+                    value: workout.level,
+                    label: 'Level',
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         PremiumCard(
-          color: AppColors.goldSoft,
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+          color: AppColors.chipBackground(context),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
               const CircleAvatar(
-                radius: 18,
+                radius: 17,
                 backgroundColor: AppColors.goldBright,
                 child: Icon(Icons.info_outline_rounded, color: AppColors.white),
               ),
@@ -139,7 +158,7 @@ class _WorkoutDetailContent extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         PremiumCard(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
           child: Column(
             children: [
               if (workout.exercises.isEmpty)
@@ -189,10 +208,15 @@ class _WorkoutDetailContent extends ConsumerWidget {
 }
 
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.title, required this.onBack});
+  const _TopBar({
+    required this.title,
+    required this.onBack,
+    required this.onMore,
+  });
 
   final String title;
   final VoidCallback onBack;
+  final VoidCallback onMore;
 
   @override
   Widget build(BuildContext context) {
@@ -209,10 +233,7 @@ class _TopBar extends StatelessWidget {
             ),
           ),
         ),
-        _SquareButton(
-          icon: Icons.more_horiz_rounded,
-          onTap: () => _showWorkoutOptions(context),
-        ),
+        _SquareButton(icon: Icons.more_horiz_rounded, onTap: onMore),
       ],
     );
   }
@@ -244,7 +265,11 @@ void _showExerciseSummary(BuildContext context, List<Exercise> exercises) {
   );
 }
 
-void _showWorkoutOptions(BuildContext context) {
+void _showWorkoutOptions(
+  BuildContext context,
+  WidgetRef ref,
+  WorkoutPlan workout,
+) {
   showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -256,21 +281,42 @@ void _showWorkoutOptions(BuildContext context) {
           ListTile(
             leading: const Icon(Icons.restart_alt_rounded),
             title: const Text('Restart workout'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Workout progress reset.')),
-              );
+              try {
+                await ref
+                    .read(appDataRepositoryProvider)
+                    .resetWorkoutProgress(workout);
+                ref.invalidate(exerciseLogsProvider);
+                ref.invalidate(progressProvider);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Workout progress reset.')),
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(friendlyErrorMessage(error))),
+                  );
+                }
+              }
             },
           ),
           ListTile(
             leading: const Icon(Icons.share_outlined),
             title: const Text('Share workout'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Workout summary copied.')),
-              );
+              final summary = ref
+                  .read(appDataRepositoryProvider)
+                  .workoutShareText(workout);
+              await Clipboard.setData(ClipboardData(text: summary));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Workout summary copied.')),
+                );
+              }
             },
           ),
         ],
@@ -347,19 +393,9 @@ class _ExerciseRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 16),
                 SizedBox(
-                  width: 64,
-                  height: 46,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: AppColors.subtle(context),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(
-                      Icons.fitness_center_rounded,
-                      color: AppColors.secondaryText(context),
-                      size: 26,
-                    ),
-                  ),
+                  width: 66,
+                  height: 50,
+                  child: _ExerciseThumb(exercise: exercise),
                 ),
                 const SizedBox(width: 18),
                 Expanded(
@@ -374,15 +410,15 @@ class _ExerciseRow extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${exercise.sets} Sets  •  ${exercise.reps} Reps',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.secondaryText(context),
+                        ),
                       ),
                       Text(
                         'Rest ${exercise.restSeconds} sec',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyLarge?.copyWith(color: AppColors.muted),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppColors.secondaryText(context),
+                        ),
                       ),
                     ],
                   ),
@@ -398,12 +434,94 @@ class _ExerciseRow extends StatelessWidget {
   }
 }
 
-class _Divider extends StatelessWidget {
-  const _Divider();
+class _WorkoutStatTile extends StatelessWidget {
+  const _WorkoutStatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
 
   @override
-  Widget build(BuildContext context) =>
-      Container(width: 1, height: 58, color: AppColors.divider(context));
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.subtle(context),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.gold, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.secondaryText(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExerciseThumb extends StatelessWidget {
+  const _ExerciseThumb({required this.exercise});
+
+  final Exercise exercise;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = exercise.imageUrls.isEmpty
+        ? null
+        : exercise.imageUrls.first;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: AppColors.subtle(context)),
+        child: imageUrl == null
+            ? Icon(
+                Icons.fitness_center_rounded,
+                color: AppColors.secondaryText(context),
+                size: 24,
+              )
+            : Image.network(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Icon(
+                  Icons.fitness_center_rounded,
+                  color: AppColors.secondaryText(context),
+                  size: 24,
+                ),
+              ),
+      ),
+    );
+  }
 }
 
 class _InlineEmptyState extends StatelessWidget {
@@ -430,9 +548,9 @@ class _InlineEmptyState extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
               Text(

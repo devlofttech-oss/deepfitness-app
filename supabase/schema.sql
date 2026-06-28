@@ -6,6 +6,8 @@ create table public.users (
   id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
   email text not null unique,
+  notifications_enabled boolean not null default true,
+  preferred_unit text not null default 'kg' check (preferred_unit in ('kg', 'lb')),
   role public.user_role not null,
   created_at timestamptz not null default now()
 );
@@ -72,8 +74,23 @@ create table public.exercise_logs (
   set_number integer not null,
   weight numeric(7, 2) not null,
   reps integer not null,
+  completed boolean not null default true,
   logged_at timestamptz not null default now()
 );
+
+create table public.exercise_notes (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  workout_exercise_id uuid references public.workout_exercises(id) on delete cascade,
+  exercise_id uuid not null references public.exercises(id) on delete restrict,
+  note text not null default '',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create unique index exercise_notes_member_workout_exercise_idx
+  on public.exercise_notes (member_id, workout_exercise_id, exercise_id)
+  where workout_exercise_id is not null;
 
 create table public.diet_plans (
   id uuid primary key default gen_random_uuid(),
@@ -150,6 +167,7 @@ alter table public.workout_plans enable row level security;
 alter table public.workout_days enable row level security;
 alter table public.workout_exercises enable row level security;
 alter table public.exercise_logs enable row level security;
+alter table public.exercise_notes enable row level security;
 alter table public.diet_plans enable row level security;
 alter table public.diet_meals enable row level security;
 alter table public.measurements enable row level security;
@@ -258,6 +276,15 @@ create policy "members update own logs"
 on public.exercise_logs for update
 using (member_id = auth.uid())
 with check (member_id = auth.uid());
+
+create policy "members manage own exercise notes"
+on public.exercise_notes for all
+using (member_id = auth.uid())
+with check (member_id = auth.uid());
+
+create policy "trainers read assigned exercise notes"
+on public.exercise_notes for select
+using (public.is_member_trainer(member_id));
 
 create policy "read assigned diet plans"
 on public.diet_plans for select
