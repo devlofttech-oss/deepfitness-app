@@ -177,17 +177,19 @@ class _ExercisePreviewContent extends ConsumerWidget {
             ),
           ),
         ],
-        const SizedBox(height: 24),
-        PrimaryButton(
-          label: 'Start Workout',
-          icon: Icons.arrow_forward_rounded,
-          onPressed: () {
-            ref
-                .read(selectedExerciseProvider.notifier)
-                .select(_firstIncompleteExercise(workout));
-            context.go('/exercise-log');
-          },
-        ),
+        if (_hasPendingRequiredSets(workout)) ...[
+          const SizedBox(height: 24),
+          PrimaryButton(
+            label: 'Start Workout',
+            icon: Icons.arrow_forward_rounded,
+            onPressed: () {
+              ref
+                  .read(selectedExerciseProvider.notifier)
+                  .select(_firstIncompleteExercise(workout));
+              context.go('/exercise-log');
+            },
+          ),
+        ],
       ],
     );
   }
@@ -370,23 +372,25 @@ class _WorkoutDetailContent extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 24),
-        PrimaryButton(
-          label: 'Start Workout',
-          icon: Icons.arrow_forward_rounded,
-          onPressed: () {
-            if (workout.exercises.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('No workout assigned yet.')),
-              );
-              return;
-            }
-            ref
-                .read(selectedExerciseProvider.notifier)
-                .select(_firstIncompleteExercise(workout));
-            context.push('/exercise-log');
-          },
-        ),
+        if (_hasPendingRequiredSets(workout)) ...[
+          const SizedBox(height: 24),
+          PrimaryButton(
+            label: 'Start Workout',
+            icon: Icons.arrow_forward_rounded,
+            onPressed: () {
+              if (workout.exercises.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('No workout assigned yet.')),
+                );
+                return;
+              }
+              ref
+                  .read(selectedExerciseProvider.notifier)
+                  .select(_firstIncompleteExercise(workout));
+              context.push('/exercise-log');
+            },
+          ),
+        ],
       ],
     );
   }
@@ -493,6 +497,10 @@ Exercise _firstIncompleteExercise(WorkoutPlan workout) {
     (exercise) => !exercise.isCompleted,
     orElse: () => workout.exercises.first,
   );
+}
+
+bool _hasPendingRequiredSets(WorkoutPlan workout) {
+  return workout.exercises.any((exercise) => !exercise.isCompleted);
 }
 
 void _showWorkoutOptions(

@@ -9,6 +9,7 @@ import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
 import 'package:deepfitness/shared/widgets/progress_ring.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
@@ -174,10 +175,12 @@ class _ProgressContent extends ConsumerWidget {
         _ProgressGridCard(
           title: 'Muscle Progress',
           emptyMessage: 'Complete workouts to build muscle group history.',
+          previewCount: 2,
+          onTap: () => context.push('/progress/muscles'),
           items: progress.muscleProgress.entries
               .map(
                 (entry) => _ProgressItem(
-                  icon: _muscleIcon(entry.key),
+                  icon: progressMuscleIcon(entry.key),
                   label: entry.key,
                   value: '+${entry.value}%',
                 ),
@@ -188,10 +191,12 @@ class _ProgressContent extends ConsumerWidget {
         _ProgressGridCard(
           title: 'Personal Bests',
           emptyMessage: 'Log weighted sets to unlock personal bests.',
+          previewCount: 2,
+          onTap: () => context.push('/progress/bests'),
           items: progress.personalBests.entries
               .map(
                 (entry) => _ProgressItem(
-                  icon: _bestIcon(entry.key),
+                  icon: progressBestIcon(entry.key),
                   label: entry.key,
                   value: '${entry.value} kg',
                 ),
@@ -202,41 +207,111 @@ class _ProgressContent extends ConsumerWidget {
       ],
     );
   }
+}
 
-  IconData _muscleIcon(String key) {
-    return switch (key) {
-      'Chest' => Icons.favorite_border_rounded,
-      'Back' => Icons.accessibility_new_rounded,
-      'Legs' => Icons.directions_walk_rounded,
-      'Shoulders' => Icons.fitness_center_rounded,
-      'Arms' => Icons.sports_mma_rounded,
-      'Core' => Icons.self_improvement_rounded,
-      'Cardio' => Icons.directions_run_rounded,
-      _ => Icons.fitness_center_rounded,
-    };
+class MuscleProgressDetailScreen extends ConsumerWidget {
+  const MuscleProgressDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(progressProvider);
+
+    return PremiumScaffold(
+      bottomPadding: 176,
+      child: AsyncStateView(
+        value: progress,
+        errorTitle: 'Could not load muscle progress',
+        onRetry: () => ref.invalidate(progressProvider),
+        data: (progress) => _ProgressDetailContent(
+          title: 'Muscle Progress',
+          subtitle: 'Main muscle groups from completed sets.',
+          emptyMessage: 'Complete workouts to build muscle group history.',
+          items: progress.muscleProgress.entries
+              .map(
+                (entry) => _ProgressItem(
+                  icon: progressMuscleIcon(entry.key),
+                  label: entry.key,
+                  value: '+${entry.value}%',
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
   }
+}
 
-  IconData _bestIcon(String key) {
-    final name = key.toLowerCase();
-    if (name.contains('squat') ||
-        name.contains('leg') ||
-        name.contains('lunge')) {
-      return Icons.directions_walk_rounded;
-    }
-    if (name.contains('row') ||
-        name.contains('pull') ||
-        name.contains('deadlift')) {
-      return Icons.fitness_center_rounded;
-    }
-    if (name.contains('press') ||
-        name.contains('chest') ||
-        name.contains('bench')) {
-      return Icons.trending_up_rounded;
-    }
-    if (name.contains('curl') || name.contains('tricep')) {
-      return Icons.sports_mma_rounded;
-    }
-    return Icons.emoji_events_outlined;
+class PersonalBestsDetailScreen extends ConsumerWidget {
+  const PersonalBestsDetailScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(progressProvider);
+
+    return PremiumScaffold(
+      bottomPadding: 176,
+      child: AsyncStateView(
+        value: progress,
+        errorTitle: 'Could not load personal bests',
+        onRetry: () => ref.invalidate(progressProvider),
+        data: (progress) => _ProgressDetailContent(
+          title: 'Personal Bests',
+          subtitle: 'Highest weight logged for weighted exercises.',
+          emptyMessage: 'Log weighted sets to unlock personal bests.',
+          items: progress.personalBests.entries
+              .map(
+                (entry) => _ProgressItem(
+                  icon: progressBestIcon(entry.key),
+                  label: entry.key,
+                  value: '${entry.value} kg',
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProgressDetailContent extends StatelessWidget {
+  const _ProgressDetailContent({
+    required this.title,
+    required this.subtitle,
+    required this.emptyMessage,
+    required this.items,
+  });
+
+  final String title;
+  final String subtitle;
+  final String emptyMessage;
+  final List<_ProgressItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        PageHeader(
+          title: title,
+          subtitle: subtitle,
+          action: IconButton(
+            onPressed: () => context.pop(),
+            icon: const Icon(
+              Icons.close_rounded,
+              color: AppColors.gold,
+              size: 22,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        _ProgressGridCard(
+          title: 'All',
+          emptyMessage: emptyMessage,
+          items: items,
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
   }
 }
 
@@ -275,29 +350,52 @@ class _ProgressGridCard extends StatelessWidget {
     required this.title,
     required this.items,
     required this.emptyMessage,
+    this.previewCount,
+    this.onTap,
   });
 
   final String title;
   final List<_ProgressItem> items;
   final String emptyMessage;
+  final int? previewCount;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final visibleItems = previewCount == null
+        ? items
+        : items.take(previewCount!).toList();
     return PremiumCard(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.secondaryText(context),
-              fontWeight: FontWeight.w800,
-              fontSize: 18,
+          InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.secondaryText(context),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                    ),
+                  ),
+                ),
+                if (onTap != null)
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.gold,
+                    size: 24,
+                  ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          if (items.isEmpty)
+          if (visibleItems.isEmpty)
             Row(
               children: [
                 const Icon(Icons.insights_rounded, color: AppColors.gold),
@@ -320,7 +418,7 @@ class _ProgressGridCard extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    for (final item in items)
+                    for (final item in visibleItems)
                       SizedBox(
                         width: tileWidth,
                         child: _Metric(item: item),
@@ -333,6 +431,42 @@ class _ProgressGridCard extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData progressMuscleIcon(String key) {
+  return switch (key) {
+    'Chest' => Icons.favorite_border_rounded,
+    'Back' => Icons.accessibility_new_rounded,
+    'Legs' => Icons.directions_walk_rounded,
+    'Shoulders' => Icons.fitness_center_rounded,
+    'Arms' => Icons.sports_mma_rounded,
+    'Core' => Icons.self_improvement_rounded,
+    'Cardio' => Icons.directions_run_rounded,
+    _ => Icons.fitness_center_rounded,
+  };
+}
+
+IconData progressBestIcon(String key) {
+  final name = key.toLowerCase();
+  if (name.contains('squat') ||
+      name.contains('leg') ||
+      name.contains('lunge')) {
+    return Icons.directions_walk_rounded;
+  }
+  if (name.contains('row') ||
+      name.contains('pull') ||
+      name.contains('deadlift')) {
+    return Icons.fitness_center_rounded;
+  }
+  if (name.contains('press') ||
+      name.contains('chest') ||
+      name.contains('bench')) {
+    return Icons.trending_up_rounded;
+  }
+  if (name.contains('curl') || name.contains('tricep')) {
+    return Icons.sports_mma_rounded;
+  }
+  return Icons.emoji_events_outlined;
 }
 
 class _Metric extends StatelessWidget {

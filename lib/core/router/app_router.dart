@@ -85,6 +85,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 _smoothPage(state: state, child: const ProgressScreen()),
           ),
           GoRoute(
+            path: '/progress/muscles',
+            pageBuilder: (context, state) => _smoothPage(
+              state: state,
+              child: const MuscleProgressDetailScreen(),
+            ),
+          ),
+          GoRoute(
+            path: '/progress/bests',
+            pageBuilder: (context, state) => _smoothPage(
+              state: state,
+              child: const PersonalBestsDetailScreen(),
+            ),
+          ),
+          GoRoute(
             path: '/diet',
             pageBuilder: (context, state) =>
                 _smoothPage(state: state, child: const DietScreen()),
