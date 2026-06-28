@@ -15,24 +15,28 @@ class AuthSessionState {
   const AuthSessionState({
     required this.isAuthenticated,
     required this.isSupabaseConfigured,
+    this.userId,
     this.email,
     this.role,
   });
 
   final bool isAuthenticated;
   final bool isSupabaseConfigured;
+  final String? userId;
   final String? email;
   final UserRole? role;
 
   AuthSessionState copyWith({
     bool? isAuthenticated,
     bool? isSupabaseConfigured,
+    String? userId,
     String? email,
     UserRole? role,
   }) {
     return AuthSessionState(
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
       isSupabaseConfigured: isSupabaseConfigured ?? this.isSupabaseConfigured,
+      userId: userId ?? this.userId,
       email: email ?? this.email,
       role: role ?? this.role,
     );
@@ -58,6 +62,7 @@ class AuthController extends AsyncNotifier<AuthSessionState> {
     return AuthSessionState(
       isAuthenticated: user != null,
       isSupabaseConfigured: repository.isConfigured,
+      userId: user?.id,
       email: user?.email,
       role: role,
     );
@@ -88,6 +93,7 @@ class AuthController extends AsyncNotifier<AuthSessionState> {
         AuthSessionState(
           isAuthenticated: true,
           isSupabaseConfigured: repository.isConfigured,
+          userId: response?.user?.id,
           email: userEmail,
           role: role,
         ),
@@ -118,6 +124,7 @@ class AuthController extends AsyncNotifier<AuthSessionState> {
         AuthSessionState(
           isAuthenticated: response.user != null,
           isSupabaseConfigured: repository.isConfigured,
+          userId: response.user?.id,
           email: response.user?.email ?? identifier,
           role: role,
         ),

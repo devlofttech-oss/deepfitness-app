@@ -6,15 +6,21 @@ class PremiumScaffold extends StatelessWidget {
     required this.child,
     this.bottomPadding = 24,
     this.scrollController,
+    this.floatingActionButton,
+    this.floatingActionButtonLocation,
   });
 
   final Widget child;
   final double bottomPadding;
   final ScrollController? scrollController;
+  final Widget? floatingActionButton;
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: floatingActionButton,
+      floatingActionButtonLocation: floatingActionButtonLocation,
       body: SafeArea(
         child: SingleChildScrollView(
           controller: scrollController,

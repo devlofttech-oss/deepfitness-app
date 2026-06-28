@@ -1,3 +1,4 @@
+import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/supabase_service.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,22 +7,37 @@ final appDataRepositoryProvider = Provider<AppDataRepository>(
   (ref) => AppDataRepository(ref.watch(supabaseServiceProvider)),
 );
 
-final currentUserProvider = FutureProvider<AppUser>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchCurrentUser(),
-);
+final currentAuthUserIdProvider = Provider<String?>((ref) {
+  return ref.watch(
+    authControllerProvider.select(
+      (state) => state.maybeWhen(
+        data: (session) => session.userId,
+        orElse: () => null,
+      ),
+    ),
+  );
+});
 
-final workoutProvider = FutureProvider<WorkoutPlan>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchTodayWorkout(),
-);
+final currentUserProvider = FutureProvider<AppUser>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchCurrentUser();
+});
+
+final workoutProvider = FutureProvider<WorkoutPlan>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchTodayWorkout();
+});
 
 final nutritionProvider = FutureProvider<NutritionPlan>((ref) {
+  ref.watch(currentAuthUserIdProvider);
   final date = ref.watch(nutritionDateProvider);
   return ref.watch(appDataRepositoryProvider).fetchNutritionPlan(date: date);
 });
 
-final todayNutritionProvider = FutureProvider<NutritionPlan>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchNutritionPlan(),
-);
+final todayNutritionProvider = FutureProvider<NutritionPlan>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchNutritionPlan();
+});
 
 final nutritionDateProvider =
     NotifierProvider<NutritionDateController, DateTime>(
@@ -29,6 +45,7 @@ final nutritionDateProvider =
     );
 
 final progressProvider = FutureProvider<MemberProgress>((ref) {
+  ref.watch(currentAuthUserIdProvider);
   final range = ref.watch(progressDateRangeProvider);
   return ref
       .watch(appDataRepositoryProvider)
@@ -41,33 +58,39 @@ final progressDateRangeProvider =
       ({DateTime start, DateTime end})?
     >(ProgressDateRangeController.new);
 
-final appSettingsProvider = FutureProvider<AppSettings>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchSettings(),
-);
+final appSettingsProvider = FutureProvider<AppSettings>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchSettings();
+});
 
-final membersProvider = FutureProvider<List<MemberSummary>>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchMembers(),
-);
+final membersProvider = FutureProvider<List<MemberSummary>>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchMembers();
+});
 
 final exerciseLibraryProvider = FutureProvider<List<Exercise>>(
   (ref) => ref.watch(appDataRepositoryProvider).fetchExerciseLibrary(),
 );
 
-final trainerStatsProvider = FutureProvider<TrainerDashboardStats>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchTrainerStats(),
-);
+final trainerStatsProvider = FutureProvider<TrainerDashboardStats>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchTrainerStats();
+});
 
-final savedWorkoutPlansProvider = FutureProvider<List<WorkoutPlan>>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchSavedWorkoutPlans(),
-);
+final savedWorkoutPlansProvider = FutureProvider<List<WorkoutPlan>>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchSavedWorkoutPlans();
+});
 
-final savedDietPlansProvider = FutureProvider<List<NutritionPlan>>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchSavedDietPlans(),
-);
+final savedDietPlansProvider = FutureProvider<List<NutritionPlan>>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchSavedDietPlans();
+});
 
-final mealTemplatesProvider = FutureProvider<List<DietMeal>>(
-  (ref) => ref.watch(appDataRepositoryProvider).fetchMealTemplates(),
-);
+final mealTemplatesProvider = FutureProvider<List<DietMeal>>((ref) {
+  ref.watch(currentAuthUserIdProvider);
+  return ref.watch(appDataRepositoryProvider).fetchMealTemplates();
+});
 
 final selectedExerciseProvider =
     NotifierProvider<SelectedExerciseController, Exercise?>(

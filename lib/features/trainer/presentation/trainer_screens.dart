@@ -19,6 +19,8 @@ enum AssignmentKind { workout, diet }
 
 enum TrainerPlanMode { saved, custom }
 
+enum _HeightUnit { cm, feet }
+
 final selectedMemberProvider =
     NotifierProvider<SelectedMemberController, MemberSummary?>(
       SelectedMemberController.new,
@@ -307,10 +309,13 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   final _password = TextEditingController();
   final _goal = TextEditingController();
   final _age = TextEditingController();
-  final _height = TextEditingController();
+  final _heightCm = TextEditingController();
+  final _heightFeet = TextEditingController();
+  final _heightInches = TextEditingController();
   final _weight = TextEditingController();
   CreatedMemberInvite? _createdInvite;
   bool _saving = false;
+  _HeightUnit _heightUnit = _HeightUnit.cm;
 
   @override
   void dispose() {
@@ -320,7 +325,9 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     _password.dispose();
     _goal.dispose();
     _age.dispose();
-    _height.dispose();
+    _heightCm.dispose();
+    _heightFeet.dispose();
+    _heightInches.dispose();
     _weight.dispose();
     super.dispose();
   }
@@ -358,11 +365,12 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             controller: _age,
             keyboardType: TextInputType.number,
           ),
-          _LabeledField(
-            label: 'Height',
-            controller: _height,
-            keyboardType: TextInputType.text,
-            hintText: '178 cm or 5\'7',
+          _HeightSelector(
+            unit: _heightUnit,
+            centimetersController: _heightCm,
+            feetController: _heightFeet,
+            inchesController: _heightInches,
+            onUnitChanged: (unit) => setState(() => _heightUnit = unit),
           ),
           _LabeledField(
             label: 'Weight',
@@ -395,7 +403,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     final phone = _normalizePhone(_phone.text.trim());
     final password = _password.text;
     final goal = _goal.text.trim();
-    final height = _parseHeightCm(_height.text);
+    final height = _parseHeightCm();
     final weight = double.tryParse(_weight.text.trim());
     final age = int.tryParse(_age.text.trim());
     final missing = <String>[
@@ -466,24 +474,19 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     return compact.startsWith('+') ? compact : '+91$compact';
   }
 
-  double? _parseHeightCm(String value) {
-    final raw = value.trim().toLowerCase();
-    if (raw.isEmpty) return null;
-
-    final numeric = double.tryParse(raw.replaceAll('cm', '').trim());
-    if (numeric != null) {
-      if (numeric >= 80 && numeric <= 260) return numeric;
-      if (numeric > 0 && numeric < 9) return numeric * 30.48;
-      return null;
+  double? _parseHeightCm() {
+    if (_heightUnit == _HeightUnit.cm) {
+      final centimeters = double.tryParse(_heightCm.text.trim());
+      if (centimeters == null) return null;
+      return centimeters >= 80 && centimeters <= 260 ? centimeters : null;
     }
 
-    final feetMatch = RegExp(
-      r'''^(\d+(?:\.\d+)?)\s*(?:'|ft|feet)\s*(\d+(?:\.\d+)?)?\s*(?:"|in|inch|inches)?$''',
-    ).firstMatch(raw);
-    if (feetMatch == null) return null;
-
-    final feet = double.tryParse(feetMatch.group(1) ?? '');
-    final inches = double.tryParse(feetMatch.group(2) ?? '0') ?? 0;
+    final feet = double.tryParse(_heightFeet.text.trim());
+    final inches =
+        double.tryParse(
+          _heightInches.text.trim().isEmpty ? '0' : _heightInches.text.trim(),
+        ) ??
+        0;
     if (feet == null || feet <= 0 || inches < 0 || inches >= 12) return null;
 
     final centimeters = (feet * 12 + inches) * 2.54;
@@ -802,9 +805,30 @@ class _AssignExercisesScreenState extends ConsumerState<AssignExercisesScreen> {
   Widget build(BuildContext context) {
     final draft = ref.watch(assignmentDraftProvider);
     final exercises = ref.watch(exerciseLibraryProvider);
+    final exerciseItems = exercises.maybeWhen(
+      data: (items) => items,
+      orElse: () => const <Exercise>[],
+    );
 
     return PremiumScaffold(
       scrollController: _scrollController,
+      bottomPadding: exerciseItems.isEmpty ? 24 : 112,
+      floatingActionButton: exerciseItems.isEmpty
+          ? null
+          : FloatingActionButton.extended(
+              heroTag: 'save-workout-assignment',
+              backgroundColor: AppColors.goldBright,
+              foregroundColor: AppColors.text(context),
+              elevation: 8,
+              icon: const Icon(Icons.save_outlined),
+              label: Text(
+                draft.exerciseIds.isEmpty
+                    ? 'Save Workout'
+                    : 'Save ${draft.exerciseIds.length}',
+              ),
+              onPressed: () => _saveWorkout(context, ref, draft, exerciseItems),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -943,14 +967,6 @@ class _AssignExercisesScreenState extends ConsumerState<AssignExercisesScreen> {
                     ),
                   if (hasMore || _loadingMoreExercises)
                     const _ListLoadingIndicator(),
-                  const SizedBox(height: 12),
-                  PrimaryButton(
-                    label: draft.exerciseIds.isEmpty
-                        ? 'Save Workout'
-                        : 'Save ${draft.exerciseIds.length} Exercises',
-                    icon: Icons.save_outlined,
-                    onPressed: () => _saveWorkout(context, ref, draft, items),
-                  ),
                 ],
               );
             },
@@ -2200,14 +2216,12 @@ class _LabeledField extends StatelessWidget {
     required this.controller,
     this.keyboardType,
     this.obscureText = false,
-    this.hintText,
   });
 
   final String label;
   final TextEditingController controller;
   final TextInputType? keyboardType;
   final bool obscureText;
-  final String? hintText;
 
   @override
   Widget build(BuildContext context) {
@@ -2227,11 +2241,124 @@ class _LabeledField extends StatelessWidget {
             controller: controller,
             keyboardType: keyboardType,
             obscureText: obscureText,
-            decoration: hintText == null
-                ? null
-                : InputDecoration(hintText: hintText),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _HeightSelector extends StatelessWidget {
+  const _HeightSelector({
+    required this.unit,
+    required this.centimetersController,
+    required this.feetController,
+    required this.inchesController,
+    required this.onUnitChanged,
+  });
+
+  final _HeightUnit unit;
+  final TextEditingController centimetersController;
+  final TextEditingController feetController;
+  final TextEditingController inchesController;
+  final ValueChanged<_HeightUnit> onUnitChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Height',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              _HeightUnitToggle(
+                label: 'cm',
+                active: unit == _HeightUnit.cm,
+                onTap: () => onUnitChanged(_HeightUnit.cm),
+              ),
+              const SizedBox(width: 8),
+              _HeightUnitToggle(
+                label: 'ft',
+                active: unit == _HeightUnit.feet,
+                onTap: () => onUnitChanged(_HeightUnit.feet),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (unit == _HeightUnit.cm)
+            TextField(
+              controller: centimetersController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(hintText: 'Centimeters'),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: feetController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: 'Feet'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: TextField(
+                    controller: inchesController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: 'Inches'),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HeightUnitToggle extends StatelessWidget {
+  const _HeightUnitToggle({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? AppColors.goldBright : AppColors.surface(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: active ? AppColors.goldBright : AppColors.divider(context),
+          ),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: active ? AppColors.text(context) : AppColors.muted,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
     );
   }
