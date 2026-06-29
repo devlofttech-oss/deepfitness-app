@@ -131,6 +131,7 @@ create table public.diet_plans (
   member_id uuid not null references public.members(id) on delete cascade,
   name text not null,
   daily_calories integer not null,
+  scheduled_date date not null default current_date,
   protein_g integer,
   carbs_g integer,
   fats_g integer,

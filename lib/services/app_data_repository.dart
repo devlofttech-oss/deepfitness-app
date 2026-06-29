@@ -25,7 +25,9 @@ final currentUserProvider = FutureProvider<AppUser>((ref) {
 
 final workoutProvider = FutureProvider<WorkoutPlan>((ref) {
   ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchTodayWorkout();
+  return ref
+      .watch(appDataRepositoryProvider)
+      .fetchTodayWorkout(date: DateTime.now());
 });
 
 final nutritionProvider = FutureProvider<NutritionPlan>((ref) {
@@ -215,28 +217,27 @@ class AppDataRepository {
     );
   }
 
-  Future<WorkoutPlan> fetchTodayWorkout({String? memberId}) async {
+  Future<WorkoutPlan> fetchTodayWorkout({
+    String? memberId,
+    DateTime? date,
+  }) async {
     _requireClient();
     final userId = memberId ?? _authUserId;
     if (userId == null) throw StateError('You are not logged in.');
-
-    final plan = await _supabaseService.client
-        .from('workout_plans')
-        .select()
-        .eq('member_id', userId)
-        .order('created_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (plan == null) return _emptyWorkout();
+    final selectedDay = _dateKey(date ?? DateTime.now());
 
     final day = await _supabaseService.client
         .from('workout_days')
-        .select()
-        .eq('workout_plan_id', plan['id'])
-        .order('scheduled_date', ascending: false)
+        .select(
+          'id,workout_plan_id,title,duration_minutes,scheduled_date,workout_plans!inner(id,name,focus,estimated_calories,level,member_id)',
+        )
+        .eq('workout_plans.member_id', userId)
+        .eq('scheduled_date', selectedDay)
+        .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
-    if (day == null) return _emptyWorkout(name: plan['name']?.toString());
+    if (day == null) return _emptyWorkout();
+    final plan = day['workout_plans'] as Map<String, dynamic>;
 
     final rows = await _supabaseService.client
         .from('workout_exercises')
@@ -300,6 +301,7 @@ class AppDataRepository {
     final userId = memberId ?? _authUserId;
     if (userId == null) throw StateError('You are not logged in.');
     final selectedDate = date ?? DateTime.now();
+    final selectedDay = _dateKey(selectedDate);
     final waterGoal = await _fetchWaterGoal(userId);
     final waterLiters = await _fetchWaterLitersForDate(userId, selectedDate);
 
@@ -307,6 +309,7 @@ class AppDataRepository {
         .from('diet_plans')
         .select()
         .eq('member_id', userId)
+        .eq('scheduled_date', selectedDay)
         .order('created_at', ascending: false)
         .limit(1)
         .maybeSingle();
@@ -323,7 +326,6 @@ class AppDataRepository {
         .eq('diet_plan_id', plan['id'])
         .order('sort_order');
 
-    final selectedDay = _dateKey(selectedDate);
     final mealIds = mealRows
         .map<String>((row) => row['id'].toString())
         .toList();
@@ -866,6 +868,7 @@ class AppDataRepository {
           'member_id': memberId,
           'name': name,
           'daily_calories': dailyCalories,
+          'scheduled_date': DateTime.now().toIso8601String().substring(0, 10),
           'protein_g': protein,
           'carbs_g': carbs,
           'fats_g': fats,
