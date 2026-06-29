@@ -10,9 +10,9 @@ import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
 import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:deepfitness/shared/widgets/section_title.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ExercisePreviewScreen extends ConsumerWidget {
   const ExercisePreviewScreen({super.key});
@@ -549,10 +549,12 @@ void _showWorkoutOptions(
               final summary = ref
                   .read(appDataRepositoryProvider)
                   .workoutShareText(workout);
-              await Clipboard.setData(ClipboardData(text: summary));
+              await SharePlus.instance.share(
+                ShareParams(text: summary, subject: workout.name),
+              );
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Workout summary copied.')),
+                  const SnackBar(content: Text('Workout summary shared.')),
                 );
               }
             },

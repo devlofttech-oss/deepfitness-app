@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     const phone = normalizePhone(String(body.phone ?? '').trim()) || undefined;
     const password = String(body.password ?? '');
     const goal = String(body.goal ?? '').trim();
+    const gender = normalizeGender(String(body.gender ?? '').trim());
     const age = Number(body.age ?? 0) || null;
     const heightCm = Number(body.height_cm ?? 0) || null;
     const weight = Number(body.weight ?? 0) || null;
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
           role: 'member',
           trainer_id: user.id,
           goal,
+          gender,
           age,
           height_cm: heightCm,
         },
@@ -81,6 +83,7 @@ Deno.serve(async (req) => {
       id: memberId,
       trainer_id: user.id,
       goal,
+      gender,
       age,
       height_cm: heightCm,
     });
@@ -108,6 +111,7 @@ Deno.serve(async (req) => {
         email: email ?? '',
         phone: phone ?? '',
         goal,
+        gender,
         age,
         height_cm: heightCm,
         weight,
@@ -124,6 +128,11 @@ function normalizePhone(value: string): string | null {
   if (!value) return null;
   const compact = value.replace(/\s+/g, '');
   return compact.startsWith('+') ? compact : `+91${compact}`;
+}
+
+function normalizeGender(value: string): string {
+  const normalized = value.toLowerCase();
+  return ['male', 'female', 'other'].includes(normalized) ? normalized : 'male';
 }
 
 function json(data: unknown, status = 200): Response {

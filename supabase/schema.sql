@@ -22,6 +22,7 @@ create table public.members (
   id uuid primary key references public.users(id) on delete cascade,
   trainer_id uuid references public.trainers(id) on delete restrict,
   goal text,
+  gender text not null default 'male' check (gender in ('male', 'female', 'other')),
   age integer check (age between 1 and 120),
   height_cm numeric(5, 2),
   water_goal_liters numeric(4, 2) not null default 3.00,

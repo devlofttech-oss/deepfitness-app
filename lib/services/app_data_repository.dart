@@ -164,15 +164,17 @@ class AppDataRepository {
     final role = row['role'] == 'trainer' ? UserRole.trainer : UserRole.member;
     String? trainerName;
     String? goal;
+    String? gender;
     double? heightCm;
 
     if (role == UserRole.member) {
       final memberRow = await _supabaseService.client
           .from('members')
-          .select('goal,height_cm,age,trainer_id,trainers(name)')
+          .select('goal,gender,height_cm,age,trainer_id,trainers(name)')
           .eq('id', authUser.id)
           .maybeSingle();
       goal = memberRow?['goal']?.toString();
+      gender = memberRow?['gender']?.toString();
       heightCm = _toNullableDouble(memberRow?['height_cm']);
       final age = _toNullableInt(memberRow?['age']);
       final trainer = memberRow?['trainers'];
@@ -198,6 +200,7 @@ class AppDataRepository {
         avatarUrl: row['avatar_url']?.toString(),
         trainerName: trainerName,
         goal: goal,
+        gender: gender,
         heightCm: heightCm,
         age: age,
       );
@@ -213,6 +216,7 @@ class AppDataRepository {
       avatarUrl: row['avatar_url']?.toString(),
       trainerName: trainerName,
       goal: goal,
+      gender: gender,
       heightCm: heightCm,
     );
   }
@@ -415,6 +419,16 @@ class AppDataRepository {
         .select('id')
         .eq('member_id', userId);
     final completedLogs = logs.where((row) => row['completed'] != false);
+    final memberRow = await _supabaseService.client
+        .from('members')
+        .select('gender')
+        .eq('id', userId)
+        .maybeSingle();
+    final assignmentStats = await _exerciseAssignmentStats(
+      memberId: userId,
+      startDate: startDate,
+      endDate: endDate,
+    );
 
     final personalBests = <String, int>{};
     final muscleCounts = <String, int>{};
@@ -452,6 +466,11 @@ class AppDataRepository {
             ),
       ),
       personalBests: Map.fromEntries(sortedBests.take(6)),
+      assignedExercises: assignmentStats.assigned,
+      completedExercises: assignmentStats.completed,
+      missedExercises: assignmentStats.missed,
+      adherence: assignmentStats.adherence,
+      gender: memberRow?['gender']?.toString(),
     );
   }
 
@@ -905,6 +924,7 @@ class AppDataRepository {
     required String? phone,
     required String password,
     required String goal,
+    required String gender,
     required int? age,
     required double heightCm,
     required double weight,
@@ -918,6 +938,7 @@ class AppDataRepository {
         'phone': phone,
         'password': password,
         'goal': goal,
+        'gender': gender,
         'age': age,
         'height_cm': heightCm,
         'weight': weight,
@@ -1178,6 +1199,70 @@ class AppDataRepository {
       (sum, row) => sum + _toInt(row['sets']),
     );
     return _workoutCompletion(memberId, ids, totalSets);
+  }
+
+  Future<({int assigned, int completed, int missed, double adherence})>
+  _exerciseAssignmentStats({
+    required String memberId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    final today = DateTime.now();
+    final yesterday = DateTime(
+      today.year,
+      today.month,
+      today.day,
+    ).subtract(const Duration(days: 1));
+    final effectiveStart = startDate ?? DateTime(today.year, today.month, 1);
+    final effectiveEnd = endDate == null || endDate.isAfter(yesterday)
+        ? yesterday
+        : endDate;
+    if (effectiveEnd.isBefore(effectiveStart)) {
+      return (assigned: 0, completed: 0, missed: 0, adherence: 0.0);
+    }
+    final rows = await _supabaseService.client
+        .from('workout_days')
+        .select(
+          'id,scheduled_date,workout_plans!inner(member_id),workout_exercises(id)',
+        )
+        .eq('workout_plans.member_id', memberId)
+        .gte('scheduled_date', _dateKey(effectiveStart))
+        .lte('scheduled_date', _dateKey(effectiveEnd));
+
+    final assignedIds = <String>{};
+    for (final row in rows) {
+      final exercises = row['workout_exercises'];
+      if (exercises is! List) continue;
+      for (final exercise in exercises) {
+        if (exercise is Map && exercise['id'] != null) {
+          assignedIds.add(exercise['id'].toString());
+        }
+      }
+    }
+
+    if (assignedIds.isEmpty) {
+      return (assigned: 0, completed: 0, missed: 0, adherence: 0.0);
+    }
+
+    final completedIds =
+        (await _supabaseService.client
+                .from('exercise_logs')
+                .select('workout_exercise_id')
+                .eq('member_id', memberId)
+                .eq('completed', true)
+                .inFilter('workout_exercise_id', assignedIds.toList()))
+            .map<String?>((row) => row['workout_exercise_id']?.toString())
+            .whereType<String>()
+            .toSet();
+    final completed = completedIds.length;
+    final assigned = assignedIds.length;
+    final missed = (assigned - completed).clamp(0, assigned);
+    return (
+      assigned: assigned,
+      completed: completed,
+      missed: missed,
+      adherence: assigned == 0 ? 0.0 : completed / assigned,
+    );
   }
 
   Future<double> _workoutCompletion(

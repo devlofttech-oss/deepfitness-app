@@ -317,6 +317,11 @@ void _showNotifications(
                   ? 'Ask your trainer to assign a workout.'
                   : '${workout.exercises.length} exercises available.',
             ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/workout');
+            },
           ),
           ListTile(
             leading: const Icon(
@@ -331,6 +336,11 @@ void _showNotifications(
                   ? 'Ask your trainer to assign a diet plan.'
                   : '${nutrition.meals.length} meals planned today.',
             ),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/diet');
+            },
           ),
         ],
       ),

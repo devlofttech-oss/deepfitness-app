@@ -11,6 +11,7 @@ class AppUser {
     this.avatarUrl,
     this.trainerName,
     this.goal,
+    this.gender,
     this.heightCm,
     this.age,
   });
@@ -24,6 +25,7 @@ class AppUser {
   final String? avatarUrl;
   final String? trainerName;
   final String? goal;
+  final String? gender;
   final double? heightCm;
   final int? age;
 }
@@ -222,6 +224,11 @@ class MemberProgress {
     required this.dayStreak,
     required this.muscleProgress,
     required this.personalBests,
+    required this.assignedExercises,
+    required this.completedExercises,
+    required this.missedExercises,
+    required this.adherence,
+    this.gender,
   });
 
   final double currentWeight;
@@ -231,4 +238,9 @@ class MemberProgress {
   final int dayStreak;
   final Map<String, int> muscleProgress;
   final Map<String, int> personalBests;
+  final int assignedExercises;
+  final int completedExercises;
+  final int missedExercises;
+  final double adherence;
+  final String? gender;
 }

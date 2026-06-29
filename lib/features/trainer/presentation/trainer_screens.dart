@@ -316,6 +316,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   CreatedMemberInvite? _createdInvite;
   bool _saving = false;
   _HeightUnit _heightUnit = _HeightUnit.cm;
+  String _gender = 'male';
 
   @override
   void dispose() {
@@ -360,6 +361,10 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             obscureText: true,
           ),
           _LabeledField(label: 'Goal', controller: _goal),
+          _GenderSelector(
+            value: _gender,
+            onChanged: (value) => setState(() => _gender = value),
+          ),
           _LabeledField(
             label: 'Age',
             controller: _age,
@@ -431,6 +436,7 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
             phone: phone,
             password: password,
             goal: goal,
+            gender: _gender,
             age: age,
             heightCm: heightCm,
             weight: currentWeight,
@@ -1118,61 +1124,82 @@ class _AssignMealsScreenState extends ConsumerState<AssignMealsScreen> {
     final description = TextEditingController();
     final meal = await showDialog<DietMeal>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Meal'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: name,
-                decoration: const InputDecoration(labelText: 'Meal name'),
+      builder: (context) {
+        String? error;
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Add Meal'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: name,
+                    decoration: const InputDecoration(labelText: 'Meal name'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: time,
+                    decoration: const InputDecoration(labelText: 'Time'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: calories,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Calories'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: description,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                  ),
+                  if (error != null) ...[
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        error!,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: time,
-                decoration: const InputDecoration(labelText: 'Time'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
               ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: calories,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Calories'),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: description,
-                decoration: const InputDecoration(labelText: 'Description'),
+              FilledButton(
+                onPressed: () {
+                  final parsedCalories = int.tryParse(calories.text.trim());
+                  if (name.text.trim().isEmpty || parsedCalories == null) {
+                    setDialogState(() {
+                      error = 'Enter a meal name and valid calories.';
+                    });
+                    return;
+                  }
+                  Navigator.pop(
+                    context,
+                    DietMeal(
+                      name: name.text.trim(),
+                      time: time.text.trim(),
+                      description: description.text.trim(),
+                      calories: parsedCalories,
+                      icon: name.text.trim().toLowerCase(),
+                    ),
+                  );
+                },
+                child: const Text('Add'),
               ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (name.text.trim().isEmpty ||
-                  int.tryParse(calories.text.trim()) == null) {
-                return;
-              }
-              Navigator.pop(
-                context,
-                DietMeal(
-                  name: name.text.trim(),
-                  time: time.text.trim(),
-                  description: description.text.trim(),
-                  calories: int.parse(calories.text.trim()),
-                  icon: name.text.trim().toLowerCase(),
-                ),
-              );
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+        );
+      },
     );
     name.dispose();
     time.dispose();
@@ -1395,13 +1422,13 @@ class TrainerProfileScreen extends ConsumerWidget {
                 _SettingsRow(
                   icon: Icons.privacy_tip_outlined,
                   label: 'Privacy Policy',
-                  onTap: () => _showTrainerSetting(context, 'Privacy Policy'),
+                  onTap: () => _showTrainerPrivacyPolicy(context),
                 ),
                 _SettingsRow(
                   icon: Icons.support_agent_rounded,
                   label: 'Help & Support',
                   showDivider: false,
-                  onTap: () => _showTrainerSetting(context, 'Help & Support'),
+                  onTap: () => _openTrainerSupportEmail(context),
                 ),
               ],
             ),
@@ -2326,6 +2353,82 @@ class _HeightSelector extends StatelessWidget {
   }
 }
 
+class _GenderSelector extends StatelessWidget {
+  const _GenderSelector({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Gender',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (final option in const [
+                ('male', Icons.male_rounded, 'Male'),
+                ('female', Icons.female_rounded, 'Female'),
+                ('other', Icons.person_rounded, 'Other'),
+              ])
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: option.$1 == 'other' ? 0 : 8,
+                    ),
+                    child: InkWell(
+                      onTap: () => onChanged(option.$1),
+                      borderRadius: BorderRadius.circular(14),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 180),
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: value == option.$1
+                              ? AppColors.goldBright
+                              : AppColors.surface(context),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: value == option.$1
+                                ? AppColors.goldBright
+                                : AppColors.divider(context),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(option.$2, size: 18),
+                            const SizedBox(width: 5),
+                            Flexible(
+                              child: Text(
+                                option.$3,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HeightUnitToggle extends StatelessWidget {
   const _HeightUnitToggle({
     required this.label,
@@ -2516,6 +2619,25 @@ void _showTrainerSetting(BuildContext context, String label) {
       ),
     ),
   );
+}
+
+Future<void> _openTrainerSupportEmail(BuildContext context) async {
+  final uri = Uri(
+    scheme: 'mailto',
+    path: 'deepfitnessgym2025@gmail.com',
+    queryParameters: {
+      'subject': 'Deep Fitness Trainer Support',
+      'body': 'Hi Deep Fitness team,\n\nI need help with ',
+    },
+  );
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+      context.mounted) {
+    _showTrainerSetting(context, 'Help & Support');
+  }
+}
+
+void _showTrainerPrivacyPolicy(BuildContext context) {
+  _showTrainerSetting(context, 'Privacy Policy');
 }
 
 void _goBackOr(BuildContext context, String fallbackRoute) {

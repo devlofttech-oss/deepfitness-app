@@ -11,6 +11,7 @@ import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -337,35 +338,20 @@ class _ProfileContent extends ConsumerWidget {
                 icon: Icons.privacy_tip_outlined,
                 label: 'Privacy Policy',
                 value: '',
-                onTap: () => _showInfoSheet(
-                  context,
-                  title: 'Privacy Policy',
-                  message:
-                      'Your workout, diet, measurement, and note data is visible only to you and your assigned trainer.',
-                ),
+                onTap: () => _showPrivacyPolicy(context),
               ),
               _InfoRow(
                 icon: Icons.support_agent_rounded,
                 label: 'Help & Support',
                 value: '',
-                onTap: () => _showInfoSheet(
-                  context,
-                  title: 'Help & Support',
-                  message:
-                      'Contact deepfitnessgym2025@gmail.com for app or gym support.',
-                ),
+                onTap: () => _openSupportEmail(context),
               ),
               _InfoRow(
                 icon: Icons.info_outline_rounded,
                 label: 'About Deep Fitness',
                 value: '',
                 showDivider: false,
-                onTap: () => _showInfoSheet(
-                  context,
-                  title: 'About Deep Fitness',
-                  message:
-                      'Deep Fitness helps members follow trainer-assigned workouts, diets, progress tracking, and exercise logs.',
-                ),
+                onTap: () => _showAboutDeepFitness(context),
               ),
             ],
           ),
@@ -624,5 +610,50 @@ void _showInfoSheet(
         ],
       ),
     ),
+  );
+}
+
+Future<void> _openSupportEmail(BuildContext context) async {
+  final uri = Uri(
+    scheme: 'mailto',
+    path: 'deepfitnessgym2025@gmail.com',
+    queryParameters: {
+      'subject': 'Deep Fitness App Support',
+      'body': 'Hi Deep Fitness team,\n\nI need help with ',
+    },
+  );
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+      context.mounted) {
+    _showInfoSheet(
+      context,
+      title: 'Help & Support',
+      message: 'Email deepfitnessgym2025@gmail.com for app or gym support.',
+    );
+  }
+}
+
+void _showPrivacyPolicy(BuildContext context) {
+  _showInfoSheet(
+    context,
+    title: 'Privacy Policy',
+    message:
+        'Deep Fitness stores profile, workout, diet, measurement, progress, and note data so members and assigned trainers can manage coaching. Member data is visible only to the member and their assigned trainer. Support requests may use your email address so the team can respond.',
+  );
+}
+
+void _showAboutDeepFitness(BuildContext context) {
+  showAboutDialog(
+    context: context,
+    applicationName: 'Deep Fitness',
+    applicationVersion: '1.0.0',
+    applicationIcon: const CircleAvatar(
+      backgroundColor: AppColors.black,
+      child: Icon(Icons.fitness_center_rounded, color: AppColors.gold),
+    ),
+    children: const [
+      Text(
+        'Deep Fitness helps members follow trainer-assigned workouts, diets, progress tracking, and exercise logs.',
+      ),
+    ],
   );
 }
