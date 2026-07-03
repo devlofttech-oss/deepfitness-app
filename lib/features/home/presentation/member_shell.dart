@@ -32,15 +32,17 @@ class MemberShell extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
           child: Container(
             height: 72,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.divider(context)),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(
+                color: AppColors.divider(context).withValues(alpha: .72),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: .06),
-                  blurRadius: 20,
+                  color: Colors.black.withValues(alpha: .045),
+                  blurRadius: 22,
                   offset: const Offset(0, 10),
                 ),
               ],
@@ -95,26 +97,26 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: SizedBox(
-          width: 64,
+          width: 72,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 240),
                 curve: Curves.easeOutCubic,
-                width: 38,
+                width: active ? 48 : 40,
                 height: 34,
                 decoration: BoxDecoration(
                   color: active ? AppColors.text(context) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
                   icon,
                   color: active ? AppColors.goldBright : AppColors.muted,
-                  size: 22,
+                  size: active ? 24 : 23,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOutCubic,

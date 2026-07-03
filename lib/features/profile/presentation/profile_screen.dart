@@ -1,17 +1,13 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/core/theme/theme_controller.dart';
-import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
-import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -30,7 +26,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final progress = ref.watch(progressProvider);
 
     return PremiumScaffold(
-      bottomPadding: 24,
+      bottomPadding: 16,
       child: AsyncStateView(
         value: user,
         errorTitle: 'Could not load your profile',
@@ -122,15 +118,10 @@ class _ProfileContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
-    final settings = ref
-        .watch(appSettingsProvider)
-        .maybeWhen(
-          data: (settings) => settings,
-          orElse: () => const AppSettings(
-            notificationsEnabled: true,
-            preferredUnit: 'kg',
-          ),
-        );
+    final weight = _formatWeight(progress.currentWeight);
+    final height = user.heightCm == null
+        ? 'Not set'
+        : '${user.heightCm!.round()} cm';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,260 +131,580 @@ class _ProfileContent extends ConsumerWidget {
           subtitle: 'Manage your fitness journey',
         ),
         const SizedBox(height: 24),
-        PremiumCard(
-          padding: const EdgeInsets.all(22),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      CircleAvatar(
-                        radius: 34,
-                        backgroundColor: avatarColor,
-                        child: Icon(
-                          avatarIcon,
-                          color: AppColors.goldBright,
-                          size: 34,
-                        ),
-                      ),
-                      Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: InkWell(
-                          onTap: onChangeAvatar,
-                          borderRadius: BorderRadius.circular(18),
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: BoxDecoration(
-                              color: AppColors.goldBright,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.surface(context),
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt_outlined,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          user.name,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        Text(
-                          'Member since ${_formatMonthYear(user.createdAt)}',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: AppColors.secondaryText(context),
-                              ),
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.workspace_premium_rounded,
-                              color: AppColors.gold,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Deep Fitness Member',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(color: AppColors.gold),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 18),
-              Row(
-                children: [
-                  _ProfileMetric(
-                    icon: Icons.monitor_weight_outlined,
-                    value: '${progress.currentWeight.toStringAsFixed(1)} kg',
-                    label: 'Weight',
-                  ),
-                  Container(
-                    width: 1,
-                    height: 58,
-                    color: AppColors.divider(context),
-                  ),
-                  _ProfileMetric(
-                    icon: Icons.fitness_center_rounded,
-                    value: '${progress.workoutsCompleted}',
-                    label: 'Workouts',
-                  ),
-                  Container(
-                    width: 1,
-                    height: 58,
-                    color: AppColors.divider(context),
-                  ),
-                  _ProfileMetric(
-                    icon: Icons.local_fire_department_outlined,
-                    value: '${progress.dayStreak}',
-                    label: 'Streak',
-                  ),
-                ],
-              ),
-            ],
-          ),
+        _ProfileSummaryCard(
+          user: user,
+          progress: progress,
+          avatarIcon: avatarIcon,
+          avatarColor: avatarColor,
+          onChangeAvatar: onChangeAvatar,
         ),
-        const SizedBox(height: 30),
-        Text(
-          'Personal Information',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
+        const SizedBox(height: 14),
+        const _FitnessLevelCard(),
+        const SizedBox(height: 14),
+        _SplitInfoCard(
+          leading: _ProfileInfoTile(
+            title: 'Weight',
+            icon: Icons.monitor_weight_outlined,
+            value: weight,
+            caption: 'Current Weight',
+          ),
+          trailing: _ProfileInfoTile(
+            title: 'Height',
+            icon: Icons.straighten_rounded,
+            value: height,
+            caption: 'Current Height',
           ),
         ),
         const SizedBox(height: 14),
-        PremiumCard(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Column(
-            children: [
-              _InfoRow(
-                icon: Icons.person_outline_rounded,
-                label: 'Age',
-                value: user.age == null ? 'Not set' : '${user.age}',
-              ),
-              _InfoRow(
-                icon: Icons.straighten_rounded,
-                label: 'Height',
-                value: user.heightCm == null
-                    ? 'Not set'
-                    : '${user.heightCm!.round()} cm',
-              ),
-              _InfoRow(
-                icon: Icons.track_changes_rounded,
-                label: 'Goal',
-                value: _displayValue(user.goal),
-              ),
-              _InfoRow(
-                icon: Icons.engineering_outlined,
-                label: 'Trainer',
-                value: _displayValue(user.trainerName),
-                showDivider: false,
-              ),
-            ],
+        _SplitInfoCard(
+          leading: _ProfileInfoTile(
+            title: 'Goal',
+            icon: Icons.track_changes_rounded,
+            value: _displayValue(user.goal),
           ),
-        ),
-        const SizedBox(height: 30),
-        Text(
-          'Settings',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
+          trailing: _ProfileInfoTile(
+            title: 'Category',
+            icon: _genderIcon(user.gender),
+            value: _formatGender(user.gender),
           ),
         ),
         const SizedBox(height: 14),
-        PremiumCard(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          child: Column(
-            children: [
-              _SettingsSwitchRow(
-                icon: Icons.dark_mode_outlined,
-                label: 'Dark Mode',
-                value: isDarkMode,
-                onChanged: (value) =>
-                    ref.read(themeModeProvider.notifier).setDarkMode(value),
-              ),
-              _SettingsSwitchRow(
-                icon: Icons.notifications_none_rounded,
-                label: 'Notifications',
-                value: settings.notificationsEnabled,
-                onChanged: (value) async {
-                  await ref
-                      .read(appDataRepositoryProvider)
-                      .updateNotificationsEnabled(value);
-                  ref.invalidate(appSettingsProvider);
-                },
-              ),
-              _InfoRow(
-                icon: Icons.monitor_weight_outlined,
-                label: 'Units',
-                value: settings.preferredUnit.toUpperCase(),
-                onTap: () =>
-                    _showUnitPicker(context, ref, settings.preferredUnit),
-              ),
-              _InfoRow(
-                icon: Icons.privacy_tip_outlined,
-                label: 'Privacy Policy',
-                value: '',
-                onTap: () => _showPrivacyPolicy(context),
-              ),
-              _InfoRow(
-                icon: Icons.support_agent_rounded,
-                label: 'Help & Support',
-                value: '',
-                onTap: () => _openSupportEmail(context),
-              ),
-              _InfoRow(
-                icon: Icons.info_outline_rounded,
-                label: 'About Deep Fitness',
-                value: '',
-                showDivider: false,
-                onTap: () => _showAboutDeepFitness(context),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 28),
-        PrimaryButton(
-          label: 'Log Out',
-          icon: Icons.logout_rounded,
-          outline: true,
-          onPressed: () async {
-            await ref.read(authControllerProvider.notifier).signOut();
-            if (context.mounted) {
-              context.go('/login');
-            }
-          },
+        _PersonalDetailsCard(user: user),
+        const SizedBox(height: 14),
+        _SettingsCard(
+          isDarkMode: isDarkMode,
+          onChanged: (value) =>
+              ref.read(themeModeProvider.notifier).setDarkMode(value),
         ),
       ],
     );
   }
 }
 
-String _displayValue(String? value) {
-  final trimmed = value?.trim() ?? '';
-  return trimmed.isEmpty ? 'Not set' : trimmed;
+class _ProfileSummaryCard extends StatelessWidget {
+  const _ProfileSummaryCard({
+    required this.user,
+    required this.progress,
+    required this.avatarIcon,
+    required this.avatarColor,
+    required this.onChangeAvatar,
+  });
+
+  final AppUser user;
+  final MemberProgress progress;
+  final IconData avatarIcon;
+  final Color avatarColor;
+  final VoidCallback onChangeAvatar;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      radius: 24,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 34,
+                    backgroundColor: avatarColor,
+                    child: Icon(
+                      avatarIcon,
+                      color: AppColors.goldBright,
+                      size: 32,
+                    ),
+                  ),
+                  Positioned(
+                    right: -4,
+                    bottom: -4,
+                    child: Material(
+                      color: AppColors.goldBright,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: onChangeAvatar,
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          width: 30,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: AppColors.surface(context),
+                              width: 2,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.camera_alt_outlined,
+                            size: 16,
+                            color: AppColors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontSize: 21, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Member since ${_formatMonthYear(user.createdAt)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.workspace_premium_rounded,
+                          color: AppColors.gold,
+                          size: 21,
+                        ),
+                        const SizedBox(width: 10),
+                        Flexible(
+                          child: Text(
+                            'Deep Fitness Member',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: AppColors.gold,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(height: 1, color: AppColors.divider(context)),
+          const SizedBox(height: 15),
+          Row(
+            children: [
+              _ProfileMetric(
+                icon: Icons.monitor_weight_outlined,
+                value: _formatWeight(progress.currentWeight),
+                label: 'Weight',
+              ),
+              _MetricDivider(),
+              _ProfileMetric(
+                icon: Icons.fitness_center_rounded,
+                value: '${progress.workoutsCompleted}',
+                label: 'Workouts',
+              ),
+              _MetricDivider(),
+              _ProfileMetric(
+                icon: Icons.local_fire_department_outlined,
+                value: '${progress.dayStreak}',
+                label: 'Streak',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
-String _formatMonthYear(DateTime date) {
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
-  return '${months[date.month - 1]} ${date.year}';
+class _FitnessLevelCard extends StatelessWidget {
+  const _FitnessLevelCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      radius: 22,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Fitness Level',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: const [
+              Expanded(
+                child: _FitnessLevelOption(
+                  icon: Icons.directions_walk_rounded,
+                  label: 'Beginner',
+                  selected: true,
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _FitnessLevelOption(
+                  icon: Icons.directions_run_rounded,
+                  label: 'Intermediate',
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _FitnessLevelOption(
+                  icon: Icons.fitness_center_rounded,
+                  label: 'Advanced',
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FitnessLevelOption extends StatelessWidget {
+  const _FitnessLevelOption({
+    required this.icon,
+    required this.label,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = selected ? AppColors.gold : AppColors.text(context);
+    return Container(
+      height: 46,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
+      decoration: BoxDecoration(
+        color: selected
+            ? AppColors.goldSoft.withValues(alpha: .62)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: selected
+              ? AppColors.gold.withValues(alpha: .32)
+              : AppColors.divider(context),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 24, color: foreground),
+          const SizedBox(width: 7),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontSize: 12.5,
+                color: foreground,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SplitInfoCard extends StatelessWidget {
+  const _SplitInfoCard({required this.leading, required this.trailing});
+
+  final _ProfileInfoTile leading;
+  final _ProfileInfoTile trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      radius: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(child: leading),
+            VerticalDivider(
+              width: 26,
+              thickness: 1,
+              color: AppColors.divider(context),
+            ),
+            Expanded(child: trailing),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileInfoTile extends StatelessWidget {
+  const _ProfileInfoTile({
+    required this.title,
+    required this.icon,
+    required this.value,
+    this.caption,
+  });
+
+  final String title;
+  final IconData icon;
+  final String value;
+  final String? caption;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _SoftIconBox(icon: icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    maxLines: caption == null ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: title == 'Goal'
+                          ? AppColors.secondaryText(context)
+                          : AppColors.text(context),
+                    ),
+                  ),
+                  if (caption != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      caption!,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _PersonalDetailsCard extends StatelessWidget {
+  const _PersonalDetailsCard({required this.user});
+
+  final AppUser user;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      radius: 22,
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Personal Details',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _DetailRow(
+            icon: Icons.person_outline_rounded,
+            label: 'Age',
+            value: user.age == null ? 'Not set' : '${user.age}',
+          ),
+          _DetailRow(
+            icon: Icons.phone_outlined,
+            label: 'Contact',
+            value: _displayValue(user.phone),
+          ),
+          _DetailRow(
+            icon: Icons.person_add_alt_1_outlined,
+            label: 'Trainer',
+            value: _displayValue(user.trainerName),
+            showDivider: false,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsCard extends StatelessWidget {
+  const _SettingsCard({required this.isDarkMode, required this.onChanged});
+
+  final bool isDarkMode;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return PremiumCard(
+      radius: 22,
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Settings',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 36,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.dark_mode_outlined,
+                  color: AppColors.gold,
+                  size: 22,
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Text(
+                    'Dark Mode',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Transform.scale(
+                  scale: .9,
+                  child: Switch(
+                    value: isDarkMode,
+                    activeThumbColor: AppColors.goldBright,
+                    activeTrackColor: AppColors.gold.withValues(alpha: .35),
+                    inactiveThumbColor: AppColors.muted.withValues(alpha: .72),
+                    inactiveTrackColor: Colors.transparent,
+                    onChanged: onChanged,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.showDivider = true,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 40,
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.gold, size: 22),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Flexible(
+                child: Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: AppColors.secondaryText(context),
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showDivider)
+          Divider(height: 1, thickness: 1, color: AppColors.divider(context)),
+      ],
+    );
+  }
+}
+
+class _SoftIconBox extends StatelessWidget {
+  const _SoftIconBox({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: AppColors.goldSoft.withValues(alpha: .45),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.gold.withValues(alpha: .18)),
+      ),
+      child: Icon(icon, color: AppColors.gold, size: 22),
+    );
+  }
 }
 
 class _ProfileMetric extends StatelessWidget {
@@ -413,19 +724,24 @@ class _ProfileMetric extends StatelessWidget {
       child: Column(
         children: [
           Icon(icon, color: AppColors.gold, size: 22),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+            ),
           ),
+          const SizedBox(height: 1),
           Text(
             label,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: AppColors.secondaryText(context),
+              fontSize: 12.5,
             ),
           ),
         ],
@@ -434,226 +750,49 @@ class _ProfileMetric extends StatelessWidget {
   }
 }
 
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.showDivider = true,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool showDivider;
-  final VoidCallback? onTap;
-
+class _MetricDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 52),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Icon(icon, color: AppColors.gold, size: 20),
-                const SizedBox(width: 18),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    label,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (value.isNotEmpty)
-                  Flexible(
-                    flex: 3,
-                    child: Text(
-                      value,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.secondaryText(context),
-                      ),
-                    ),
-                  ),
-                if (value.isNotEmpty && onTap != null) const SizedBox(width: 4),
-                if (onTap != null) const Icon(Icons.chevron_right_rounded),
-              ],
-            ),
-          ),
-        ),
-        if (showDivider) const Divider(height: 1),
-      ],
-    );
+    return Container(width: 1, height: 56, color: AppColors.divider(context));
   }
 }
 
-class _SettingsSwitchRow extends StatelessWidget {
-  const _SettingsSwitchRow({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(
-          height: 52,
-          child: Row(
-            children: [
-              Icon(icon, color: AppColors.gold, size: 20),
-              const SizedBox(width: 18),
-              Expanded(
-                child: Text(
-                  label,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Switch(
-                value: value,
-                activeThumbColor: AppColors.goldBright,
-                activeTrackColor: AppColors.gold.withValues(alpha: .38),
-                onChanged: onChanged,
-              ),
-            ],
-          ),
-        ),
-        const Divider(height: 1),
-      ],
-    );
-  }
+String _displayValue(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? 'Not set' : trimmed;
 }
 
-void _showUnitPicker(BuildContext context, WidgetRef ref, String currentUnit) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Units',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          for (final unit in const ['kg', 'lb'])
-            ListTile(
-              leading: Icon(
-                unit == currentUnit
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_unchecked_rounded,
-              ),
-              title: Text(unit.toUpperCase()),
-              onTap: () async {
-                await ref
-                    .read(appDataRepositoryProvider)
-                    .updatePreferredUnit(unit);
-                ref.invalidate(appSettingsProvider);
-                if (context.mounted) Navigator.pop(context);
-              },
-            ),
-        ],
-      ),
-    ),
-  );
+String _formatWeight(double value) {
+  return value <= 0 ? 'Not set' : '${value.toStringAsFixed(1)} kg';
 }
 
-void _showInfoSheet(
-  BuildContext context, {
-  required String title,
-  required String message,
-}) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          Text(message),
-          const SizedBox(height: 14),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Done'),
-          ),
-        ],
-      ),
-    ),
-  );
+String _formatGender(String? value) {
+  final gender = value?.trim().toLowerCase() ?? '';
+  if (gender == 'female') return 'Female';
+  if (gender == 'other') return 'Other';
+  return 'Male';
 }
 
-Future<void> _openSupportEmail(BuildContext context) async {
-  final uri = Uri(
-    scheme: 'mailto',
-    path: 'deepfitnessgym2025@gmail.com',
-    queryParameters: {
-      'subject': 'Deep Fitness App Support',
-      'body': 'Hi Deep Fitness team,\n\nI need help with ',
-    },
-  );
-  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
-      context.mounted) {
-    _showInfoSheet(
-      context,
-      title: 'Help & Support',
-      message: 'Email deepfitnessgym2025@gmail.com for app or gym support.',
-    );
-  }
+IconData _genderIcon(String? value) {
+  final gender = value?.trim().toLowerCase() ?? '';
+  if (gender == 'female') return Icons.female_rounded;
+  return Icons.male_rounded;
 }
 
-void _showPrivacyPolicy(BuildContext context) {
-  _showInfoSheet(
-    context,
-    title: 'Privacy Policy',
-    message:
-        'Deep Fitness stores profile, workout, measurement, progress, and note data so members and assigned trainers can manage coaching. Member data is visible only to the member and their assigned trainer. Support requests may use your email address so the team can respond.',
-  );
-}
-
-void _showAboutDeepFitness(BuildContext context) {
-  showAboutDialog(
-    context: context,
-    applicationName: 'Deep Fitness',
-    applicationVersion: '1.0.0',
-    applicationIcon: const CircleAvatar(
-      backgroundColor: AppColors.black,
-      child: Icon(Icons.fitness_center_rounded, color: AppColors.gold),
-    ),
-    children: const [
-      Text(
-        'Deep Fitness helps members follow trainer-assigned workouts, progress tracking, and exercise logs.',
-      ),
-    ],
-  );
+String _formatMonthYear(DateTime date) {
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return '${months[date.month - 1]} ${date.year}';
 }
