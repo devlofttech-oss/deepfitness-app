@@ -159,13 +159,11 @@ class _ProfileContent extends ConsumerWidget {
             title: 'Weight',
             icon: Icons.monitor_weight_outlined,
             value: weight,
-            caption: 'Current Weight',
           ),
           trailing: _ProfileInfoTile(
             title: 'Height',
             icon: Icons.straighten_rounded,
             value: height,
-            caption: 'Current Height',
           ),
         ),
         const SizedBox(height: 14),
@@ -501,13 +499,11 @@ class _ProfileInfoTile extends StatelessWidget {
     required this.title,
     required this.icon,
     required this.value,
-    this.caption,
   });
 
   final String title;
   final IconData icon;
   final String value;
-  final String? caption;
 
   @override
   Widget build(BuildContext context) {
@@ -528,34 +524,17 @@ class _ProfileInfoTile extends StatelessWidget {
             _SoftIconBox(icon: icon),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    maxLines: caption == null ? 2 : 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: title == 'Goal'
-                          ? AppColors.secondaryText(context)
-                          : AppColors.text(context),
-                    ),
-                  ),
-                  if (caption != null) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      caption!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.secondaryText(context),
-                        fontSize: 12.5,
-                      ),
-                    ),
-                  ],
-                ],
+              child: Text(
+                value,
+                maxLines: title == 'Goal' ? 2 : 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: title == 'Goal'
+                      ? AppColors.secondaryText(context)
+                      : AppColors.text(context),
+                ),
               ),
             ),
           ],
@@ -774,18 +753,17 @@ class _SettingsActionRow extends StatelessWidget {
                     ),
                   ),
                 ),
+                const Spacer(),
                 if (value.isNotEmpty)
-                  Flexible(
-                    child: Text(
-                      value,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: AppColors.secondaryText(context),
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.right,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.secondaryText(context),
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 const SizedBox(width: 4),
