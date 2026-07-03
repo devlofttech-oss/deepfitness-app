@@ -164,17 +164,11 @@ class AppDataRepository {
     final role = row['role'] == 'trainer' ? UserRole.trainer : UserRole.member;
     String? trainerName;
     String? goal;
-    String? gender;
     double? heightCm;
 
     if (role == UserRole.member) {
-      final memberRow = await _supabaseService.client
-          .from('members')
-          .select('goal,gender,height_cm,age,trainer_id,trainers(name)')
-          .eq('id', authUser.id)
-          .maybeSingle();
+      final memberRow = await _fetchMemberProfileRow(authUser.id);
       goal = memberRow?['goal']?.toString();
-      gender = memberRow?['gender']?.toString();
       heightCm = _toNullableDouble(memberRow?['height_cm']);
       final age = _toNullableInt(memberRow?['age']);
       final trainer = memberRow?['trainers'];
@@ -200,7 +194,7 @@ class AppDataRepository {
         avatarUrl: row['avatar_url']?.toString(),
         trainerName: trainerName,
         goal: goal,
-        gender: gender,
+        gender: memberRow?['gender']?.toString(),
         heightCm: heightCm,
         age: age,
       );
@@ -216,9 +210,25 @@ class AppDataRepository {
       avatarUrl: row['avatar_url']?.toString(),
       trainerName: trainerName,
       goal: goal,
-      gender: gender,
       heightCm: heightCm,
     );
+  }
+
+  Future<Map<String, dynamic>?> _fetchMemberProfileRow(String userId) async {
+    try {
+      return await _supabaseService.client
+          .from('members')
+          .select('goal,gender,height_cm,age,trainer_id,trainers(name)')
+          .eq('id', userId)
+          .maybeSingle();
+    } catch (error) {
+      if (!_isMissingColumn(error, 'members.gender')) rethrow;
+      return _supabaseService.client
+          .from('members')
+          .select('goal,height_cm,age,trainer_id,trainers(name)')
+          .eq('id', userId)
+          .maybeSingle();
+    }
   }
 
   Future<WorkoutPlan> fetchTodayWorkout({
@@ -419,11 +429,7 @@ class AppDataRepository {
         .select('id')
         .eq('member_id', userId);
     final completedLogs = logs.where((row) => row['completed'] != false);
-    final memberRow = await _supabaseService.client
-        .from('members')
-        .select('gender')
-        .eq('id', userId)
-        .maybeSingle();
+    final gender = await _fetchMemberGender(userId);
     final assignmentStats = await _exerciseAssignmentStats(
       memberId: userId,
       startDate: startDate,
@@ -470,8 +476,22 @@ class AppDataRepository {
       completedExercises: assignmentStats.completed,
       missedExercises: assignmentStats.missed,
       adherence: assignmentStats.adherence,
-      gender: memberRow?['gender']?.toString(),
+      gender: gender,
     );
+  }
+
+  Future<String?> _fetchMemberGender(String userId) async {
+    try {
+      final row = await _supabaseService.client
+          .from('members')
+          .select('gender')
+          .eq('id', userId)
+          .maybeSingle();
+      return row?['gender']?.toString();
+    } catch (error) {
+      if (!_isMissingColumn(error, 'members.gender')) rethrow;
+      return null;
+    }
   }
 
   Future<AppSettings> fetchSettings() async {
@@ -1092,6 +1112,14 @@ class AppDataRepository {
 
   static DateTime _toDateTime(Object? value) {
     return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  }
+
+  static bool _isMissingColumn(Object error, String columnName) {
+    final message = error.toString().toLowerCase();
+    final normalizedColumn = columnName.toLowerCase();
+    return message.contains('42703') &&
+        (message.contains(normalizedColumn) ||
+            message.contains(normalizedColumn.split('.').last));
   }
 
   static String _dateKey(DateTime date) {
