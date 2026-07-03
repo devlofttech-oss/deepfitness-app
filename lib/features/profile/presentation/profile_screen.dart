@@ -1,13 +1,17 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/core/theme/theme_controller.dart';
+import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
+import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -118,6 +122,15 @@ class _ProfileContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
+    final settings = ref
+        .watch(appSettingsProvider)
+        .maybeWhen(
+          data: (settings) => settings,
+          orElse: () => const AppSettings(
+            notificationsEnabled: true,
+            preferredUnit: 'kg',
+          ),
+        );
     final weight = _formatWeight(progress.currentWeight);
     final height = user.heightCm == null
         ? 'Not set'
@@ -172,9 +185,33 @@ class _ProfileContent extends ConsumerWidget {
         _PersonalDetailsCard(user: user),
         const SizedBox(height: 14),
         _SettingsCard(
+          settings: settings,
           isDarkMode: isDarkMode,
-          onChanged: (value) =>
+          onDarkModeChanged: (value) =>
               ref.read(themeModeProvider.notifier).setDarkMode(value),
+          onNotificationsChanged: (value) async {
+            await ref
+                .read(appDataRepositoryProvider)
+                .updateNotificationsEnabled(value);
+            ref.invalidate(appSettingsProvider);
+          },
+          onUnitsTap: () =>
+              _showUnitPicker(context, ref, settings.preferredUnit),
+          onPrivacyTap: () => _showPrivacyPolicy(context),
+          onSupportTap: () => _openSupportEmail(context),
+          onAboutTap: () => _showAboutDeepFitness(context),
+        ),
+        const SizedBox(height: 18),
+        PrimaryButton(
+          label: 'Log Out',
+          icon: Icons.logout_rounded,
+          outline: true,
+          onPressed: () async {
+            await ref.read(authControllerProvider.notifier).signOut();
+            if (context.mounted) {
+              context.go('/login');
+            }
+          },
         ),
       ],
     );
@@ -572,10 +609,25 @@ class _PersonalDetailsCard extends StatelessWidget {
 }
 
 class _SettingsCard extends StatelessWidget {
-  const _SettingsCard({required this.isDarkMode, required this.onChanged});
+  const _SettingsCard({
+    required this.settings,
+    required this.isDarkMode,
+    required this.onDarkModeChanged,
+    required this.onNotificationsChanged,
+    required this.onUnitsTap,
+    required this.onPrivacyTap,
+    required this.onSupportTap,
+    required this.onAboutTap,
+  });
 
+  final AppSettings settings;
   final bool isDarkMode;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool> onDarkModeChanged;
+  final ValueChanged<bool> onNotificationsChanged;
+  final VoidCallback onUnitsTap;
+  final VoidCallback onPrivacyTap;
+  final VoidCallback onSupportTap;
+  final VoidCallback onAboutTap;
 
   @override
   Widget build(BuildContext context) {
@@ -593,41 +645,161 @@ class _SettingsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          SizedBox(
-            height: 36,
+          _SettingsSwitchRow(
+            icon: Icons.dark_mode_outlined,
+            label: 'Dark Mode',
+            value: isDarkMode,
+            onChanged: onDarkModeChanged,
+          ),
+          _SettingsSwitchRow(
+            icon: Icons.notifications_none_rounded,
+            label: 'Notifications',
+            value: settings.notificationsEnabled,
+            onChanged: onNotificationsChanged,
+          ),
+          _SettingsActionRow(
+            icon: Icons.monitor_weight_outlined,
+            label: 'Units',
+            value: settings.preferredUnit.toUpperCase(),
+            onTap: onUnitsTap,
+          ),
+          _SettingsActionRow(
+            icon: Icons.privacy_tip_outlined,
+            label: 'Privacy Policy',
+            onTap: onPrivacyTap,
+          ),
+          _SettingsActionRow(
+            icon: Icons.support_agent_rounded,
+            label: 'Help & Support',
+            onTap: onSupportTap,
+          ),
+          _SettingsActionRow(
+            icon: Icons.info_outline_rounded,
+            label: 'About Deep Fitness',
+            showDivider: false,
+            onTap: onAboutTap,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SettingsSwitchRow extends StatelessWidget {
+  const _SettingsSwitchRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(
+          height: 44,
+          child: Row(
+            children: [
+              Icon(icon, color: AppColors.gold, size: 22),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Text(
+                  label,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Transform.scale(
+                scale: .9,
+                child: Switch(
+                  value: value,
+                  activeThumbColor: AppColors.goldBright,
+                  activeTrackColor: AppColors.gold.withValues(alpha: .35),
+                  inactiveThumbColor: AppColors.muted.withValues(alpha: .72),
+                  inactiveTrackColor: Colors.transparent,
+                  onChanged: onChanged,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, thickness: 1, color: AppColors.divider(context)),
+      ],
+    );
+  }
+}
+
+class _SettingsActionRow extends StatelessWidget {
+  const _SettingsActionRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.value = '',
+    this.showDivider = true,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+  final VoidCallback onTap;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: SizedBox(
+            height: 44,
             child: Row(
               children: [
-                const Icon(
-                  Icons.dark_mode_outlined,
-                  color: AppColors.gold,
-                  size: 22,
-                ),
+                Icon(icon, color: AppColors.gold, size: 22),
                 const SizedBox(width: 20),
                 Expanded(
                   child: Text(
-                    'Dark Mode',
+                    label,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                Transform.scale(
-                  scale: .9,
-                  child: Switch(
-                    value: isDarkMode,
-                    activeThumbColor: AppColors.goldBright,
-                    activeTrackColor: AppColors.gold.withValues(alpha: .35),
-                    inactiveThumbColor: AppColors.muted.withValues(alpha: .72),
-                    inactiveTrackColor: Colors.transparent,
-                    onChanged: onChanged,
+                if (value.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.secondaryText(context),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+        if (showDivider)
+          Divider(height: 1, thickness: 1, color: AppColors.divider(context)),
+      ],
     );
   }
 }
@@ -795,4 +967,120 @@ String _formatMonthYear(DateTime date) {
     'Dec',
   ];
   return '${months[date.month - 1]} ${date.year}';
+}
+
+void _showUnitPicker(BuildContext context, WidgetRef ref, String currentUnit) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Units',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 12),
+          for (final unit in const ['kg', 'lb'])
+            ListTile(
+              leading: Icon(
+                unit == currentUnit
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_unchecked_rounded,
+              ),
+              title: Text(unit.toUpperCase()),
+              onTap: () async {
+                await ref
+                    .read(appDataRepositoryProvider)
+                    .updatePreferredUnit(unit);
+                ref.invalidate(appSettingsProvider);
+                if (context.mounted) Navigator.pop(context);
+              },
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showInfoSheet(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 10),
+          Text(message),
+          const SizedBox(height: 14),
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+Future<void> _openSupportEmail(BuildContext context) async {
+  final uri = Uri(
+    scheme: 'mailto',
+    path: 'deepfitnessgym2025@gmail.com',
+    queryParameters: {
+      'subject': 'Deep Fitness App Support',
+      'body': 'Hi Deep Fitness team,\n\nI need help with ',
+    },
+  );
+  if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
+      context.mounted) {
+    _showInfoSheet(
+      context,
+      title: 'Help & Support',
+      message: 'Email deepfitnessgym2025@gmail.com for app or gym support.',
+    );
+  }
+}
+
+void _showPrivacyPolicy(BuildContext context) {
+  _showInfoSheet(
+    context,
+    title: 'Privacy Policy',
+    message:
+        'Deep Fitness stores profile, workout, measurement, progress, and note data so members and assigned trainers can manage coaching. Member data is visible only to the member and their assigned trainer. Support requests may use your email address so the team can respond.',
+  );
+}
+
+void _showAboutDeepFitness(BuildContext context) {
+  showAboutDialog(
+    context: context,
+    applicationName: 'Deep Fitness',
+    applicationVersion: '1.0.0',
+    applicationIcon: const CircleAvatar(
+      backgroundColor: AppColors.black,
+      child: Icon(Icons.fitness_center_rounded, color: AppColors.gold),
+    ),
+    children: const [
+      Text(
+        'Deep Fitness helps members follow trainer-assigned workouts, progress tracking, and exercise logs.',
+      ),
+    ],
+  );
 }
