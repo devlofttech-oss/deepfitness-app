@@ -637,7 +637,7 @@ void _showPrivacyPolicy(BuildContext context) {
     context,
     title: 'Privacy Policy',
     message:
-        'Deep Fitness stores profile, workout, diet, measurement, progress, and note data so members and assigned trainers can manage coaching. Member data is visible only to the member and their assigned trainer. Support requests may use your email address so the team can respond.',
+        'Deep Fitness stores profile, workout, measurement, progress, and note data so members and assigned trainers can manage coaching. Member data is visible only to the member and their assigned trainer. Support requests may use your email address so the team can respond.',
   );
 }
 
@@ -652,7 +652,7 @@ void _showAboutDeepFitness(BuildContext context) {
     ),
     children: const [
       Text(
-        'Deep Fitness helps members follow trainer-assigned workouts, diets, progress tracking, and exercise logs.',
+        'Deep Fitness helps members follow trainer-assigned workouts, progress tracking, and exercise logs.',
       ),
     ],
   );

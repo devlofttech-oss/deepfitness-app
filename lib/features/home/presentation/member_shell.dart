@@ -61,12 +61,6 @@ class MemberShell extends ConsumerWidget {
                   onTap: () => context.go('/progress'),
                 ),
                 _NavItem(
-                  icon: Icons.restaurant_rounded,
-                  label: 'Diet',
-                  active: location == '/diet',
-                  onTap: () => context.go('/diet'),
-                ),
-                _NavItem(
                   icon: Icons.person_outline_rounded,
                   label: 'Profile',
                   active: location == '/profile',

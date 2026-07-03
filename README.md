@@ -2,6 +2,10 @@
 
 Premium Flutter gym management and fitness tracking app.
 
+## Current scope
+
+The diet/nutrition member tab and trainer diet-assignment entry points are temporarily hidden. The underlying diet data model and implementation files remain in the codebase so the feature can be restored later.
+
 ## Supabase setup
 
 1. Create a Supabase project.

@@ -1,6 +1,5 @@
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/presentation/login_screen.dart';
-import 'package:deepfitness/features/diet/presentation/diet_screen.dart';
 import 'package:deepfitness/features/home/presentation/member_shell.dart';
 import 'package:deepfitness/features/home/presentation/today_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
@@ -105,11 +104,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
-            path: '/diet',
-            pageBuilder: (context, state) =>
-                _smoothPage(state: state, child: const DietScreen()),
-          ),
-          GoRoute(
             path: '/profile',
             pageBuilder: (context, state) =>
                 _smoothPage(state: state, child: const ProfileScreen()),
@@ -191,11 +185,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             _trainerPage(state, const ExerciseLibraryScreen()),
       ),
       GoRoute(
-        path: '/trainer/diet-plan',
-        pageBuilder: (context, state) =>
-            _trainerPage(state, const CreateDietPlanScreen()),
-      ),
-      GoRoute(
         path: '/trainer/assign',
         pageBuilder: (context, state) =>
             _trainerPage(state, const AssignPlanScreen()),
@@ -219,11 +208,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/trainer/assign/exercises',
         pageBuilder: (context, state) =>
             _trainerPage(state, const AssignExercisesScreen()),
-      ),
-      GoRoute(
-        path: '/trainer/assign/meals',
-        pageBuilder: (context, state) =>
-            _trainerPage(state, const AssignMealsScreen()),
       ),
       GoRoute(
         path: '/trainer/profile',

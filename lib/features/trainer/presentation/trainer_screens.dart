@@ -170,7 +170,7 @@ class TrainerDashboardScreen extends ConsumerWidget {
           ),
           _ActionCard(
             title: 'Assign Plans',
-            subtitle: 'Workout or diet, step by step',
+            subtitle: 'Workout plans, step by step',
             icon: Icons.send_rounded,
             route: '/trainer/assign',
           ),
@@ -608,17 +608,6 @@ class AssignPlanScreen extends ConsumerWidget {
               ref
                   .read(assignmentDraftProvider.notifier)
                   .start(AssignmentKind.workout);
-              context.push('/trainer/assign/member');
-            },
-          ),
-          _ChoiceCard(
-            title: 'Diet Plan',
-            subtitle: 'Meals, calories, macros',
-            icon: Icons.restaurant_rounded,
-            onTap: () {
-              ref
-                  .read(assignmentDraftProvider.notifier)
-                  .start(AssignmentKind.diet);
               context.push('/trainer/assign/member');
             },
           ),
