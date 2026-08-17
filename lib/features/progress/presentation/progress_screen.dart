@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
@@ -7,7 +9,11 @@ import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+
+const _bodyVisualHeight = 362.0;
+const _bodyVisualScale = 1.13;
 
 class ProgressScreen extends ConsumerWidget {
   const ProgressScreen({super.key});
@@ -141,22 +147,208 @@ class _ProgressContent extends ConsumerWidget {
   }
 }
 
-class _BodyVisualCard extends StatelessWidget {
+class _BodyVisualCard extends StatefulWidget {
   const _BodyVisualCard({required this.progress});
 
   final MemberProgress progress;
 
   @override
+  State<_BodyVisualCard> createState() => _BodyVisualCardState();
+}
+
+class _BodyVisualCardState extends State<_BodyVisualCard> {
+  String? _selectedLayer;
+
+  @override
   Widget build(BuildContext context) {
+    final gender = widget.progress.gender?.toLowerCase() == 'female'
+        ? 'female'
+        : 'male';
+    final metrics = _BodySvgMetrics.forGender(gender);
+    final selected = _selectedLayer == null
+        ? null
+        : _bodyLayerForAsset(_selectedLayer!);
+    final selectedValue = selected == null
+        ? null
+        : _progressForLayer(widget.progress.muscleProgress, selected);
+
     return SizedBox(
-      height: 360,
-      child: CustomPaint(
-        painter: _MuscleBodyPainter(
-          isFemale: progress.gender == 'female',
-          muscleProgress: progress.muscleProgress,
-          outlineColor: AppColors.secondaryText(context),
+      height: _bodyVisualHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapUp: (details) {
+              final layer = _hitTestBodyLayer(
+                details.localPosition,
+                Size(constraints.maxWidth, constraints.maxHeight),
+                metrics,
+              );
+              if (layer == null) return;
+              setState(() {
+                _selectedLayer = _selectedLayer == layer ? null : layer;
+              });
+            },
+            child: Stack(
+              alignment: Alignment.center,
+              clipBehavior: Clip.none,
+              children: [
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: .16),
+                        width: 1.2,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Transform.scale(
+                    scale: _bodyVisualScale,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: .82,
+                            child: SvgPicture.asset(
+                              'assets/body/$gender/front_outline.svg',
+                              fit: BoxFit.contain,
+                              clipBehavior: Clip.none,
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Opacity(
+                            opacity: .82,
+                            child: SvgPicture.asset(
+                              'assets/body/$gender/back_outline.svg',
+                              fit: BoxFit.contain,
+                              clipBehavior: Clip.none,
+                            ),
+                          ),
+                        ),
+                        for (final layer in _bodyLayers)
+                          Positioned.fill(
+                            child: _AnimatedBodyLayer(
+                              assetPath:
+                                  'assets/body/$gender/${layer.assetName}.svg',
+                              color: _bodyLayerColor(layer.assetName),
+                              progress:
+                                  _progressForLayer(
+                                    widget.progress.muscleProgress,
+                                    layer,
+                                  ) /
+                                  100,
+                              selected: _selectedLayer == layer.assetName,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    child: selected == null
+                        ? const SizedBox(height: 36)
+                        : Align(
+                            key: ValueKey(selected.assetName),
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface(context),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: AppColors.gold.withValues(alpha: .42),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(
+                                      alpha: AppColors.isDark(context)
+                                          ? .32
+                                          : .06,
+                                    ),
+                                    blurRadius: 18,
+                                    offset: const Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                '${selected.label} +${selectedValue ?? 0}%',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: AppColors.text(context),
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AnimatedBodyLayer extends StatelessWidget {
+  const _AnimatedBodyLayer({
+    required this.assetPath,
+    required this.color,
+    required this.progress,
+    required this.selected,
+  });
+
+  final String assetPath;
+  final Color color;
+  final double progress;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final targetProgress = progress.clamp(0.0, 1.0);
+    return IgnorePointer(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(end: targetProgress),
+        duration: const Duration(milliseconds: 360),
+        curve: Curves.easeOutCubic,
+        builder: (context, animatedProgress, child) {
+          final opacity = selected
+              ? .98
+              : (animatedProgress == 0
+                    ? .18
+                    : (.34 + animatedProgress * .58).clamp(.34, .92));
+          final layerColor = selected ? AppColors.gold : color;
+          return AnimatedOpacity(
+            opacity: opacity,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(layerColor, BlendMode.srcIn),
+              child: child,
+            ),
+          );
+        },
+        child: SvgPicture.asset(
+          assetPath,
+          fit: BoxFit.contain,
+          clipBehavior: Clip.none,
         ),
-        child: const SizedBox.expand(),
       ),
     );
   }
@@ -710,6 +902,217 @@ IconData progressBestIcon(String key) {
   return Icons.emoji_events_outlined;
 }
 
+class _BodyLayerDefinition {
+  const _BodyLayerDefinition({
+    required this.assetName,
+    required this.label,
+    required this.progressKeys,
+  });
+
+  final String assetName;
+  final String label;
+  final List<String> progressKeys;
+}
+
+class _BodySvgMetrics {
+  const _BodySvgMetrics({
+    required this.viewBoxWidth,
+    required this.viewBoxHeight,
+    required this.bodyWidth,
+    required this.backStart,
+  });
+
+  final double viewBoxWidth;
+  final double viewBoxHeight;
+  final double bodyWidth;
+  final double backStart;
+
+  static _BodySvgMetrics forGender(String gender) {
+    if (gender == 'female') {
+      return const _BodySvgMetrics(
+        viewBoxWidth: 1256,
+        viewBoxHeight: 1450,
+        bodyWidth: 650,
+        backStart: 606,
+      );
+    }
+    return const _BodySvgMetrics(
+      viewBoxWidth: 1410,
+      viewBoxHeight: 1280,
+      bodyWidth: 727,
+      backStart: 683,
+    );
+  }
+}
+
+const _bodyLayers = <_BodyLayerDefinition>[
+  _BodyLayerDefinition(
+    assetName: 'chest',
+    label: 'Chest',
+    progressKeys: ['Chest'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'shoulders',
+    label: 'Shoulders',
+    progressKeys: ['Shoulders'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'arms',
+    label: 'Arms',
+    progressKeys: ['Arms', 'Biceps', 'Triceps'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'forearms',
+    label: 'Forearms',
+    progressKeys: ['Forearms', 'Arms'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'abs',
+    label: 'Abs',
+    progressKeys: ['Abs', 'Core'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'obliques',
+    label: 'Obliques',
+    progressKeys: ['Obliques', 'Core'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'lats',
+    label: 'Lats',
+    progressKeys: ['Lats', 'Back'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'traps',
+    label: 'Traps',
+    progressKeys: ['Traps', 'Back', 'Shoulders'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'quads',
+    label: 'Quads',
+    progressKeys: ['Quads', 'Legs'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'hamstrings',
+    label: 'Hamstrings',
+    progressKeys: ['Hamstrings', 'Legs'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'glutes',
+    label: 'Glutes',
+    progressKeys: ['Glutes', 'Legs'],
+  ),
+  _BodyLayerDefinition(
+    assetName: 'calves',
+    label: 'Calves',
+    progressKeys: ['Calves', 'Legs'],
+  ),
+];
+
+_BodyLayerDefinition? _bodyLayerForAsset(String assetName) {
+  for (final layer in _bodyLayers) {
+    if (layer.assetName == assetName) return layer;
+  }
+  return null;
+}
+
+int _progressForLayer(
+  Map<String, int> muscleProgress,
+  _BodyLayerDefinition layer,
+) {
+  for (final key in layer.progressKeys) {
+    final value = _progressValue(muscleProgress, key);
+    if (value != null) return value;
+  }
+  return 0;
+}
+
+int? _progressValue(Map<String, int> muscleProgress, String key) {
+  final direct = muscleProgress[key];
+  if (direct != null) return direct;
+  final normalizedKey = key.toLowerCase();
+  for (final entry in muscleProgress.entries) {
+    if (entry.key.toLowerCase() == normalizedKey) return entry.value;
+  }
+  return null;
+}
+
+String? _hitTestBodyLayer(
+  Offset position,
+  Size boxSize,
+  _BodySvgMetrics metrics,
+) {
+  final center = Offset(boxSize.width / 2, boxSize.height / 2);
+  final unscaledPosition = center + (position - center) / _bodyVisualScale;
+  final paintRect = _svgPaintRect(boxSize, metrics);
+  if (!paintRect.contains(unscaledPosition)) return null;
+
+  final svgX =
+      ((unscaledPosition.dx - paintRect.left) / paintRect.width) *
+      metrics.viewBoxWidth;
+  final svgY =
+      ((unscaledPosition.dy - paintRect.top) / paintRect.height) *
+      metrics.viewBoxHeight;
+  final y = (svgY / metrics.viewBoxHeight).clamp(0.0, 1.0);
+
+  if (svgX <= metrics.bodyWidth) {
+    return _hitFrontLayer(svgX / metrics.bodyWidth, y);
+  }
+  if (svgX >= metrics.backStart) {
+    return _hitBackLayer((svgX - metrics.backStart) / metrics.bodyWidth, y);
+  }
+  return null;
+}
+
+Rect _svgPaintRect(Size boxSize, _BodySvgMetrics metrics) {
+  final scale = math.min(
+    boxSize.width / metrics.viewBoxWidth,
+    boxSize.height / metrics.viewBoxHeight,
+  );
+  final width = metrics.viewBoxWidth * scale;
+  final height = metrics.viewBoxHeight * scale;
+  return Rect.fromLTWH(
+    (boxSize.width - width) / 2,
+    (boxSize.height - height) / 2,
+    width,
+    height,
+  );
+}
+
+String? _hitFrontLayer(double x, double y) {
+  if (_inside(y, .40, .70) && _outerLimb(x)) return 'forearms';
+  if (_inside(y, .21, .48) && _outerUpperLimb(x)) return 'arms';
+  if (_inside(y, .13, .25) && _wideShoulder(x)) return 'shoulders';
+  if (_inside(y, .16, .30) && _inside(x, .34, .66)) return 'chest';
+  if (_inside(y, .27, .55) && (_inside(x, .24, .38) || _inside(x, .62, .76))) {
+    return 'obliques';
+  }
+  if (_inside(y, .29, .51) && _inside(x, .38, .62)) return 'abs';
+  if (_inside(y, .50, .75) && _inside(x, .26, .74)) return 'quads';
+  if (_inside(y, .74, .98) && _inside(x, .28, .72)) return 'calves';
+  return null;
+}
+
+String? _hitBackLayer(double x, double y) {
+  if (_inside(y, .42, .69) && _outerLimb(x)) return 'forearms';
+  if (_inside(y, .24, .49) && _outerUpperLimb(x)) return 'arms';
+  if (_inside(y, .13, .25) && _wideShoulder(x)) return 'shoulders';
+  if (_inside(y, .08, .23) && _inside(x, .35, .65)) return 'traps';
+  if (_inside(y, .19, .50) && _inside(x, .25, .75)) return 'lats';
+  if (_inside(y, .48, .61) && _inside(x, .31, .69)) return 'glutes';
+  if (_inside(y, .59, .78) && _inside(x, .29, .71)) return 'hamstrings';
+  if (_inside(y, .76, .98) && _inside(x, .29, .71)) return 'calves';
+  return null;
+}
+
+bool _inside(double value, double min, double max) =>
+    value >= min && value <= max;
+
+bool _outerLimb(double x) => x <= .23 || x >= .77;
+
+bool _outerUpperLimb(double x) => x <= .27 || x >= .73;
+
+bool _wideShoulder(double x) => x <= .36 || x >= .64;
+
 List<MapEntry<String, int>> _displayMuscles(Map<String, int> muscles) {
   const order = [
     'Chest',
@@ -736,188 +1139,43 @@ List<MapEntry<String, int>> _displayMuscles(Map<String, int> muscles) {
 
 Color _muscleColor(String key) {
   final normalized = key.toLowerCase();
-  if (normalized.contains('chest')) return const Color(0xFFFF512F);
-  if (normalized.contains('back')) return const Color(0xFF13A88B);
-  if (normalized.contains('shoulder')) return const Color(0xFFF5BA00);
+  if (normalized.contains('chest')) return const Color(0xFFD9362F);
+  if (normalized.contains('back')) return const Color(0xFF007C70);
+  if (normalized.contains('shoulder')) return const Color(0xFFD29600);
   if (normalized.contains('arm') ||
       normalized.contains('bicep') ||
       normalized.contains('tricep')) {
-    return const Color(0xFF8C4DE8);
+    return const Color(0xFF6630BF);
   }
   if (normalized.contains('core') || normalized.contains('ab')) {
-    return const Color(0xFF62C83F);
+    return const Color(0xFF439E2E);
   }
-  if (normalized.contains('hamstring')) return const Color(0xFFFF5A2C);
-  if (normalized.contains('glute')) return const Color(0xFFF0448B);
-  if (normalized.contains('calf')) return const Color(0xFF11A786);
+  if (normalized.contains('hamstring')) return const Color(0xFFE6432A);
+  if (normalized.contains('glute')) return const Color(0xFFD92E73);
+  if (normalized.contains('calf')) return const Color(0xFF007E68);
   if (normalized.contains('leg') || normalized.contains('quad')) {
-    return const Color(0xFF2382F6);
+    return const Color(0xFF1268D8);
   }
-  if (normalized.contains('cardio')) return const Color(0xFFFF8E1A);
+  if (normalized.contains('cardio')) return const Color(0xFFD76E00);
   return AppColors.gold;
 }
 
-class _MuscleBodyPainter extends CustomPainter {
-  const _MuscleBodyPainter({
-    required this.isFemale,
-    required this.muscleProgress,
-    required this.outlineColor,
-  });
-
-  final bool isFemale;
-  final Map<String, int> muscleProgress;
-  final Color outlineColor;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final outline = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..color = outlineColor.withValues(alpha: .62);
-    final faint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1
-      ..color = AppColors.gold.withValues(alpha: .12);
-
-    canvas.drawCircle(
-      Offset(size.width * .50, size.height * .52),
-      size.width * .42,
-      faint,
-    );
-
-    _drawFigure(
-      canvas,
-      Rect.fromLTWH(0, 14, size.width * .48, size.height - 28),
-      front: true,
-      outline: outline,
-    );
-    _drawFigure(
-      canvas,
-      Rect.fromLTWH(size.width * .52, 14, size.width * .48, size.height - 28),
-      front: false,
-      outline: outline,
-    );
-  }
-
-  void _drawFigure(
-    Canvas canvas,
-    Rect rect, {
-    required bool front,
-    required Paint outline,
-  }) {
-    final cx = rect.center.dx;
-    final top = rect.top;
-    final h = rect.height;
-    final w = rect.width;
-    final shoulder = isFemale ? w * .24 : w * .28;
-    final hip = isFemale ? w * .20 : w * .16;
-
-    canvas.drawOval(
-      Rect.fromCenter(
-        center: Offset(cx, top + h * .075),
-        width: w * .15,
-        height: h * .13,
-      ),
-      outline,
-    );
-    canvas.drawLine(
-      Offset(cx, top + h * .14),
-      Offset(cx, top + h * .63),
-      outline,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(cx - shoulder, top + h * .19)
-        ..quadraticBezierTo(cx, top + h * .13, cx + shoulder, top + h * .19)
-        ..lineTo(cx + hip, top + h * .52)
-        ..quadraticBezierTo(cx, top + h * .60, cx - hip, top + h * .52)
-        ..close(),
-      outline,
-    );
-    canvas.drawLine(
-      Offset(cx - shoulder, top + h * .20),
-      Offset(cx - w * .34, top + h * .48),
-      outline,
-    );
-    canvas.drawLine(
-      Offset(cx + shoulder, top + h * .20),
-      Offset(cx + w * .34, top + h * .48),
-      outline,
-    );
-    canvas.drawLine(
-      Offset(cx - hip * .72, top + h * .56),
-      Offset(cx - w * .13, top + h * .94),
-      outline,
-    );
-    canvas.drawLine(
-      Offset(cx + hip * .72, top + h * .56),
-      Offset(cx + w * .13, top + h * .94),
-      outline,
-    );
-
-    if (front) {
-      _muscle(canvas, rect, 'Chest', cx - w * .075, .25, .16, .07);
-      _muscle(canvas, rect, 'Chest', cx + w * .075, .25, .16, .07);
-      _muscle(canvas, rect, 'Shoulders', cx - w * .20, .25, .08, .10);
-      _muscle(canvas, rect, 'Shoulders', cx + w * .20, .25, .08, .10);
-      _muscle(canvas, rect, 'Arms', cx - w * .27, .37, .07, .16);
-      _muscle(canvas, rect, 'Arms', cx + w * .27, .37, .07, .16);
-      for (final y in [.35, .42, .49]) {
-        _muscle(canvas, rect, 'Core', cx - w * .045, y, .055, .055);
-        _muscle(canvas, rect, 'Core', cx + w * .045, y, .055, .055);
-      }
-      _muscle(canvas, rect, 'Legs', cx - w * .09, .69, .09, .25);
-      _muscle(canvas, rect, 'Legs', cx + w * .09, .69, .09, .25);
-      _muscle(canvas, rect, 'Calves', cx - w * .08, .88, .055, .12);
-      _muscle(canvas, rect, 'Calves', cx + w * .08, .88, .055, .12);
-    } else {
-      _muscle(canvas, rect, 'Back', cx, .31, .25, .23);
-      _muscle(canvas, rect, 'Shoulders', cx - w * .21, .27, .075, .10);
-      _muscle(canvas, rect, 'Shoulders', cx + w * .21, .27, .075, .10);
-      _muscle(canvas, rect, 'Arms', cx - w * .27, .40, .065, .15);
-      _muscle(canvas, rect, 'Arms', cx + w * .27, .40, .065, .15);
-      _muscle(canvas, rect, 'Glutes', cx - w * .075, .57, .12, .10);
-      _muscle(canvas, rect, 'Glutes', cx + w * .075, .57, .12, .10);
-      _muscle(canvas, rect, 'Hamstrings', cx - w * .09, .73, .07, .22);
-      _muscle(canvas, rect, 'Hamstrings', cx + w * .09, .73, .07, .22);
-      _muscle(canvas, rect, 'Calves', cx - w * .08, .89, .055, .12);
-      _muscle(canvas, rect, 'Calves', cx + w * .08, .89, .055, .12);
-    }
-  }
-
-  void _muscle(
-    Canvas canvas,
-    Rect rect,
-    String muscle,
-    double centerX,
-    double yFactor,
-    double widthFactor,
-    double heightFactor,
-  ) {
-    final value = ((muscleProgress[muscle] ?? 0) / 100).clamp(0.22, 1.0);
-    final color = _muscleColor(muscle).withValues(alpha: value);
-    final paint = Paint()
-      ..style = PaintingStyle.fill
-      ..color = color;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromCenter(
-          center: Offset(centerX, rect.top + rect.height * yFactor),
-          width: rect.width * widthFactor,
-          height: rect.height * heightFactor,
-        ),
-        const Radius.circular(999),
-      ),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _MuscleBodyPainter oldDelegate) {
-    return oldDelegate.isFemale != isFemale ||
-        oldDelegate.muscleProgress != muscleProgress ||
-        oldDelegate.outlineColor != outlineColor;
-  }
+Color _bodyLayerColor(String assetName) {
+  return switch (assetName) {
+    'chest' => _muscleColor('Chest'),
+    'shoulders' => _muscleColor('Shoulders'),
+    'arms' => _muscleColor('Arms'),
+    'forearms' => const Color(0xFF4C39B6),
+    'abs' => _muscleColor('Core'),
+    'obliques' => const Color(0xFF4E9E35),
+    'lats' => _muscleColor('Back'),
+    'traps' => const Color(0xFF007FA3),
+    'quads' => _muscleColor('Legs'),
+    'hamstrings' => _muscleColor('Hamstrings'),
+    'glutes' => _muscleColor('Glutes'),
+    'calves' => _muscleColor('Calves'),
+    _ => AppColors.gold,
+  };
 }
 
 class _Metric extends StatelessWidget {

@@ -2,6 +2,8 @@ import 'package:deepfitness/core/router/app_router.dart';
 import 'package:deepfitness/core/constants/app_constants.dart';
 import 'package:deepfitness/core/theme/app_theme.dart';
 import 'package:deepfitness/core/theme/theme_controller.dart';
+import 'package:deepfitness/services/supabase_service.dart';
+import 'package:deepfitness/services/timeout_http_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -12,10 +14,24 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   if (SupabaseConfig.isConfigured) {
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
-    );
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey,
+        httpClient: TimeoutHttpClient(),
+      );
+      SupabaseService.markInitialized();
+    } catch (error, stackTrace) {
+      SupabaseService.markUnavailable();
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'deepfitness',
+          context: ErrorDescription('while initializing Supabase'),
+        ),
+      );
+    }
   }
 
   runApp(const ProviderScope(child: DeepFitnessApp()));

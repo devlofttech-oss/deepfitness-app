@@ -11,9 +11,20 @@ class SupabaseService {
   // ignore: prefer_initializing_formals
   SupabaseService({SupabaseClient? client}) : _client = client;
 
+  static bool _isInitialized = false;
+
+  static void markInitialized() {
+    _isInitialized = true;
+  }
+
+  static void markUnavailable() {
+    _isInitialized = false;
+  }
+
   final SupabaseClient? _client;
 
-  bool get isConfigured => SupabaseConfig.isConfigured;
+  bool get isConfigured =>
+      _client != null || (SupabaseConfig.isConfigured && _isInitialized);
 
   SupabaseClient get client {
     final injected = _client;

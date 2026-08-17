@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/supabase_service.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+const _appDataTimeout = Duration(seconds: 20);
 
 final appDataRepositoryProvider = Provider<AppDataRepository>(
   (ref) => AppDataRepository(ref.watch(supabaseServiceProvider)),
@@ -19,26 +23,32 @@ final currentAuthUserIdProvider = Provider<String?>((ref) {
 });
 
 final currentUserProvider = FutureProvider<AppUser>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchCurrentUser();
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchCurrentUser(),
+  );
 });
 
 final workoutProvider = FutureProvider<WorkoutPlan>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref
-      .watch(appDataRepositoryProvider)
-      .fetchTodayWorkout(date: DateTime.now());
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchTodayWorkout(date: DateTime.now()),
+  );
 });
 
 final nutritionProvider = FutureProvider<NutritionPlan>((ref) {
-  ref.watch(currentAuthUserIdProvider);
   final date = ref.watch(nutritionDateProvider);
-  return ref.watch(appDataRepositoryProvider).fetchNutritionPlan(date: date);
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchNutritionPlan(date: date),
+  );
 });
 
 final todayNutritionProvider = FutureProvider<NutritionPlan>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchNutritionPlan();
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchNutritionPlan(),
+  );
 });
 
 final nutritionDateProvider =
@@ -47,11 +57,12 @@ final nutritionDateProvider =
     );
 
 final progressProvider = FutureProvider<MemberProgress>((ref) {
-  ref.watch(currentAuthUserIdProvider);
   final range = ref.watch(progressDateRangeProvider);
-  return ref
-      .watch(appDataRepositoryProvider)
-      .fetchProgress(startDate: range?.start, endDate: range?.end);
+  return _loadForSignedInUser(
+    ref,
+    (repository) =>
+        repository.fetchProgress(startDate: range?.start, endDate: range?.end),
+  );
 });
 
 final progressDateRangeProvider =
@@ -61,13 +72,11 @@ final progressDateRangeProvider =
     >(ProgressDateRangeController.new);
 
 final appSettingsProvider = FutureProvider<AppSettings>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchSettings();
+  return _loadForSignedInUser(ref, (repository) => repository.fetchSettings());
 });
 
 final membersProvider = FutureProvider<List<MemberSummary>>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchMembers();
+  return _loadForSignedInUser(ref, (repository) => repository.fetchMembers());
 });
 
 final exerciseLibraryProvider = FutureProvider<List<Exercise>>(
@@ -75,24 +84,56 @@ final exerciseLibraryProvider = FutureProvider<List<Exercise>>(
 );
 
 final trainerStatsProvider = FutureProvider<TrainerDashboardStats>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchTrainerStats();
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchTrainerStats(),
+  );
 });
 
 final savedWorkoutPlansProvider = FutureProvider<List<WorkoutPlan>>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchSavedWorkoutPlans();
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchSavedWorkoutPlans(),
+  );
 });
 
 final savedDietPlansProvider = FutureProvider<List<NutritionPlan>>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchSavedDietPlans();
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchSavedDietPlans(),
+  );
 });
 
 final mealTemplatesProvider = FutureProvider<List<DietMeal>>((ref) {
-  ref.watch(currentAuthUserIdProvider);
-  return ref.watch(appDataRepositoryProvider).fetchMealTemplates();
+  return _loadForSignedInUser(
+    ref,
+    (repository) => repository.fetchMealTemplates(),
+  );
 });
+
+Future<T> _loadForSignedInUser<T>(
+  Ref ref,
+  Future<T> Function(AppDataRepository repository) load,
+) async {
+  final session = await ref
+      .watch(authControllerProvider.future)
+      .timeout(
+        _appDataTimeout,
+        onTimeout: () => throw TimeoutException(
+          'Timed out while checking your login session.',
+        ),
+      );
+  if (!session.isAuthenticated || session.userId == null) {
+    throw StateError('You are not logged in.');
+  }
+
+  final repository = ref.watch(appDataRepositoryProvider);
+  return load(repository).timeout(
+    _appDataTimeout,
+    onTimeout: () =>
+        throw TimeoutException('Timed out while loading Deep Fitness data.'),
+  );
+}
 
 final selectedExerciseProvider =
     NotifierProvider<SelectedExerciseController, Exercise?>(
@@ -218,7 +259,7 @@ class AppDataRepository {
     try {
       return await _supabaseService.client
           .from('members')
-          .select('goal,gender,height_cm,age,trainer_id,trainers(name)')
+          .select('goal,height_cm,age,gender,trainer_id,trainers(name)')
           .eq('id', userId)
           .maybeSingle();
     } catch (error) {
@@ -319,14 +360,7 @@ class AppDataRepository {
     final waterGoal = await _fetchWaterGoal(userId);
     final waterLiters = await _fetchWaterLitersForDate(userId, selectedDate);
 
-    final plan = await _supabaseService.client
-        .from('diet_plans')
-        .select()
-        .eq('member_id', userId)
-        .eq('scheduled_date', selectedDay)
-        .order('created_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
+    final plan = await _fetchNutritionPlanRow(userId, selectedDay);
     if (plan == null) {
       return _emptyNutrition(
         waterLiters: waterLiters,
@@ -386,6 +420,33 @@ class AppDataRepository {
     );
   }
 
+  Future<Map<String, dynamic>?> _fetchNutritionPlanRow(
+    String userId,
+    String selectedDay,
+  ) async {
+    try {
+      final row = await _supabaseService.client
+          .from('diet_plans')
+          .select()
+          .eq('member_id', userId)
+          .eq('scheduled_date', selectedDay)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return _nullableMap(row);
+    } catch (error) {
+      if (!_isMissingColumn(error, 'diet_plans.scheduled_date')) rethrow;
+      final row = await _supabaseService.client
+          .from('diet_plans')
+          .select()
+          .eq('member_id', userId)
+          .order('created_at', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      return _nullableMap(row);
+    }
+  }
+
   Future<MemberProgress> fetchProgress({
     String? memberId,
     DateTime? startDate,
@@ -429,7 +490,6 @@ class AppDataRepository {
         .select('id')
         .eq('member_id', userId);
     final completedLogs = logs.where((row) => row['completed'] != false);
-    final gender = await _fetchMemberGender(userId);
     final assignmentStats = await _exerciseAssignmentStats(
       memberId: userId,
       startDate: startDate,
@@ -476,22 +536,7 @@ class AppDataRepository {
       completedExercises: assignmentStats.completed,
       missedExercises: assignmentStats.missed,
       adherence: assignmentStats.adherence,
-      gender: gender,
     );
-  }
-
-  Future<String?> _fetchMemberGender(String userId) async {
-    try {
-      final row = await _supabaseService.client
-          .from('members')
-          .select('gender')
-          .eq('id', userId)
-          .maybeSingle();
-      return row?['gender']?.toString();
-    } catch (error) {
-      if (!_isMissingColumn(error, 'members.gender')) rethrow;
-      return null;
-    }
   }
 
   Future<AppSettings> fetchSettings() async {
@@ -1112,6 +1157,13 @@ class AppDataRepository {
 
   static DateTime _toDateTime(Object? value) {
     return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
+  }
+
+  static Map<String, dynamic>? _nullableMap(Object? value) {
+    if (value == null) return null;
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return null;
   }
 
   static bool _isMissingColumn(Object error, String columnName) {

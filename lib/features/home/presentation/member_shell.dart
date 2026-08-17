@@ -23,6 +23,7 @@ class MemberShell extends ConsumerWidget {
     }
 
     final location = GoRouterState.of(context).uri.path;
+    final isDark = AppColors.isDark(context);
 
     return Scaffold(
       body: child,
@@ -30,19 +31,21 @@ class MemberShell extends ConsumerWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-          child: Container(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
             height: 72,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
             decoration: BoxDecoration(
               color: AppColors.surface(context),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(32),
               border: Border.all(
                 color: AppColors.divider(context).withValues(alpha: .72),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: .045),
-                  blurRadius: 22,
+                  color: Colors.black.withValues(alpha: isDark ? .32 : .045),
+                  blurRadius: isDark ? 28 : 22,
                   offset: const Offset(0, 10),
                 ),
               ],
@@ -95,30 +98,43 @@ class _NavItem extends StatelessWidget {
     return PressableScale(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(18),
         child: SizedBox(
           width: 72,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 240),
+                duration: const Duration(milliseconds: 280),
                 curve: Curves.easeOutCubic,
                 width: active ? 48 : 40,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: active ? AppColors.text(context) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
+                  color: active ? AppColors.goldBright : Colors.transparent,
+                  borderRadius: BorderRadius.circular(17),
+                  boxShadow: active
+                      ? [
+                          BoxShadow(
+                            color: AppColors.goldBright.withValues(alpha: .38),
+                            blurRadius: 16,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
                 ),
-                child: Icon(
-                  icon,
-                  color: active ? AppColors.goldBright : AppColors.muted,
-                  size: active ? 24 : 23,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    icon,
+                    key: ValueKey(active),
+                    color: active ? Colors.white : AppColors.secondaryText(context),
+                    size: active ? 24 : 23,
+                  ),
                 ),
               ),
               const SizedBox(height: 3),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
+                duration: const Duration(milliseconds: 200),
                 curve: Curves.easeOutCubic,
                 style:
                     Theme.of(context).textTheme.bodySmall?.copyWith(

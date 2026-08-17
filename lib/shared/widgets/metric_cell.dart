@@ -33,9 +33,9 @@ class MetricCell extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.secondaryText(context),
+            ),
           ),
         ],
       ),

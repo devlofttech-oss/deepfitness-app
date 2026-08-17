@@ -6,7 +6,7 @@ class PremiumCard extends StatelessWidget {
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16),
-    this.radius = 18,
+    this.radius = 24,
     this.color,
   });
 
@@ -17,22 +17,25 @@ class PremiumCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final isDark = AppColors.isDark(context);
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
         color: color ?? AppColors.surface(context),
         borderRadius: BorderRadius.circular(radius),
-        border: Border.all(
-          color: AppColors.divider(context).withValues(alpha: .86),
-        ),
+        border: isDark
+            ? null
+            : Border.all(
+                color: AppColors.divider(context).withValues(alpha: .86),
+              ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: AppColors.isDark(context) ? .12 : .028,
-            ),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
+            color: Colors.black.withValues(alpha: isDark ? .26 : .028),
+            blurRadius: isDark ? 26 : 18,
+            offset: const Offset(0, 10),
           ),
         ],
       ),

@@ -18,13 +18,22 @@ class ProgressRing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final percent = (value * 100).round();
+    final trackColor = AppColors.divider(context);
     return SizedBox(
       width: size,
       height: size,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          CustomPaint(size: Size.square(size), painter: _RingPainter(value)),
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(end: value.clamp(0.0, 1.0)),
+            duration: const Duration(milliseconds: 700),
+            curve: Curves.easeOutCubic,
+            builder: (context, animatedValue, _) => CustomPaint(
+              size: Size.square(size),
+              painter: _RingPainter(animatedValue, trackColor),
+            ),
+          ),
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -37,7 +46,7 @@ class ProgressRing extends StatelessWidget {
               Text(
                 label ?? 'of goal',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.muted,
+                  color: AppColors.secondaryText(context),
                   height: 1,
                 ),
               ),
@@ -50,9 +59,10 @@ class ProgressRing extends StatelessWidget {
 }
 
 class _RingPainter extends CustomPainter {
-  const _RingPainter(this.value);
+  const _RingPainter(this.value, this.trackColor);
 
   final double value;
+  final Color trackColor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -64,7 +74,7 @@ class _RingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round
-      ..color = AppColors.border;
+      ..color = trackColor;
     final progress = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
@@ -77,5 +87,5 @@ class _RingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _RingPainter oldDelegate) =>
-      oldDelegate.value != value;
+      oldDelegate.value != value || oldDelegate.trackColor != trackColor;
 }
