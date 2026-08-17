@@ -6,6 +6,10 @@ Premium Flutter gym management and fitness tracking app.
 
 The diet/nutrition member tab and trainer diet-assignment entry points are temporarily hidden. The underlying diet data model and implementation files remain in the codebase so the feature can be restored later.
 
+## Theming
+
+The app is dark-only. `AppTheme.dark` is the single theme, `MaterialApp` pins `themeMode` to dark so the OS appearance setting cannot flip it, and the Android launch theme/background matches the `#121212` canvas. There is no light palette and no dark-mode toggle in settings — colours should come from `AppColors` rather than being hardcoded per screen.
+
 ## Supabase setup
 
 1. Create a Supabase project.

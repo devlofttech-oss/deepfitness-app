@@ -73,7 +73,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     });
 
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.night,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -147,7 +147,7 @@ class _LogoOrb extends StatelessWidget {
             height: 310,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFF2EEE4)),
+              border: Border.all(color: AppColors.borderDark),
             ),
           ),
           Container(
@@ -155,10 +155,10 @@ class _LogoOrb extends StatelessWidget {
             height: 172,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFFFAF6ED).withValues(alpha: .84),
+              color: AppColors.slate.withValues(alpha: .84),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.goldBright.withValues(alpha: .08),
+                  color: AppColors.goldBright.withValues(alpha: .18),
                   blurRadius: 34,
                   spreadRadius: 8,
                 ),
@@ -190,7 +190,7 @@ class _Sparkle extends StatelessWidget {
     return Icon(
       Icons.auto_awesome_rounded,
       size: size,
-      color: const Color(0xFFD7C9A7).withValues(alpha: .64),
+      color: AppColors.goldBright.withValues(alpha: .52),
     );
   }
 }
@@ -203,7 +203,7 @@ class _BrandWordmark extends StatelessWidget {
     final style = Theme.of(context).textTheme.headlineMedium?.copyWith(
       fontWeight: FontWeight.w400,
       letterSpacing: 10,
-      color: AppColors.black,
+      color: AppColors.white,
     );
     return FittedBox(
       fit: BoxFit.scaleDown,
@@ -214,7 +214,7 @@ class _BrandWordmark extends StatelessWidget {
             TextSpan(text: 'DEEP '),
             TextSpan(
               text: 'FITNESS',
-              style: TextStyle(color: Color(0xFFD2A83D)),
+              style: TextStyle(color: AppColors.goldBright),
             ),
           ],
         ),
@@ -237,7 +237,7 @@ class _LoadingBar extends StatelessWidget {
         height: 6,
         child: LinearProgressIndicator(
           value: value,
-          backgroundColor: const Color(0xFFE9E7E4),
+          backgroundColor: AppColors.borderDark,
           color: AppColors.goldBright,
           minHeight: 6,
         ),
@@ -255,8 +255,8 @@ class _SplashBackgroundPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              const Color(0xFFF8EBCB).withValues(alpha: .28),
-              AppColors.white.withValues(alpha: 0),
+              AppColors.goldBright.withValues(alpha: .12),
+              AppColors.night.withValues(alpha: 0),
             ],
           ).createShader(
             Rect.fromCircle(
@@ -275,14 +275,14 @@ class _SplashBackgroundPainter extends CustomPainter {
       size,
       y: size.height * .82,
       height: 56,
-      color: const Color(0xFFF3EAD8).withValues(alpha: .48),
+      color: AppColors.slate.withValues(alpha: .55),
     );
     _drawWave(
       canvas,
       size,
       y: size.height * .88,
       height: 42,
-      color: const Color(0xFFF8F1E5).withValues(alpha: .66),
+      color: AppColors.charcoal.withValues(alpha: .75),
     );
   }
 

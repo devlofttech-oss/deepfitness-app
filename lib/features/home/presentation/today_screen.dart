@@ -61,7 +61,7 @@ class _TodayContent extends StatelessWidget {
                   Text(
                     '$greeting,',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.muted,
+                      color: AppColors.secondaryText(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -80,10 +80,10 @@ class _TodayContent extends StatelessWidget {
               children: [
                 IconButton(
                   onPressed: () => _showNotifications(context, workout),
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.notifications_none_rounded,
                     size: 26,
-                    color: AppColors.muted,
+                    color: AppColors.secondaryText(context),
                   ),
                 ),
                 Positioned(
@@ -106,7 +106,7 @@ class _TodayContent extends StatelessWidget {
         const SectionTitle(title: "Today's Workout"),
         const SizedBox(height: 18),
         PremiumCard(
-          color: AppColors.black,
+          color: AppColors.charcoal,
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

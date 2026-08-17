@@ -1,5 +1,4 @@
 import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/core/theme/theme_controller.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
@@ -22,7 +21,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   IconData _avatarIcon = Icons.person_rounded;
-  Color _avatarColor = AppColors.black;
+  Color _avatarColor = AppColors.graphite;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +52,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   void _showAvatarPicker() {
     final options = [
-      (Icons.person_rounded, AppColors.black),
+      (Icons.person_rounded, AppColors.graphite),
       (Icons.fitness_center_rounded, AppColors.gold),
       (Icons.local_fire_department_rounded, Colors.red.shade700),
       (Icons.self_improvement_rounded, AppColors.success),
@@ -121,7 +120,6 @@ class _ProfileContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkMode = ref.watch(themeModeProvider) == ThemeMode.dark;
     final settings = ref
         .watch(appSettingsProvider)
         .maybeWhen(
@@ -184,9 +182,6 @@ class _ProfileContent extends ConsumerWidget {
         const SizedBox(height: 14),
         _SettingsCard(
           settings: settings,
-          isDarkMode: isDarkMode,
-          onDarkModeChanged: (value) =>
-              ref.read(themeModeProvider.notifier).setDarkMode(value),
           onNotificationsChanged: (value) async {
             await ref
                 .read(appDataRepositoryProvider)
@@ -249,7 +244,7 @@ class _ProfileSummaryCard extends StatelessWidget {
                     backgroundColor: avatarColor,
                     child: Icon(
                       avatarIcon,
-                      color: AppColors.goldBright,
+                      color: AppColors.white,
                       size: 32,
                     ),
                   ),
@@ -434,7 +429,7 @@ class _FitnessLevelOption extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         color: selected
-            ? AppColors.goldSoft.withValues(alpha: .62)
+            ? AppColors.chipBackground(context)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
@@ -590,8 +585,6 @@ class _PersonalDetailsCard extends StatelessWidget {
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard({
     required this.settings,
-    required this.isDarkMode,
-    required this.onDarkModeChanged,
     required this.onNotificationsChanged,
     required this.onUnitsTap,
     required this.onPrivacyTap,
@@ -600,8 +593,6 @@ class _SettingsCard extends StatelessWidget {
   });
 
   final AppSettings settings;
-  final bool isDarkMode;
-  final ValueChanged<bool> onDarkModeChanged;
   final ValueChanged<bool> onNotificationsChanged;
   final VoidCallback onUnitsTap;
   final VoidCallback onPrivacyTap;
@@ -624,12 +615,6 @@ class _SettingsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          _SettingsSwitchRow(
-            icon: Icons.dark_mode_outlined,
-            label: 'Dark Mode',
-            value: isDarkMode,
-            onChanged: onDarkModeChanged,
-          ),
           _SettingsSwitchRow(
             icon: Icons.notifications_none_rounded,
             label: 'Notifications',
@@ -848,7 +833,7 @@ class _SoftIconBox extends StatelessWidget {
       width: 32,
       height: 32,
       decoration: BoxDecoration(
-        color: AppColors.goldSoft.withValues(alpha: .45),
+        color: AppColors.chipBackground(context),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.gold.withValues(alpha: .18)),
       ),
@@ -1052,7 +1037,7 @@ void _showAboutDeepFitness(BuildContext context) {
     applicationName: 'Deep Fitness',
     applicationVersion: '1.0.0',
     applicationIcon: const CircleAvatar(
-      backgroundColor: AppColors.black,
+      backgroundColor: AppColors.charcoal,
       child: Icon(Icons.fitness_center_rounded, color: AppColors.gold),
     ),
     children: const [

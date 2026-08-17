@@ -417,7 +417,7 @@ class _TopBar extends StatelessWidget {
           child: Text(
             title,
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.muted,
+              color: AppColors.secondaryText(context),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -443,7 +443,7 @@ class _PreviewTopBar extends StatelessWidget {
           child: Text(
             'Exercise Details',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.muted,
+              color: AppColors.secondaryText(context),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -622,11 +622,11 @@ class _ExerciseRow extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppColors.goldSoft,
+                  backgroundColor: AppColors.chipBackground(context),
                   child: Text(
                     '$index',
                     style: const TextStyle(
-                      color: AppColors.black,
+                      color: AppColors.goldBright,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -901,11 +901,11 @@ class _InstructionRow extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: AppColors.goldSoft,
+                backgroundColor: AppColors.chipBackground(context),
                 child: Text(
                   '$index',
                   style: const TextStyle(
-                    color: AppColors.black,
+                    color: AppColors.goldBright,
                     fontWeight: FontWeight.w800,
                     fontSize: 12,
                   ),

@@ -127,8 +127,8 @@ class TrainerDashboardScreen extends ConsumerWidget {
             action: IconButton.filled(
               onPressed: () => context.push('/trainer/profile'),
               style: IconButton.styleFrom(
-                backgroundColor: AppColors.white,
-                foregroundColor: AppColors.black,
+                backgroundColor: AppColors.surface(context),
+                foregroundColor: AppColors.text(context),
               ),
               icon: const Icon(Icons.person_outline_rounded),
             ),
@@ -813,7 +813,7 @@ class _AssignExercisesScreenState extends ConsumerState<AssignExercisesScreen> {
           : FloatingActionButton.extended(
               heroTag: 'save-workout-assignment',
               backgroundColor: AppColors.goldBright,
-              foregroundColor: AppColors.text(context),
+              foregroundColor: AppColors.black,
               elevation: 8,
               icon: const Icon(Icons.save_outlined),
               label: Text(
@@ -1355,7 +1355,7 @@ class TrainerProfileScreen extends ConsumerWidget {
                         Text(
                           user.email,
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.muted),
+                              ?.copyWith(color: AppColors.secondaryText(context)),
                         ),
                       ],
                     ),
@@ -1596,8 +1596,8 @@ class _BackHeader extends StatelessWidget {
         IconButton.filled(
           onPressed: () => _goBackOr(context, '/trainer'),
           style: IconButton.styleFrom(
-            backgroundColor: AppColors.white,
-            foregroundColor: AppColors.black,
+            backgroundColor: AppColors.surface(context),
+            foregroundColor: AppColors.text(context),
           ),
           icon: const Icon(Icons.chevron_left_rounded),
         ),
@@ -1672,9 +1672,9 @@ class _ChoiceCard extends StatelessWidget {
                     ),
                     Text(
                       subtitle,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                   ],
                 ),
@@ -1705,14 +1705,14 @@ class _MemberRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumCard(
         padding: const EdgeInsets.all(14),
-        color: selected ? AppColors.goldSoft : AppColors.white,
+        color: selected ? AppColors.chipBackground(context) : null,
         child: InkWell(
           onTap: onTap,
           child: Row(
             children: [
               CircleAvatar(
                 radius: 22,
-                backgroundColor: AppColors.black,
+                backgroundColor: AppColors.graphite,
                 child: Icon(
                   selected ? Icons.check_rounded : Icons.person_outline_rounded,
                   color: AppColors.goldBright,
@@ -1727,19 +1727,23 @@ class _MemberRow extends StatelessWidget {
                     Text(
                       member.name,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.text(context),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       '${member.goal} - ${member.currentWeight.toStringAsFixed(1)} kg',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.secondaryText(context),
+              ),
             ],
           ),
         ),
@@ -1767,7 +1771,7 @@ class _SelectableRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: PremiumCard(
         padding: const EdgeInsets.all(14),
-        color: active ? AppColors.goldSoft : AppColors.white,
+        color: active ? AppColors.chipBackground(context) : null,
         child: InkWell(
           onTap: onTap,
           child: Row(
@@ -1786,14 +1790,15 @@ class _SelectableRow extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.text(context),
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                   ],
                 ),
@@ -2126,9 +2131,9 @@ class _TrainerStat extends StatelessWidget {
           ),
           Text(
             label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.muted),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.secondaryText(context),
+            ),
           ),
         ],
       ),
@@ -2394,14 +2399,24 @@ class _GenderSelector extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(option.$2, size: 18),
+                            Icon(
+                              option.$2,
+                              size: 18,
+                              color: value == option.$1
+                                  ? AppColors.black
+                                  : null,
+                            ),
                             const SizedBox(width: 5),
                             Flexible(
                               child: Text(
                                 option.$3,
                                 overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w800),
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: value == option.$1
+                                      ? AppColors.black
+                                      : null,
+                                  fontWeight: FontWeight.w800,
+                                ),
                               ),
                             ),
                           ],
@@ -2447,7 +2462,9 @@ class _HeightUnitToggle extends StatelessWidget {
         child: Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: active ? AppColors.text(context) : AppColors.muted,
+            color: active
+                ? AppColors.black
+                : AppColors.secondaryText(context),
             fontWeight: FontWeight.w800,
           ),
         ),

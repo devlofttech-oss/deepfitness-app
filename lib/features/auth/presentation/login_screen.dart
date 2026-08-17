@@ -300,7 +300,7 @@ class _AuthScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.night,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -324,9 +324,9 @@ class _AuthScaffold extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       subtitle!,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(color: AppColors.muted),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: AppColors.secondaryText(context),
+                      ),
                     ),
                   ],
                   const SizedBox(height: 26),
@@ -374,7 +374,7 @@ class _AuthHeader extends StatelessWidget {
               children: const [
                 TextSpan(
                   text: 'DEEP ',
-                  style: TextStyle(color: AppColors.black),
+                  style: TextStyle(color: AppColors.white),
                 ),
                 TextSpan(
                   text: 'FITNESS',
@@ -398,8 +398,8 @@ class _AuthBackgroundPainter extends CustomPainter {
       ..shader =
           RadialGradient(
             colors: [
-              const Color(0xFFF8EBCB).withValues(alpha: .18),
-              AppColors.white.withValues(alpha: 0),
+              AppColors.goldBright.withValues(alpha: .10),
+              AppColors.night.withValues(alpha: 0),
             ],
           ).createShader(
             Rect.fromCircle(
@@ -479,7 +479,7 @@ class _AuthError extends StatelessWidget {
     return Text(
       message,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: Colors.red.shade700,
+        color: AppColors.danger,
         fontWeight: FontWeight.w600,
       ),
     );

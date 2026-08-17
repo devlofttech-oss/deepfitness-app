@@ -169,7 +169,7 @@ class _DietContentState extends ConsumerState<_DietContent> {
         InkWell(
           onTap: () => _addWater(nutrition),
           child: PremiumCard(
-            color: AppColors.goldSoft,
+            color: AppColors.chipBackground(context),
             padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
             child: Row(
               children: [
@@ -178,7 +178,7 @@ class _DietContentState extends ConsumerState<_DietContent> {
                   backgroundColor: AppColors.goldBright,
                   child: Icon(
                     Icons.water_drop_outlined,
-                    color: AppColors.white,
+                    color: AppColors.black,
                   ),
                 ),
                 const SizedBox(width: 14),
@@ -283,7 +283,7 @@ class _MealCard extends StatelessWidget {
                   Text(
                     meal.description,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.charcoal,
+                      color: AppColors.text(context),
                       height: 1.35,
                     ),
                   ),
@@ -350,7 +350,10 @@ void _showMealDetails(BuildContext context, DietMeal meal) {
                 ),
               ),
               const SizedBox(height: 8),
-              Text(meal.time, style: const TextStyle(color: AppColors.muted)),
+              Text(
+                meal.time,
+                style: TextStyle(color: AppColors.secondaryText(context)),
+              ),
               const SizedBox(height: 12),
               Text(
                 meal.description,
