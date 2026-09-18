@@ -60,6 +60,14 @@ the party, applies the best-value bundles first, then charges per head. From
 
 ## 1. Firebase setup
 
+> **This event needs its own Firebase project — never the Deep Fitness app's
+> (`deepfitness-82bdd`).** Both live in this repo now, each with its own
+> `firebase.json` and `firestore.rules`, and running `firebase deploy --only
+> firestore` in the wrong directory would overwrite the app's security rules
+> with the event's. The `.firebaserc` here holds a placeholder project id on
+> purpose, so the CLI fails loudly until you set the real one. Always check
+> `firebase use` before deploying, and run it from inside this folder.
+
 1. Create a project at [console.firebase.google.com](https://console.firebase.google.com).
 2. **Build → Authentication → Get started → Sign-in method** → enable **Email/Password**.
 3. **Build → Firestore Database → Create database** → production mode, pick a region.
