@@ -1,0 +1,109 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // Keep in sync with MAX_PARTY_SIZE in src/lib/event.ts.
+    function isHeadCount(value) {
+      return value is int && value >= 0 && value <= 12;
+    }
+
+    function partyTotal(party) {
+      return party.adults + party.kids + party.students;
+    }
+
+    function isValidParty(party) {
+      return party.keys().hasOnly(['adults', 'kids', 'students']) &&
+        party.keys().hasAll(['adults', 'kids', 'students']) &&
+        isHeadCount(party.adults) &&
+        isHeadCount(party.kids) &&
+        isHeadCount(party.students) &&
+        partyTotal(party) >= 1 &&
+        partyTotal(party) <= 12;
+    }
+
+    // Rules cannot loop over a list, so beyond the head count matching the
+    // party and the lead attendee being named, per-attendee detail is
+    // validated in the booking form and re-checked by an admin at approval.
+    function isValidAttendees(attendees, party) {
+      return attendees is list &&
+        attendees.size() == partyTotal(party) &&
+        attendees[0].name is string &&
+        attendees[0].name.size() > 0;
+    }
+
+    // Bookings open 2026-09-18 00:00 IST — kept in sync with
+    // REGISTRATION_OPENS_AT in src/lib/launch.ts.
+    function isLaunched() {
+      return request.time.toMillis() >= 1789669800000;
+    }
+
+    // Public slot counter — how many heads are already confirmed, so the
+    // landing and event pages can show passes remaining without exposing the
+    // tickets collection. Written only by admins, in the same transaction that
+    // approves a booking.
+    match /stats/{docId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+        request.resource.data.confirmedHeads is int &&
+        request.resource.data.confirmedHeads >= 0;
+    }
+
+    match /profiles/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+
+      allow create: if isSignedIn() && request.auth.uid == uid &&
+        request.resource.data.isAdmin == false &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 &&
+        request.resource.data.email is string && request.resource.data.email.size() > 0 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0;
+
+      // No update path. Nothing in the app edits a profile after signup, and
+      // letting a user rewrite their own name/phone would let them
+      // misrepresent who a pass belongs to. Promote an admin from the
+      // Firebase console instead.
+
+      allow delete: if isAdmin();
+    }
+
+    match /tickets/{ticketId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isSignedIn() &&
+        isLaunched() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.verifiedAt == null &&
+        request.resource.data.checkedInAt == null &&
+        isValidParty(request.resource.data.party) &&
+        isValidAttendees(request.resource.data.attendees, request.resource.data.party) &&
+        request.resource.data.amount is number &&
+        request.resource.data.amount > 0 &&
+        request.resource.data.amount <= 100000 &&
+        request.resource.data.transactionId is string &&
+        request.resource.data.transactionId.size() > 0 &&
+        request.resource.data.name is string && request.resource.data.name.size() > 0 &&
+        request.resource.data.email is string && request.resource.data.email.size() > 0 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0;
+
+      // Admin approve/reject (pending -> verified/rejected) or check-in
+      // (verified -> checked_in). The check-in runs as a transaction in
+      // src/components/Scanner.tsx, so a QR cannot be reused.
+      allow update: if isAdmin() && (
+        (resource.data.status == 'pending' && request.resource.data.status in ['verified', 'rejected']) ||
+        (resource.data.status == 'verified' && request.resource.data.status == 'checked_in')
+      );
+
+      allow delete: if isAdmin();
+    }
+  }
+}

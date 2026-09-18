@@ -1,0 +1,172 @@
+@import "tailwindcss";
+
+:root {
+  /* Maroon base — deep, warm, festive */
+  --background: #1b0409;
+  --surface: #2a070f;
+  --surface-2: #380a16;
+  --maroon: #6b0f1a;
+  --maroon-soft: #8c1626;
+  --border: #5a1622;
+
+  /* Gold + cream */
+  --gold-1: #f7e6ac;
+  --gold-2: #e9c86c;
+  --gold-3: #c9962f;
+  --gold-4: #8a6318;
+  --foreground: #fdf3e3;
+  --muted: #cfa899;
+
+  /* Festival accents */
+  --marigold: #f5a524;
+  --henna: #1f7a5c;
+
+  --danger: #ff6b6b;
+  --success: #57d38c;
+  --warning: #f5c542;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-display: var(--font-rozha);
+}
+
+body {
+  background-color: var(--background);
+  /* Layered festive glow: a warm spotlight up top, maroon pools at the
+     bottom corners, over a fine gold rangoli dot grid. */
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245, 165, 36, 0.18), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(107, 15, 26, 0.55), transparent 65%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(107, 15, 26, 0.55), transparent 65%),
+    radial-gradient(circle at 1px 1px, rgba(233, 200, 108, 0.09) 1px, transparent 0);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 22px 22px;
+  background-attachment: fixed;
+  color: var(--foreground);
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-rozha), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* Gold leaf gradient with a slow sheen, like foil on a wedding card. */
+.gold-text {
+  background: linear-gradient(
+    115deg,
+    #a8781f 0%,
+    #f7e6ac 22%,
+    #c9962f 40%,
+    #fff6d8 55%,
+    #a8781f 72%,
+    #f2d98c 88%,
+    #a8781f 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  will-change: background-position;
+  animation: gold-sheen 7s ease-in-out infinite;
+}
+
+@keyframes gold-sheen {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+.gold-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(135deg, #8a6318, #f7e6ac, #c9962f, #f7e6ac, #8a6318) border-box;
+}
+
+.gold-btn {
+  background: linear-gradient(135deg, #a8781f, #f7e6ac 42%, #e9c86c 58%, #c9962f);
+  color: #3a0810;
+  font-weight: 600;
+  box-shadow: 0 6px 20px -8px rgba(233, 200, 108, 0.7);
+  transition: filter 0.2s ease, transform 0.15s ease;
+}
+
+.gold-btn:active {
+  transform: scale(0.98);
+}
+
+.gold-btn:hover {
+  filter: brightness(1.1);
+}
+
+.festive-card {
+  background: rgba(255, 244, 227, 0.035);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+}
+
+/* Woven dhoti-style diagonal stripes, used behind hero panels. */
+.pattern-weave {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(233, 200, 108, 0.06) 0px,
+    rgba(233, 200, 108, 0.06) 2px,
+    transparent 2px,
+    transparent 10px
+  );
+}
+
+::selection {
+  background: var(--gold-2);
+  color: #3a0810;
+}
+
+input, select, textarea {
+  font-size: 16px;
+}
+
+input, select {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--gold-3);
+}
+
+input::placeholder {
+  color: rgba(207, 168, 153, 0.55);
+}
+
+select option {
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
+/* html5-qrcode injects its own <video>; force it to fill and crop to
+   the square container instead of rendering at its native aspect ratio. */
+#qr-reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gold-text {
+    animation: none;
+  }
+}
