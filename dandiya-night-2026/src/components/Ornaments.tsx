@@ -45,39 +45,6 @@ export function DandiyaIcon(props: IconProps) {
   );
 }
 
-/** A lit diya. */
-export function DiyaIcon(props: IconProps) {
-  return (
-    <svg {...svgProps(props)}>
-      <path
-        d="M11.9 4c1.9 2 2.8 3.4 2.8 4.7a2.8 2.8 0 0 1-5.6 0C9.1 7.4 10 6 11.9 4Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M3.5 13.5h17c-.6 3.4-3.9 5.8-8.5 5.8s-7.9-2.4-8.5-5.8Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path d="M12 11.5v2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-/** Dhol / drum. */
-export function DholIcon(props: IconProps) {
-  return (
-    <svg {...svgProps(props)}>
-      <path d="M6 8h12l-1.2 8.5H7.2L6 8Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-      <ellipse cx="12" cy="8" rx="6" ry="2.2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M7 11l10 3M7 14l10-3" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity="0.7" />
-      <path d="M4 6.5 6 8M20 6.5 18 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 /** Speaker / DJ. */
 export function SpeakerIcon(props: IconProps) {
   return (
@@ -226,27 +193,6 @@ export function TicketIcon(props: IconProps) {
   );
 }
 
-/** Peacock feather. */
-export function PeacockIcon(props: IconProps) {
-  return (
-    <svg {...svgProps(props)}>
-      {/* barbs fanning out around the eye */}
-      <g stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity="0.75">
-        {[-58, -38, -19, 0, 19, 38, 58].map((deg) => (
-          <path key={deg} d="M12 6.4V1.4" transform={`rotate(${deg} 12 9)`} />
-        ))}
-        <path d="M8.4 13.6 5 15.4M15.6 13.6 19 15.4M8.8 16.4 6 18.6M15.2 16.4 18 18.6" />
-      </g>
-      {/* the eye */}
-      <ellipse cx="12" cy="9" rx="4.6" ry="5.2" stroke="currentColor" strokeWidth="1.5" />
-      <ellipse cx="12" cy="8.6" rx="2.2" ry="2.6" stroke="currentColor" strokeWidth="1.2" />
-      <circle cx="12" cy="8.6" r="0.9" fill="currentColor" />
-      {/* quill */}
-      <path d="M12 14.2v7.4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 /** Kalash — pot with coconut and mango leaves. */
 export function KalashIcon(props: IconProps) {
   return (
@@ -292,47 +238,6 @@ export function LotusIcon(props: IconProps) {
         strokeWidth="1.4"
         strokeLinecap="round"
       />
-    </svg>
-  );
-}
-
-/** Paisley / ambi motif. */
-export function PaisleyIcon(props: IconProps) {
-  return (
-    <svg {...svgProps(props)}>
-      <path
-        d="M14.8 2.8c3.9 1.7 5.6 5.6 4.4 9.5-1.2 4-4.8 6.7-8.8 6.7-3 0-5.4-1.9-5.4-4.6 0-2.5 1.9-4.3 4.3-4.3 1.9 0 3.3 1.2 3.3 2.8 0 1.3-.9 2.2-2.1 2.2"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="10.4" cy="14.6" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
-/** Ghungroo — a string of ankle bells. */
-export function GhungrooIcon(props: IconProps) {
-  return (
-    <svg {...svgProps(props)}>
-      <path d="M3 6.5c3 2.6 6 3.9 9 3.9s6-1.3 9-3.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      {[
-        { x: 6, y: 13 },
-        { x: 12, y: 15.4 },
-        { x: 18, y: 13 },
-      ].map((b, i) => (
-        <g key={i}>
-          <path
-            d={`M${b.x} ${b.y - 3.6}v1.4`}
-            stroke="currentColor"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-          />
-          <circle cx={b.x} cy={b.y} r="2.6" stroke="currentColor" strokeWidth="1.3" />
-          <path d={`M${b.x - 1.4} ${b.y + 1.9}h2.8`} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-        </g>
-      ))}
     </svg>
   );
 }
@@ -439,34 +344,6 @@ export function Mandala({ className = "", spin = 90 }: { className?: string; spi
 }
 
 /**
- * A rangoli corner flourish — quarter arcs and petals, meant to sit in the
- * corner of a card or section at low opacity.
- */
-export function RangoliCorner({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 80 80" className={className} aria-hidden fill="none">
-      <g stroke="currentColor" strokeWidth="1">
-        <path d="M0 76a76 76 0 0 0 76-76" strokeDasharray="3 4" />
-        <path d="M0 58a58 58 0 0 0 58-58" />
-        <path d="M0 38a38 38 0 0 0 38-38" />
-        {[10, 30, 50, 70].map((deg) => (
-          <ellipse
-            key={deg}
-            cx="0"
-            cy="0"
-            rx="6"
-            ry="22"
-            transform={`rotate(${deg}) translate(0 46)`}
-          />
-        ))}
-        <circle cx="0" cy="0" r="10" />
-      </g>
-      <circle cx="0" cy="0" r="3.5" fill="currentColor" />
-    </svg>
-  );
-}
-
-/**
  * A horizontal rule with an ornament in the middle, for breaking sections
  * apart the way a wedding card would.
  */
@@ -483,90 +360,6 @@ export function SectionDivider({
       <Icon size={18} />
       <span className="h-px flex-1 max-w-24 bg-gradient-to-l from-transparent to-[var(--gold-4)]" />
     </div>
-  );
-}
-
-/**
- * The hero illustration: two dancers mid-garba under an arch, sticks raised,
- * diyas along the ground. Drawn once and mirrored, so both figures stay in
- * step.
- */
-export function GarbaScene({ className = "" }: { className?: string }) {
-  const dancer = (
-    <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-      {/* dupatta */}
-      <path d="M84 58c2-9 20-9 22 0" stroke="currentColor" strokeWidth="1.6" opacity="0.8" />
-      <circle cx="95" cy="62" r="9" stroke="currentColor" strokeWidth="1.8" />
-      {/* braid */}
-      <path d="M87 68c-4 5-5 10-4 15" stroke="currentColor" strokeWidth="1.4" opacity="0.7" />
-      {/* torso */}
-      <path d="M95 71v18" stroke="currentColor" strokeWidth="1.8" />
-      {/* chaniya */}
-      <path d="M95 88 75 126q20 8 40 0Z" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M81 114q14 6 28 0" stroke="currentColor" strokeWidth="1.2" opacity="0.6" />
-      {/* arms */}
-      <path d="M96 79 118 66" stroke="currentColor" strokeWidth="1.8" />
-      <path d="M94 79 74 71" stroke="currentColor" strokeWidth="1.8" />
-      {/* dandiya sticks in each hand */}
-      <g stroke="currentColor" strokeWidth="1.8">
-        <path d="M112 58 126 72" />
-        <path d="M68 64 80 78" />
-      </g>
-      <g fill="currentColor">
-        <circle cx="111" cy="57" r="2" />
-        <circle cx="127" cy="73" r="2" />
-        <circle cx="67" cy="63" r="2" />
-        <circle cx="81" cy="79" r="2" />
-      </g>
-    </g>
-  );
-
-  return (
-    <svg viewBox="0 0 260 170" className={className} aria-hidden fill="none">
-      {/* arch */}
-      <path
-        d="M22 162V78a108 108 0 0 1 216 0v84"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        opacity="0.5"
-      />
-      <path
-        d="M34 162V80a96 96 0 0 1 192 0v82"
-        stroke="currentColor"
-        strokeWidth="1"
-        strokeDasharray="4 5"
-        opacity="0.4"
-      />
-      {/* ground */}
-      <path d="M18 162h224" stroke="currentColor" strokeWidth="1.2" opacity="0.5" />
-
-      {dancer}
-      <g transform="translate(260 0) scale(-1 1)">{dancer}</g>
-
-      {/* diyas along the ground */}
-      {[46, 130, 214].map((x) => (
-        <g key={x} transform={`translate(${x} 150)`}>
-          <path d="M-8 4h16c-.8 4.4-4 7-8 7s-7.2-2.6-8-7Z" stroke="currentColor" strokeWidth="1.3" />
-          <path d="M0 3c1.8-2 2.6-3.4 2.6-4.6A2.6 2.6 0 0 0 0-4a2.6 2.6 0 0 0-2.6 2.4C-2.6-.4-1.8 1 0 3Z" fill="currentColor" opacity="0.85" />
-        </g>
-      ))}
-
-      {/* sparkles */}
-      {[
-        [60, 40],
-        [200, 36],
-        [130, 24],
-        [96, 30],
-        [168, 46],
-      ].map(([x, y]) => (
-        <path
-          key={`${x}-${y}`}
-          d={`M${x} ${y - 5}l1.4 3.6L${x + 5} ${y}l-3.6 1.4L${x} ${y + 5}l-1.4-3.6L${x - 5} ${y}l3.6-1.4Z`}
-          fill="currentColor"
-          opacity="0.65"
-        />
-      ))}
-    </svg>
   );
 }
 

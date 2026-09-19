@@ -10,8 +10,6 @@ import {
   EVENT_AT,
   EVENT_DATE,
   EVENT_NAME,
-  EVENT_SUBTAGLINE,
-  EVENT_TAGLINE,
   EVENT_TIME,
   HIGHLIGHTS,
   PRESENTER,
@@ -26,16 +24,13 @@ import {
   CalendarIcon,
   ClockIcon,
   DandiyaIcon,
-  GhungrooIcon,
   HIGHLIGHT_ICONS,
   KalashIcon,
   LotusIcon,
   Mandala,
   MarigoldIcon,
-  PaisleyIcon,
   PhoneIcon,
   PinIcon,
-  RangoliCorner,
   SectionDivider,
 } from "@/components/Ornaments";
 
@@ -65,47 +60,17 @@ export default function EventDetails() {
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="gold-border rounded-2xl p-6 text-center pattern-weave relative overflow-hidden"
+        className="gold-border rounded-2xl p-6 text-center relative overflow-hidden"
       >
-        <RangoliCorner className="pointer-events-none absolute top-0 left-0 w-20 h-20 text-[var(--gold-3)] opacity-25" />
-        <RangoliCorner className="pointer-events-none absolute top-0 right-0 w-20 h-20 text-[var(--gold-3)] opacity-25 scale-x-[-1]" />
-
         <p className="text-[10px] uppercase tracking-[0.4em] text-[var(--gold-3)]">
           {PRESENTER}
         </p>
         <h1 className="font-display gold-text text-4xl mt-2 leading-tight">{EVENT_NAME}</h1>
-        <div className="my-4 flex items-center justify-center gap-3 text-[var(--gold-2)]">
-          <span className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--gold-3)]" />
+        <div className="mt-4 flex items-center justify-center gap-3 text-[var(--gold-2)]">
+          <span className="h-px w-8 bg-gradient-to-r from-transparent to-[var(--gold-4)]" />
           <DandiyaIcon size={20} />
-          <span className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--gold-3)]" />
+          <span className="h-px w-8 bg-gradient-to-l from-transparent to-[var(--gold-4)]" />
         </div>
-        <p className="font-display text-lg">{EVENT_TAGLINE}</p>
-        <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--marigold)] mt-1.5">
-          {EVENT_SUBTAGLINE}
-        </p>
-        <div className="mt-4 flex items-center justify-center gap-4 text-[var(--gold-3)] opacity-80">
-          <PaisleyIcon size={16} />
-          <KalashIcon size={18} />
-          <GhungrooIcon size={16} />
-          <PaisleyIcon size={16} className="scale-x-[-1]" />
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.12, duration: 0.5 }}
-        className="flex flex-wrap gap-2 mt-4"
-      >
-        <span className="text-[10px] uppercase tracking-wide bg-[var(--surface-2)] border border-[var(--border)] rounded-full px-3 py-1.5">
-          Garba &amp; Dandiya
-        </span>
-        <span className="text-[10px] uppercase tracking-wide bg-[var(--surface-2)] border border-[var(--border)] rounded-full px-3 py-1.5">
-          Open-air field
-        </span>
-        <span className="text-[10px] uppercase tracking-wide bg-[var(--surface-2)] border border-[var(--border)] rounded-full px-3 py-1.5">
-          All ages welcome
-        </span>
       </motion.div>
 
       {/* When & where */}
@@ -239,10 +204,6 @@ export default function EventDetails() {
             : LATE_PRICE_NOTE}
         </div>
 
-        <p className="text-[11px] text-[var(--muted)] mt-3 leading-relaxed">
-          Pick who is coming on the booking page and the total is worked out for you — couples,
-          families and student groups are bundled automatically at the best rate.
-        </p>
       </motion.section>
 
       {/* Good to know */}
@@ -280,9 +241,6 @@ export default function EventDetails() {
         transition={{ delay: 0.56, duration: 0.5 }}
         className="mt-8 gold-border rounded-2xl p-5 text-center relative overflow-hidden"
       >
-        <RangoliCorner className="pointer-events-none absolute top-0 left-0 w-16 h-16 text-[var(--gold-3)] opacity-20" />
-        <RangoliCorner className="pointer-events-none absolute top-0 right-0 w-16 h-16 text-[var(--gold-3)] opacity-20 scale-x-[-1]" />
-
         <SlotsLeft variant="card" />
 
         <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
