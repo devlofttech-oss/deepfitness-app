@@ -30,7 +30,10 @@ export default function HeroClient() {
         fill
         priority
         sizes="100vw"
-        className="object-cover object-center -z-20"
+        /* Portrait art in a landscape window crops hard. Phones keep the
+           centre; wider screens anchor to the bottom so the dancers stay in
+           frame instead of being cut away. */
+        className="object-cover object-center md:object-bottom -z-20"
       />
       <div
         aria-hidden
@@ -38,6 +41,16 @@ export default function HeroClient() {
         style={{
           background:
             "linear-gradient(to bottom, rgba(27,4,9,0.62) 0%, rgba(27,4,9,0.45) 35%, rgba(27,4,9,0.78) 70%, rgba(27,4,9,0.94) 100%)",
+        }}
+      />
+      {/* On desktop the whole frame is crowd, so the text column gets its own
+          pool of shadow while the dancers stay lit at the edges. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10 hidden md:block"
+        style={{
+          background:
+            "radial-gradient(ellipse 42% 72% at 50% 50%, rgba(27,4,9,0.80) 0%, rgba(27,4,9,0.55) 55%, rgba(27,4,9,0) 100%)",
         }}
       />
 
