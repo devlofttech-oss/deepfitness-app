@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins, Rozha_One } from "next/font/google";
+import { Abril_Fatface, Poppins } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Nav from "@/components/Nav";
 import { AuthProvider } from "@/lib/firebase/AuthProvider";
@@ -18,8 +18,8 @@ const poppins = Poppins({
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const rozha = Rozha_One({
-  variable: "--font-rozha",
+const display = Abril_Fatface({
+  variable: "--font-display-serif",
   subsets: ["latin"],
   weight: "400",
 });
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${poppins.variable} ${rozha.variable} h-full antialiased`}>
+    <html lang="en" className={`${poppins.variable} ${display.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <Nav />
