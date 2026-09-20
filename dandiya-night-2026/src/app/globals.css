@@ -51,10 +51,10 @@ body {
 
 /* Foil-stamped look for the big gold type, as on the poster. */
 .gold-emboss {
-  text-shadow:
-    0 1px 0 rgba(90, 62, 12, 0.85),
-    0 2px 4px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(245, 190, 90, 0.30);
+  filter:
+    drop-shadow(0 1px 0 rgba(74, 48, 8, 0.55))
+    drop-shadow(0 3px 10px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 26px rgba(245, 190, 90, 0.22));
 }
 
 .font-display {
@@ -66,14 +66,15 @@ body {
 /* Gold leaf gradient with a slow sheen, like foil on a wedding card. */
 .gold-text {
   background: linear-gradient(
-    115deg,
-    #a8781f 0%,
-    #f7e6ac 22%,
-    #c9962f 40%,
-    #fff6d8 55%,
-    #a8781f 72%,
-    #f2d98c 88%,
-    #a8781f 100%
+    168deg,
+    #fff4cf 0%,
+    #f3d479 18%,
+    #c9962f 34%,
+    #ffeec0 48%,
+    #fff9e8 56%,
+    #e8bf5d 70%,
+    #b8842a 84%,
+    #f6dd9a 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
