@@ -4,6 +4,9 @@ export type TicketStatus = "pending" | "verified" | "rejected" | "checked_in";
 
 export interface Profile {
   id: string;
+  /** What the guest signs in with. Unique, lowercase. */
+  username: string;
+  /** Synthetic address behind the username — see src/lib/username.ts. */
   email: string;
   name: string;
   phone: string;
