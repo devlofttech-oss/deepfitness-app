@@ -91,13 +91,6 @@ export default function SignupPage() {
             inputMode="tel"
           />
           <FormInput
-            id="instagram"
-            name="instagram"
-            label="Instagram ID (optional)"
-            autoComplete="off"
-            placeholder="@yourhandle"
-          />
-          <FormInput
             id="username"
             name="username"
             label="Username"
@@ -119,6 +112,13 @@ export default function SignupPage() {
             Remember your username and password — there is no email reset. If you forget them,
             call us and we will sort it out.
           </p>
+          <FormInput
+            id="instagram"
+            name="instagram"
+            label="Instagram ID (optional)"
+            autoComplete="off"
+            placeholder="@yourhandle"
+          />
 
           <label className="flex items-start gap-2.5 text-xs text-[var(--muted)]">
             <input

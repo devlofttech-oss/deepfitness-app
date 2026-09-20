@@ -9,9 +9,6 @@ export interface RuleGroup {
 
 export const RULES_TITLE = "Rules & Regulations";
 
-export const RULES_INTRO =
-  "A few things that keep the night safe and enjoyable for everyone. By entering the venue you agree to follow them.";
-
 /**
  * House rules as issued by the organizers, each point stated once. The kids
  * line is worded to match the price list in src/lib/pricing.ts — every kid

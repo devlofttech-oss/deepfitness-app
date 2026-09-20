@@ -1,7 +1,7 @@
 import Link from "next/link";
 import PageShell from "@/components/PageShell";
 import RulesList from "@/components/RulesList";
-import { RULES_INTRO, RULES_TITLE } from "@/lib/rules";
+import { RULES_TITLE } from "@/lib/rules";
 import { CONTACT_PHONES } from "@/lib/event";
 
 export const metadata = {
@@ -12,10 +12,7 @@ export const metadata = {
 export default function RulesPage() {
   return (
     <PageShell wide>
-      <h2 className="font-display gold-text text-3xl text-center mb-2">{RULES_TITLE}</h2>
-      <p className="text-center text-xs text-[var(--muted)] mb-8 max-w-sm mx-auto leading-relaxed">
-        {RULES_INTRO}
-      </p>
+      <h2 className="font-display gold-text text-3xl text-center mb-8">{RULES_TITLE}</h2>
 
       <RulesList />
 
