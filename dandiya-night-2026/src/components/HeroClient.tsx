@@ -45,7 +45,8 @@ export default function HeroClient() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
-        className="text-[11px] uppercase tracking-[0.45em] text-[var(--gold-3)]"
+        className="text-base sm:text-lg uppercase tracking-[0.38em] text-[var(--gold-1)] font-medium"
+        style={{ textShadow: "0 0 18px rgba(245, 190, 90, 0.45), 0 2px 6px rgba(0,0,0,0.55)" }}
       >
         {PRESENTER}
       </motion.p>
@@ -68,12 +69,6 @@ export default function HeroClient() {
           sizes="(max-width: 640px) 340px, 440px"
           className="w-full h-auto"
         />
-        <span
-          aria-hidden
-          className="block font-display gold-text gold-emboss text-4xl sm:text-5xl -mt-2 sm:-mt-3"
-        >
-          2026
-        </span>
       </motion.div>
 
       <motion.div
