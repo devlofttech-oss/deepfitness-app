@@ -74,7 +74,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
   {
     heading: "8. Photography & Content",
     body: [
-      "The event will be photographed and videographed by the Sadhana Team for social media promotion. By attending, you consent to being captured in such photos and videos and to their use on the event's social media and promotional channels.",
+      "The event will be photographed and videographed by Deepfitness@mysore and Sadhana Team for social media promotion. By attending, you consent to being captured in such photos and videos and to their use on the event's social media and promotional channels.",
     ],
   },
   {

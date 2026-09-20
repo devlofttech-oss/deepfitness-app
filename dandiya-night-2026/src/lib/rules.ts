@@ -56,7 +56,7 @@ export const RULES: RuleGroup[] = [
     heading: "The Event",
     items: [
       "Organizers have full rights to change timings or stop the event due to rain or any emergency reason.",
-      "The event will be photographed / videographed by the Sadhana Team for social media promotion.",
+      "The event will be photographed / videographed by Deepfitness@mysore and Sadhana Team for social media promotion.",
     ],
   },
 ];
