@@ -3,23 +3,16 @@
  * Change the numbers here and the event page, booking form, price summary
  * and admin views all follow — no other file hard-codes a rupee amount.
  *
- * ── ASSUMPTIONS TO CONFIRM ────────────────────────────────────────────────
- * The poster's list is ambiguous in two places; these are the readings
- * currently wired in:
- *
- *  1. "Kid with Parents — ₹999" is treated as 2 adults + 1 kid.
- *     Note this undercuts Couple (₹1,299): a couple can add one kid and pay
- *     ₹300 LESS than a couple alone. If that is not intended, either change
- *     the kid-with-parents pack to { adults: 1, kids: 1 } or raise its price
- *     above the couple price.
- *  2. "Students Offer — ₹1,299" is treated as a pass for 3 students.
- *     Students beyond a multiple of 3 are charged the single-entry rate.
+ * Rates confirmed by the organizers:
+ *   Single ₹799 · Couple ₹1,299 · Kid (below 15) ₹399
+ *   1 parent + 1 kid ₹999 · 2 parents + 1 kid ₹1,299
+ *   Students ₹1,299 for three · flat ₹899 per head after 12 Oct
  *
  * "Above 15 years — ₹799" is the same amount as Single Entry, so it is one
- * option (RATE.adult) rather than two identical rows.
- *
- * Every kid below KID_AGE_LIMIT pays the kid rate — there is no free age
- * band. The house rules on /rules are worded to match.
+ * option (RATE.adult) rather than two identical rows. Every kid below
+ * KID_AGE_LIMIT pays the kid rate — there is no free age band, and the
+ * rules on /rules are worded to match. Students beyond a multiple of three
+ * pay the single-entry rate.
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -51,7 +44,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 
 export const CATEGORY_HINT: Record<Category, string> = {
   adult: `₹${RATE.adult} each · two adults book as a couple for ₹1,299`,
-  kid: `₹${RATE.kid} each · cheaper when booked with two parents`,
+  kid: `₹${RATE.kid} each · cheaper booked with a parent`,
   student: "3 students for ₹1,299 · student ID required at entry",
 };
 
@@ -77,10 +70,18 @@ export const PACKS: Pack[] = [
     note: "Valid student ID required at entry",
   },
   {
-    id: "kid-with-parents",
-    label: "Kid with Parents (2 adults + 1 kid)",
-    price: 999,
+    id: "family",
+    label: "2 Parents + 1 Kid",
+    price: 1299,
     adults: 2,
+    kids: 1,
+    students: 0,
+  },
+  {
+    id: "parent-kid",
+    label: "1 Parent + 1 Kid",
+    price: 999,
+    adults: 1,
     kids: 1,
     students: 0,
   },
@@ -228,9 +229,13 @@ export const PRICE_TABLE: { label: string; price: number; note?: string }[] = [
     note: "ID proof mandatory for age verification",
   },
   {
-    label: "Kid with Parents",
-    price: PACKS.find((p) => p.id === "kid-with-parents")!.price,
-    note: "2 adults + 1 kid · extra kids at the kid rate",
+    label: "1 Parent + 1 Kid",
+    price: PACKS.find((p) => p.id === "parent-kid")!.price,
+  },
+  {
+    label: "2 Parents + 1 Kid",
+    price: PACKS.find((p) => p.id === "family")!.price,
+    note: "Extra kids at the kid rate",
   },
   {
     label: "Students Offer",

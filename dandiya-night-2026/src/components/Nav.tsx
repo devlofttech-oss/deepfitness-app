@@ -8,7 +8,7 @@ import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import ConfirmModal from "@/components/ConfirmModal";
-import { Toran } from "@/components/Ornaments";
+import { StringLights } from "@/components/Ornaments";
 
 function BackIcon() {
   return (
@@ -89,8 +89,8 @@ export default function Nav() {
         </nav>
       </div>
 
-      {/* Toran strung across the top of every page */}
-      <Toran className="w-full h-5 text-[var(--gold-3)] opacity-70" />
+      {/* Bulbs strung across the top of every page */}
+      <StringLights className="w-full h-6 text-[var(--gold-3)]" />
 
       <ConfirmModal
         open={confirmingLogout}

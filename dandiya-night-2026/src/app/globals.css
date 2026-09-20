@@ -42,11 +42,19 @@ body {
     radial-gradient(ellipse 60% 40% at 0% 100%, rgba(107, 15, 26, 0.55), transparent 65%),
     radial-gradient(ellipse 60% 40% at 100% 100%, rgba(107, 15, 26, 0.55), transparent 65%),
     radial-gradient(circle at 1px 1px, rgba(233, 200, 108, 0.09) 1px, transparent 0);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 22px 22px;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 22px 22px;
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Foil-stamped look for the big gold type, as on the poster. */
+.gold-emboss {
+  text-shadow:
+    0 1px 0 rgba(90, 62, 12, 0.85),
+    0 2px 4px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(245, 190, 90, 0.30);
 }
 
 .font-display {

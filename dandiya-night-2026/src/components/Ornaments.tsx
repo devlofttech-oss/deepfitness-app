@@ -363,6 +363,80 @@ export function SectionDivider({
 }
 
 /**
+ * A swagged string of festival bulbs, the kind hung across a garba ground.
+ * Each bulb glows on a staggered cycle so the string twinkles slowly.
+ */
+export function StringLights({ className = "" }: { className?: string }) {
+  const swags = Array.from({ length: 16 });
+  const span = 30;
+
+  return (
+    <svg viewBox="0 0 480 30" preserveAspectRatio="none" className={className} aria-hidden>
+      <style>
+        {"@keyframes bulb-glow{0%,100%{opacity:.45}50%{opacity:1}}" +
+          "@media (prefers-reduced-motion: reduce){.bulb{animation:none!important;opacity:.85}}"}
+      </style>
+      {swags.map((_, i) => {
+        const x = i * span;
+        return (
+          <path
+            key={`w${i}`}
+            d={`M${x} 2 Q ${x + span / 2} 15 ${x + span} 2`}
+            stroke="currentColor"
+            strokeWidth="1"
+            fill="none"
+            opacity="0.5"
+          />
+        );
+      })}
+      {swags.map((_, i) => {
+        const x = i * span + span / 2;
+        return (
+          <g key={`b${i}`} className="bulb" style={{ animation: `bulb-glow ${2.6 + (i % 4) * 0.5}s ease-in-out ${(i % 5) * 0.3}s infinite` }}>
+            <path d={`M${x} 9.4v2.4`} stroke="currentColor" strokeWidth="1" opacity="0.6" />
+            <circle cx={x} cy="15" r="3" fill={i % 2 === 0 ? "var(--marigold)" : "var(--gold-2)"} />
+            <circle cx={x} cy="15" r="6" fill={i % 2 === 0 ? "var(--marigold)" : "var(--gold-2)"} opacity="0.18" />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** A hanging lantern, lit from within. Sways gently where it is used. */
+export function Lantern({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 48 96" className={className} aria-hidden fill="none">
+      {/* chain */}
+      <path d="M24 0v16" stroke="currentColor" strokeWidth="1.4" strokeDasharray="3 3" opacity="0.7" />
+      <path d="M14 20h20" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <path d="M17 20c2-3 12-3 14 0" stroke="currentColor" strokeWidth="1.3" />
+      {/* body */}
+      <path
+        d="M13 26h22c3 6 3 22 0 30H13c-3-8-3-24 0-30Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M13 26h22" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M13 56h22" stroke="currentColor" strokeWidth="1.6" />
+      {/* lit panels */}
+      <path d="M19 30v22M29 30v22" stroke="currentColor" strokeWidth="1" opacity="0.55" />
+      <ellipse cx="24" cy="41" rx="7" ry="9" fill="var(--marigold)" opacity="0.28" />
+      <path
+        d="M24 36c2.4 2.8 3.4 4.6 3.4 6.2a3.4 3.4 0 0 1-6.8 0c0-1.6 1-3.4 3.4-6.2Z"
+        fill="var(--marigold)"
+        opacity="0.9"
+      />
+      {/* base + tassel */}
+      <path d="M17 60h14l-2 5H19l-2-5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M24 65v9" stroke="currentColor" strokeWidth="1.2" />
+      <path d="M24 74c-2.6 3-2.6 7 0 10 2.6-3 2.6-7 0-10Z" fill="currentColor" opacity="0.6" />
+    </svg>
+  );
+}
+
+/**
  * Toran — the strip of leaves and bells hung across a doorway. Rendered as a
  * repeating scallop so it stretches to any width.
  */

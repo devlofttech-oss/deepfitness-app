@@ -13,7 +13,29 @@ import {
   VENUE_SHORT,
 } from "@/lib/event";
 import SlotsLeft from "@/components/SlotsLeft";
-import { DandiyaIcon, Mandala } from "@/components/Ornaments";
+import { DandiyaIcon, Lantern, Mandala } from "@/components/Ornaments";
+
+/** Lanterns hang from the light string and sway, one slower than the other. */
+function HangingLantern({ side }: { side: "left" | "right" }) {
+  return (
+    <motion.div
+      aria-hidden
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0, rotate: side === "left" ? [-2.5, 2.5, -2.5] : [2.5, -2.5, 2.5] }}
+      transition={{
+        opacity: { duration: 0.8 },
+        y: { duration: 0.8 },
+        rotate: { duration: side === "left" ? 7 : 8.5, repeat: Infinity, ease: "easeInOut" },
+      }}
+      style={{ transformOrigin: "top center" }}
+      className={`pointer-events-none absolute -top-2 ${
+        side === "left" ? "left-1" : "right-1"
+      } w-12 sm:w-14 text-[var(--gold-3)] opacity-90`}
+    >
+      <Lantern className="w-full h-auto" />
+    </motion.div>
+  );
+}
 
 export default function HeroClient() {
   const { user } = useAuth();
@@ -24,6 +46,8 @@ export default function HeroClient() {
         className="pointer-events-none absolute -top-28 -right-28 w-80 h-80 text-[var(--gold-3)] opacity-[0.10]"
         spin={160}
       />
+      <HangingLantern side="left" />
+      <HangingLantern side="right" />
 
       <motion.p
         initial={{ opacity: 0 }}
@@ -38,7 +62,7 @@ export default function HeroClient() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="font-display gold-text text-5xl sm:text-7xl leading-[1.05] mt-5"
+        className="font-display gold-text gold-emboss text-5xl sm:text-7xl leading-[1.05] mt-5"
       >
         {EVENT_NAME.replace(" 2026", "")}
         <span className="block text-4xl sm:text-6xl">2026</span>
