@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase/client";
+import { usernameToEmail } from "@/lib/username";
 import PageShell from "@/components/PageShell";
 import FormInput from "@/components/FormInput";
 import PasswordInput from "@/components/PasswordInput";
@@ -13,7 +14,7 @@ import GoldButton from "@/components/GoldButton";
 // Deliberately generic — this page's copy and errors must look like any
 // other login form. It is not linked from anywhere in the app; reaching it
 // at all means someone already knows the URL.
-const GENERIC_ERROR = "Incorrect email or password.";
+const GENERIC_ERROR = "Incorrect username or password.";
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -24,10 +25,11 @@ export default function AdminPortalPage() {
     e.preventDefault();
     setError("");
     const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("email") || "").trim();
+    const username = String(formData.get("username") || "").trim();
+    const email = usernameToEmail(username);
     const password = String(formData.get("password") || "");
 
-    if (!email || !password) {
+    if (!username || !password) {
       setError(GENERIC_ERROR);
       return;
     }
@@ -57,12 +59,13 @@ export default function AdminPortalPage() {
       <h2 className="font-display gold-text text-3xl text-center mb-8">Login</h2>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <FormInput
-          id="email"
-          name="email"
-          type="email"
-          label="Email"
+          id="username"
+          name="username"
+          label="Username"
           required
-          autoComplete="email"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
         />
         <PasswordInput
           id="password"

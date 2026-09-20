@@ -8,7 +8,7 @@ export interface TermsSection {
 
 export const TERMS_TITLE = `${EVENT_NAME} — Terms & Conditions`;
 
-export const TERMS_INTRO = `By booking a pass for ${EVENT_NAME}, presented by ${PRESENTER}, you acknowledge and agree to the following terms and to the General Rules for the night.`;
+export const TERMS_INTRO = `By booking a pass for ${EVENT_NAME}, presented by ${PRESENTER}, you acknowledge and agree to the following terms and to the Rules & Regulations for the night.`;
 
 export const TERMS_SECTIONS: TermsSection[] = [
   {
@@ -80,7 +80,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
   {
     heading: "9. Acceptance",
     body: [
-      "By booking a pass and/or entering the venue, the attendee confirms they have read, understood and agreed to these Terms & Conditions and the General Rules in full.",
+      "By booking a pass and/or entering the venue, the attendee confirms they have read, understood and agreed to these Terms & Conditions and the Rules & Regulations in full.",
     ],
   },
 ];

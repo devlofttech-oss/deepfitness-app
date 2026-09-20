@@ -12,11 +12,12 @@ import PasswordInput from "@/components/PasswordInput";
 import GoldButton from "@/components/GoldButton";
 import LaunchGate from "@/components/LaunchGate";
 import TermsModal from "@/components/TermsModal";
+import { normalizeUsername, usernameToEmail, validateUsername } from "@/lib/username";
 
 function friendlyError(code: string) {
-  if (code.includes("email-already-in-use")) return "An account with this email already exists.";
+  if (code.includes("email-already-in-use")) return "That username is already taken.";
   if (code.includes("weak-password")) return "Password must be at least 6 characters.";
-  if (code.includes("invalid-email")) return "Enter a valid email address.";
+  if (code.includes("invalid-email")) return "That username cannot be used. Try another.";
   return "Something went wrong. Please try again.";
 }
 
@@ -34,11 +35,16 @@ export default function SignupPage() {
     const name = String(formData.get("name") || "").trim();
     const phone = String(formData.get("phone") || "").trim();
     const instagram = String(formData.get("instagram") || "").trim();
-    const email = String(formData.get("email") || "").trim();
+    const username = normalizeUsername(String(formData.get("username") || ""));
     const password = String(formData.get("password") || "");
 
-    if (!name || !phone || !email || !password) {
+    if (!name || !phone || !username || !password) {
       setError("All fields are required.");
+      return;
+    }
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      setError(usernameError);
       return;
     }
     if (!agreed) {
@@ -48,8 +54,10 @@ export default function SignupPage() {
 
     setPending(true);
     try {
+      const email = usernameToEmail(username);
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "profiles", cred.user.uid), {
+        username,
         email,
         name,
         phone,
@@ -90,12 +98,14 @@ export default function SignupPage() {
             placeholder="@yourhandle"
           />
           <FormInput
-            id="email"
-            name="email"
-            type="email"
-            label="Email"
+            id="username"
+            name="username"
+            label="Username"
             required
-            autoComplete="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="e.g. riya.shah"
           />
           <PasswordInput
             id="password"
@@ -105,6 +115,10 @@ export default function SignupPage() {
             minLength={6}
             autoComplete="new-password"
           />
+          <p className="text-[11px] text-[var(--muted)] -mt-1 leading-relaxed">
+            Remember your username and password — there is no email reset. If you forget them,
+            call us and we will sort it out.
+          </p>
 
           <label className="flex items-start gap-2.5 text-xs text-[var(--muted)]">
             <input

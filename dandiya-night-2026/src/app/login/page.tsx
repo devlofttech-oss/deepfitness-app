@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
+import { usernameToEmail } from "@/lib/username";
 import PageShell from "@/components/PageShell";
 import FormInput from "@/components/FormInput";
 import PasswordInput from "@/components/PasswordInput";
@@ -17,9 +18,8 @@ function friendlyError(code: string) {
     code.includes("wrong-password") ||
     code.includes("user-not-found")
   ) {
-    return "Incorrect email or password.";
+    return "Incorrect username or password.";
   }
-  if (code.includes("invalid-email")) return "Enter a valid email address.";
   if (code.includes("too-many-requests")) return "Too many attempts. Try again later.";
   return "Something went wrong. Please try again.";
 }
@@ -33,11 +33,11 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("email") || "").trim();
+    const email = usernameToEmail(String(formData.get("username") || ""));
     const password = String(formData.get("password") || "");
 
-    if (!email || !password) {
-      setError("Email and password are required.");
+    if (!formData.get("username") || !password) {
+      setError("Username and password are required.");
       return;
     }
 
@@ -58,12 +58,13 @@ export default function LoginPage() {
         <h2 className="font-display gold-text text-3xl text-center mb-8">Welcome Back</h2>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <FormInput
-            id="email"
-            name="email"
-            type="email"
-            label="Email"
+            id="username"
+            name="username"
+            label="Username"
             required
-            autoComplete="email"
+            autoComplete="username"
+            autoCapitalize="none"
+            spellCheck={false}
           />
           <PasswordInput
             id="password"

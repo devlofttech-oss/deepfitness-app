@@ -25,6 +25,8 @@ export interface Ticket {
   id: string;
   userId: string;
   name: string;
+  /** Booker's username, copied at booking time for the admin views. */
+  username?: string;
   email: string;
   phone: string;
   instagram?: string;

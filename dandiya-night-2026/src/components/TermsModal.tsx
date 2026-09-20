@@ -64,7 +64,7 @@ export default function TermsModal({
               target="_blank"
               className="block text-center text-[11px] uppercase tracking-[0.2em] text-[var(--gold-1)] underline underline-offset-4 mt-5"
             >
-              Read the General Rules &rarr;
+              Read the Rules & Regulations &rarr;
             </Link>
             <button
               onClick={onClose}

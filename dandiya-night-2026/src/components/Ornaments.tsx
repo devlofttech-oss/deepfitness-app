@@ -280,16 +280,15 @@ export const RULE_ICONS: Record<string, (p: IconProps) => React.JSX.Element> = {
   entry: TicketIcon,
   safety: ShieldIcon,
   conduct: MarigoldIcon,
-  family: FamilyIcon,
-  floor: DancerIcon,
-  media: CameraIcon,
+  kids: FamilyIcon,
+  event: CameraIcon,
 };
 
 /** Maps a highlight line from lib/event.ts onto an ornament. */
 export const HIGHLIGHT_ICONS: Record<string, (p: IconProps) => React.JSX.Element> = {
   "Complimentary Dandiya Sticks": DandiyaIcon,
   "Live Music & DJ": SpeakerIcon,
-  "Delicious Dinner": ThaliIcon,
+  "Food": ThaliIcon,
   "Expert Choreographer to Help You Move": DancerIcon,
   "Selfie Booth": CameraIcon,
   "Attractive Decorations": MarigoldIcon,

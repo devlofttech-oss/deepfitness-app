@@ -61,7 +61,7 @@ export default function HelpPage() {
         </span>
         <span>
           <span className="block text-sm text-[var(--foreground)] underline underline-offset-2">
-            General Rules
+            Rules & Regulations
           </span>
           <span className="block text-xs text-[var(--muted)] mt-0.5 leading-relaxed">
             Entry, safety, dress code, kids, dance floor and photography — read before you arrive.

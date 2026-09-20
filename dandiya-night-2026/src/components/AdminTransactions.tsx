@@ -15,6 +15,7 @@ import {
 import { db } from "@/lib/firebase/client";
 import { EMPTY_PARTY, partySummary, rupees, totalPeople } from "@/lib/pricing";
 import { TOTAL_SLOTS } from "@/lib/event";
+import { emailToUsername } from "@/lib/username";
 import { SLOTS_COLLECTION, SLOTS_DOC_ID, readConfirmedHeads } from "@/lib/slots";
 import type { Ticket, TicketStatus } from "@/lib/types";
 
@@ -159,7 +160,7 @@ export default function AdminTransactions() {
               <p className="text-[11px] uppercase tracking-wide text-[var(--marigold)] mt-0.5">
                 {partySummary(t.party ?? EMPTY_PARTY)}
               </p>
-              <p className="text-xs text-[var(--muted)] mt-1">{t.email}</p>
+              <p className="text-xs text-[var(--muted)] mt-1">@{t.username || emailToUsername(t.email)}</p>
               <p className="text-xs text-[var(--muted)]">{t.phone}</p>
               {t.instagram && (
                 <p className="text-xs text-[var(--muted)]">

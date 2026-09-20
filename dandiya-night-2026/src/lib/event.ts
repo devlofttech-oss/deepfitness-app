@@ -40,7 +40,7 @@ export const UPI_ID = "";
 export const HIGHLIGHTS = [
   "Complimentary Dandiya Sticks",
   "Live Music & DJ",
-  "Delicious Dinner",
+  "Food",
   "Expert Choreographer to Help You Move",
   "Selfie Booth",
   "Attractive Decorations",

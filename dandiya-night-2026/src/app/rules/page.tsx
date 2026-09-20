@@ -5,7 +5,7 @@ import { RULES_INTRO, RULES_TITLE } from "@/lib/rules";
 import { CONTACT_PHONES } from "@/lib/event";
 
 export const metadata = {
-  title: "General Rules — Dandiya Night 2026",
+  title: "Rules & Regulations — Dandiya Night 2026",
   description: "Entry, safety, dress code, kids, dance floor and photography rules for the night.",
 };
 

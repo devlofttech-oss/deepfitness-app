@@ -257,7 +257,7 @@ export default function BookForm() {
                 target="_blank"
                 className="text-[var(--gold-1)] underline underline-offset-2"
               >
-                General Rules
+                Rules & Regulations
               </Link>
               .
             </span>

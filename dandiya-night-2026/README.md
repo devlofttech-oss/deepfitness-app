@@ -107,7 +107,7 @@ Sign up once through the app, then in **Firestore → Data → profiles → `<yo
 set `isAdmin` to `true` (find the uid under **Authentication → Users**). Admins
 get `/admin` and `/admin/scan`, and reach them by logging in at `/portal-4k9x7m`.
 
-## 5. Run
+## 6. Run
 
 ```bash
 npm install
