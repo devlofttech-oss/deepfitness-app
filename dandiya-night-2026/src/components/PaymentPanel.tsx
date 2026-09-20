@@ -27,9 +27,9 @@ export default function PaymentPanel({ amount }: { amount: number }) {
           <Image
             src={PAYMENT_QR.src}
             alt="UPI payment QR code"
-            width={240}
-            height={240}
-            className="w-full max-w-[240px] h-auto"
+            width={480}
+            height={667}
+            className="w-full max-w-[300px] h-auto"
             priority
           />
         </div>

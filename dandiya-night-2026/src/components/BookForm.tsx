@@ -114,7 +114,6 @@ export default function BookForm() {
 
     const formData = new FormData(e.currentTarget);
     const transactionId = String(formData.get("transaction_id") || "").trim();
-    const referralCode = String(formData.get("referral_code") || "").trim();
 
     if (people === 0) {
       setError("Add at least one person to the booking.");
@@ -163,7 +162,6 @@ export default function BookForm() {
         attendees,
         amount: quote.total,
         transactionId,
-        referralCode,
         status: "pending",
         createdAt: serverTimestamp(),
         verifiedAt: null,
@@ -224,12 +222,6 @@ export default function BookForm() {
             name="transaction_id"
             label="Transaction / UTR ID"
             required
-            autoComplete="off"
-          />
-          <FormInput
-            id="referral_code"
-            name="referral_code"
-            label="Have a Referral Code? (optional)"
             autoComplete="off"
           />
         </div>

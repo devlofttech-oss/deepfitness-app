@@ -35,7 +35,6 @@ export interface Ticket {
   /** Amount quoted by src/lib/pricing.ts at the time of booking, in rupees. */
   amount: number;
   transactionId: string;
-  referralCode?: string;
   status: TicketStatus;
   createdAt: number;
   verifiedAt: number | null;

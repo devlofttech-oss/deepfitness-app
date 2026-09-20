@@ -173,11 +173,6 @@ export default function AdminTransactions() {
               <p className="text-xs mt-2 tracking-wide">
                 TXN: <span className="text-[var(--foreground)]">{t.transactionId}</span>
               </p>
-              {t.referralCode && (
-                <p className="text-xs tracking-wide">
-                  Referral: <span className="text-[var(--foreground)]">{t.referralCode}</span>
-                </p>
-              )}
             </div>
 
             {t.status === "pending" ? (

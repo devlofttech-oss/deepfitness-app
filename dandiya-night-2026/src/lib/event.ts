@@ -31,11 +31,11 @@ export const CONTACT_PHONES = ["9019550010", "9743625871"];
  */
 export const PAYMENT_QR = {
   src: "/payment-qr.jpeg",
-  ready: false,
+  ready: true,
 };
 
 /** Optional: shown under the QR if set, e.g. "skevents@okicici". */
-export const UPI_ID = "";
+export const UPI_ID = "arjunkariyappa1990@oksbi";
 
 export const HIGHLIGHTS = [
   "Complimentary Dandiya Sticks",
