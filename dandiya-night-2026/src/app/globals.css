@@ -33,6 +33,21 @@
   --font-display: var(--font-display-serif);
 }
 
+html {
+  /* Stops iOS inflating text when the phone is rotated. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Double-tapping a control should press it, not zoom the page. Pinch-zoom
+   stays available — it is the only way some people can read a phone. */
+button,
+a,
+label,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 body {
   background-color: var(--background);
   /* Layered festive glow: a warm spotlight up top, maroon pools at the

@@ -23,23 +23,27 @@ export default function HeroClient() {
     <main className="flex-1 flex flex-col items-center justify-center px-6 pt-14 pb-20 text-center relative overflow-hidden">
       {/* The poster art carries its own lanterns, lights and mandala, so the
           hero drops the drawn ones and sits in the empty middle of the frame.
-          The scrim keeps the type readable over the dancers at the bottom. */}
-      <Image
-        src="/background.png"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover object-center -z-20"
-      />
-      <div
-        aria-hidden
-        className="absolute inset-0 -z-10"
-        style={{
-          background:
-            "linear-gradient(to bottom, rgba(27,4,9,0.62) 0%, rgba(27,4,9,0.45) 35%, rgba(27,4,9,0.78) 70%, rgba(27,4,9,0.94) 100%)",
-        }}
-      />
+          Both layers are pinned to the viewport, so the artwork holds still
+          while the page scrolls and does not reframe when a mobile browser
+          hides its toolbar. */}
+      <div aria-hidden className="fixed inset-0 -z-20 pointer-events-none">
+        <Image
+          src="/background.png"
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        {/* Scrim, so the type stays readable over the dancers. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to bottom, rgba(27,4,9,0.62) 0%, rgba(27,4,9,0.45) 35%, rgba(27,4,9,0.78) 70%, rgba(27,4,9,0.94) 100%)",
+          }}
+        />
+      </div>
 
       <motion.p
         initial={{ opacity: 0 }}
