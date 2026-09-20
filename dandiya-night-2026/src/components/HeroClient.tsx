@@ -50,15 +50,31 @@ export default function HeroClient() {
         {PRESENTER}
       </motion.p>
 
-      <motion.h1
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
+      {/* The wordmark is artwork, so the real heading stays in the markup for
+          search engines and screen readers. */}
+      <h1 className="sr-only">{EVENT_NAME}</h1>
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
-        className="font-display gold-text gold-emboss text-5xl sm:text-7xl leading-[1.05] mt-5"
+        className="mt-4 w-full max-w-[340px] sm:max-w-[440px]"
       >
-        {EVENT_NAME.replace(" 2026", "")}
-        <span className="block text-4xl sm:text-6xl">2026</span>
-      </motion.h1>
+        <Image
+          src="/wordmark.png"
+          alt=""
+          width={1591}
+          height={988}
+          priority
+          sizes="(max-width: 640px) 340px, 440px"
+          className="w-full h-auto"
+        />
+        <span
+          aria-hidden
+          className="block font-display gold-text gold-emboss text-4xl sm:text-5xl -mt-2 sm:-mt-3"
+        >
+          2026
+        </span>
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
