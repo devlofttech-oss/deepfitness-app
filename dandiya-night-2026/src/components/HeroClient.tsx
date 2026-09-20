@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAuth } from "@/lib/firebase/AuthProvider";
@@ -13,41 +14,32 @@ import {
   VENUE_SHORT,
 } from "@/lib/event";
 import SlotsLeft from "@/components/SlotsLeft";
-import { DandiyaIcon, Lantern, Mandala } from "@/components/Ornaments";
-
-/** Lanterns hang from the light string and sway, one slower than the other. */
-function HangingLantern({ side }: { side: "left" | "right" }) {
-  return (
-    <motion.div
-      aria-hidden
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0, rotate: side === "left" ? [-2.5, 2.5, -2.5] : [2.5, -2.5, 2.5] }}
-      transition={{
-        opacity: { duration: 0.8 },
-        y: { duration: 0.8 },
-        rotate: { duration: side === "left" ? 7 : 8.5, repeat: Infinity, ease: "easeInOut" },
-      }}
-      style={{ transformOrigin: "top center" }}
-      className={`pointer-events-none absolute -top-2 ${
-        side === "left" ? "left-1" : "right-1"
-      } w-12 sm:w-14 text-[var(--gold-3)] opacity-90`}
-    >
-      <Lantern className="w-full h-auto" />
-    </motion.div>
-  );
-}
+import { DandiyaIcon } from "@/components/Ornaments";
 
 export default function HeroClient() {
   const { user } = useAuth();
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-6 pt-14 pb-20 text-center relative overflow-hidden">
-      <Mandala
-        className="pointer-events-none absolute -top-28 -right-28 w-80 h-80 text-[var(--gold-3)] opacity-[0.10]"
-        spin={160}
+      {/* The poster art carries its own lanterns, lights and mandala, so the
+          hero drops the drawn ones and sits in the empty middle of the frame.
+          The scrim keeps the type readable over the dancers at the bottom. */}
+      <Image
+        src="/background.png"
+        alt=""
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-center -z-20"
       />
-      <HangingLantern side="left" />
-      <HangingLantern side="right" />
+      <div
+        aria-hidden
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(27,4,9,0.62) 0%, rgba(27,4,9,0.45) 35%, rgba(27,4,9,0.78) 70%, rgba(27,4,9,0.94) 100%)",
+        }}
+      />
 
       <motion.p
         initial={{ opacity: 0 }}
@@ -127,7 +119,7 @@ export default function HeroClient() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 0.6 }}
-        className="mt-10 text-xs text-[var(--muted)]"
+        className="mt-10 text-xs text-[var(--foreground)]/75"
       >
         {CONTACT_PHONES.map((phone, i) => (
           <span key={phone}>

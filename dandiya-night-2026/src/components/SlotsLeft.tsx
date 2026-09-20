@@ -28,7 +28,7 @@ export function SlotsLeftView({
 
   if (variant === "pill") {
     return (
-      <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[var(--marigold)] border border-[var(--border)] rounded-full px-4 py-2">
+      <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[var(--marigold)] border border-[var(--border)] rounded-full px-4 py-2 bg-[rgba(27,4,9,0.55)] backdrop-blur-sm">
         {left === null ? (
           <>Limited slots &middot; only {TOTAL_SLOTS} passes</>
         ) : soldOut ? (

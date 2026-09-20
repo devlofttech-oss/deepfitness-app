@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Abril_Fatface, Poppins } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import Nav from "@/components/Nav";
@@ -38,6 +39,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${poppins.variable} ${display.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        {/* The poster art, heavily dimmed, ties every page to the landing
+            page without competing with the text on top of it. */}
+        <div aria-hidden className="fixed inset-0 -z-50 pointer-events-none">
+          <Image
+            src="/background.png"
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover object-center opacity-[0.13]"
+          />
+        </div>
         <AuthProvider>
           <Nav />
           {children}
