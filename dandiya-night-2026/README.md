@@ -12,7 +12,7 @@ Tailwind v4 · Framer Motion · `qrcode` · `html5-qrcode` · Rozha One + Poppin
 ## Flow
 
 - **Guest**: `/` (poster landing, countdown) → `/event` (highlights, venue, price
-  list, key rules) → `/rules` (full house rules) → `/signup` (name, phone, email,
+  list, key rules) → `/rules` (full house rules) → `/signup` (name, phone, username,
   password, optional Instagram) →
   `/book` (pick the party, see the live total, pay by UPI QR, submit the
   transaction ID, accept the non-refundable terms) → `/ticket` (pending →
@@ -36,12 +36,12 @@ Tailwind v4 · Framer Motion · `qrcode` · `html5-qrcode` · Rozha One + Poppin
 | Every price, bundle and the post-12-Oct flat rate | `src/lib/pricing.ts` |
 | Date, time, venue, contact numbers, highlights, slot cap, payment QR switch | `src/lib/event.ts` |
 | When bookings open | `src/lib/launch.ts` (+ `isLaunched()` in `firestore.rules`) |
-| House rules shown on `/rules` | `src/lib/rules.ts` |
+| Rules & Regulations shown on `/rules` | `src/lib/rules.ts` |
+| Username ↔ synthetic email mapping | `src/lib/username.ts` |
 | Public slot counter (doc path, maths) | `src/lib/slots.ts` |
-| Festival artwork — dandiya, diya, peacock, kalash, lotus, paisley, ghungroo, rangoli corners, toran, mandala, the garba scene | `src/components/Ornaments.tsx` |
+| Festival artwork — dandiya sticks, kalash, lotus, marigold, toran, mandala, section dividers | `src/components/Ornaments.tsx` |
 | Terms & Conditions text (signup modal) | `src/lib/termsContent.ts` |
 | Colours, gold text/border/button, rangoli background | `src/app/globals.css` |
-| Dandiya, diya, toran, mandala artwork (inline SVG) | `src/components/Ornaments.tsx` |
 
 ## Pricing — open question
 
@@ -101,7 +101,15 @@ Drop the UPI QR image in at `public/payment-qr.jpeg`, then set `ready: true` in
 page shows a "call us for payment details" placeholder instead of a broken
 image. Set `UPI_ID` in the same file to print the UPI handle under the QR.
 
-## 4. Make yourself admin
+## 4. Sign-in and passwords
+
+Guests sign in with a **username**, not an email. Each username maps to a
+synthetic address under a domain nobody can receive mail at, so Firebase Auth
+enforces uniqueness for us — see [`src/lib/username.ts`](src/lib/username.ts).
+The trade-off: there is no self-service password reset. Reset one from
+**Authentication → Users → ⋮ → Reset password** in the Firebase console.
+
+## 5. Make yourself admin
 
 Sign up once through the app, then in **Firestore → Data → profiles → `<your uid>`**
 set `isAdmin` to `true` (find the uid under **Authentication → Users**). Admins
