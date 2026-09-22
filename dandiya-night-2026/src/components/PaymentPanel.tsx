@@ -87,7 +87,7 @@ export default function PaymentPanel({ amount }: { amount: number }) {
             href={upiLink}
             className="w-full max-w-[300px] rounded-xl bg-[var(--gold-3)] px-5 py-3 text-center font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98]"
           >
-            Pay {rupees(amount)} via UPI App
+            Click here to Pay {rupees(amount)} via UPI App
           </a>
 
           <p className="text-xs text-[var(--muted)]">
