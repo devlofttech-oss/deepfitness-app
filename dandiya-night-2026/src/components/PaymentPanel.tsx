@@ -1,19 +1,9 @@
 "use client";
-
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { CONTACT_PHONES, PAYMENT_QR, UPI_ID } from "@/lib/event";
 import { rupees } from "@/lib/pricing";
-
 export default function PaymentPanel({ amount }: { amount: number }) {
-  const upiLink = UPI_ID
-    ? `upi://pay?pa=${encodeURIComponent(
-        UPI_ID
-      )}&pn=${encodeURIComponent(
-        "Event Payment"
-      )}&am=${amount.toFixed(2)}&cu=INR`
-    : "";
-
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -24,11 +14,9 @@ export default function PaymentPanel({ amount }: { amount: number }) {
       <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--gold-3)]">
         Amount to pay
       </p>
-
       <p className="font-display gold-text text-4xl tabular-nums leading-none">
         {rupees(amount)}
       </p>
-
       {PAYMENT_QR.ready ? (
         <div className="bg-white rounded-xl p-3 mt-1">
           <Image
@@ -55,7 +43,6 @@ export default function PaymentPanel({ amount }: { amount: number }) {
               <rect x="14" y="3" width="7" height="7" rx="1" />
               <rect x="3" y="14" width="7" height="7" rx="1" />
             </g>
-
             <g fill="currentColor">
               <rect x="5.5" y="5.5" width="2" height="2" />
               <rect x="16.5" y="5.5" width="2" height="2" />
@@ -66,7 +53,6 @@ export default function PaymentPanel({ amount }: { amount: number }) {
               <rect x="19" y="14" width="2" height="2" />
             </g>
           </svg>
-
           <p className="text-xs text-[var(--muted)] leading-relaxed">
             The UPI QR code is being set up. Call{" "}
             <a
@@ -79,24 +65,17 @@ export default function PaymentPanel({ amount }: { amount: number }) {
           </p>
         </div>
       )}
-
-      {/* Pay directly using a UPI app */}
-      {UPI_ID && (
-        <>
-          <a
-            href={upiLink}
-            className="w-full max-w-[300px] rounded-xl bg-[var(--gold-3)] px-5 py-3 text-center font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98]"
-          >
-            Click here to Pay {rupees(amount)} via UPI App
-          </a>
-
-          <p className="text-xs text-[var(--muted)]">
-            UPI ID:{" "}
-            <span className="text-[var(--foreground)]">{UPI_ID}</span>
-          </p>
-        </>
-      )}
-
+      {/* Payment number */}
+      <a
+        href="tel:+919019550010"
+        className="w-full max-w-[300px] rounded-xl bg-[var(--gold-3)] px-5 py-3 text-center font-semibold text-black transition-all duration-200 hover:scale-[1.02] hover:opacity-90 active:scale-[0.98]"
+      >
+        Pay to 9019550010
+      </a>
+      <p className="text-xs text-[var(--muted)]">
+        UPI ID:{" "}
+        <span className="text-[var(--foreground)]">{UPI_ID}</span>
+      </p>
       <p className="text-[11px] text-[var(--muted)] text-center leading-relaxed">
         Pay the exact amount, then enter the UPI transaction / UTR ID below.
         Your pass is issued once we verify the payment.
@@ -104,3 +83,5 @@ export default function PaymentPanel({ amount }: { amount: number }) {
     </motion.div>
   );
 }
+
+If you don’t want the button to open the phone dialer and just want it to display as a payment instruction, remove the <a> and use a <div> or <button> instead.
