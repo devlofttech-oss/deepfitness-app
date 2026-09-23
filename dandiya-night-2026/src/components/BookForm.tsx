@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  query,
-  serverTimestamp,
-  where,
-} from "firebase/firestore";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import PageShell from "@/components/PageShell";
@@ -21,7 +14,6 @@ import PartyBuilder from "@/components/PartyBuilder";
 import PriceSummary from "@/components/PriceSummary";
 import PaymentPanel from "@/components/PaymentPanel";
 import AttendeeFields, { type KidEntry } from "@/components/AttendeeFields";
-import { MAX_PARTY_SIZE } from "@/lib/event";
 import {
   EMPTY_PARTY,
   KID_AGE_LIMIT,
@@ -32,8 +24,6 @@ import {
   totalPeople,
 } from "@/lib/pricing";
 import type { Attendee } from "@/lib/types";
-
-const ACTIVE_STATUSES = ["pending", "verified", "checked_in"];
 
 const STEPS = ["Who", "Details", "Pay"] as const;
 
@@ -79,7 +69,6 @@ function Stepper({ step }: { step: number }) {
 export default function BookForm() {
   const { user, profile } = useAuth();
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -97,23 +86,6 @@ export default function BookForm() {
 
   const quote = useMemo(() => quoteFor(party), [party]);
   const people = totalPeople(party);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const q = query(
-        collection(db, "tickets"),
-        where("userId", "==", user.uid),
-        where("status", "in", ACTIVE_STATUSES)
-      );
-      const snap = await getDocs(q);
-      if (!snap.empty) {
-        router.replace("/ticket");
-        return;
-      }
-      setChecking(false);
-    })();
-  }, [user, router]);
 
   /** Keep the name fields in step with the steppers. */
   function updateParty(next: PartyCounts) {
@@ -150,8 +122,6 @@ export default function BookForm() {
   function stepError(index: number): string | null {
     if (index === 0) {
       if (people === 0) return "Add at least one person to the booking.";
-      if (people > MAX_PARTY_SIZE)
-        return `A single booking covers up to ${MAX_PARTY_SIZE} people.`;
       return null;
     }
     if (index === 1) {
@@ -230,14 +200,6 @@ export default function BookForm() {
       setError("Could not submit your booking. Please try again.");
       setPending(false);
     }
-  }
-
-  if (checking) {
-    return (
-      <PageShell className="items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-[var(--border)] border-t-[var(--gold-2)] animate-spin" />
-      </PageShell>
-    );
   }
 
   const subheading = [

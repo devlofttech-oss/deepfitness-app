@@ -12,9 +12,10 @@ service cloud.firestore {
         get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true;
     }
 
-    // Keep in sync with MAX_PARTY_SIZE in src/lib/event.ts.
+    // No product limit on party size; this ceiling only stops a runaway or
+    // malicious write, and sits far above any real booking.
     function isHeadCount(value) {
-      return value is int && value >= 0 && value <= 12;
+      return value is int && value >= 0 && value <= 200;
     }
 
     function partyTotal(party) {
@@ -28,7 +29,7 @@ service cloud.firestore {
         isHeadCount(party.kids) &&
         isHeadCount(party.students) &&
         partyTotal(party) >= 1 &&
-        partyTotal(party) <= 12;
+        partyTotal(party) <= 200;
     }
 
     // Rules cannot loop over a list, so beyond the head count matching the

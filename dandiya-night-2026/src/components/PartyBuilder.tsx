@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MAX_PARTY_SIZE } from "@/lib/event";
 import {
   CATEGORY_HINT,
   CATEGORY_LABEL,
@@ -64,7 +63,6 @@ export default function PartyBuilder({
   onChange: (next: PartyCounts) => void;
 }) {
   const people = totalPeople(party);
-  const room = people < MAX_PARTY_SIZE;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -83,7 +81,7 @@ export default function PartyBuilder({
               </div>
               <Stepper
                 value={party[field]}
-                canIncrease={room}
+                canIncrease
                 label={CATEGORY_LABEL[category]}
                 onChange={(next) => onChange({ ...party, [field]: next })}
               />
@@ -95,9 +93,7 @@ export default function PartyBuilder({
       <p className="text-[11px] text-[var(--muted)] mt-1">
         {people === 0
           ? "Add at least one person."
-          : `${people} ${people === 1 ? "person" : "people"} in this booking${
-              room ? "" : ` · ${MAX_PARTY_SIZE} is the maximum, book again for a bigger group`
-            }`}
+          : `${people} ${people === 1 ? "person" : "people"} in this booking`}
       </p>
     </div>
   );

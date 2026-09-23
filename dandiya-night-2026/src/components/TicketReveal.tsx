@@ -1,9 +1,12 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import type { TicketStatus } from "@/lib/types";
-import { partySummary, rupees, type PartyCounts } from "@/lib/pricing";
+import QRCode from "qrcode";
+import type { Ticket, TicketStatus } from "@/lib/types";
+import { EMPTY_PARTY, partySummary, rupees } from "@/lib/pricing";
+import type { Category } from "@/lib/pricing";
 import {
   EVENT_DATE,
   EVENT_NAME,
@@ -12,6 +15,7 @@ import {
   VENUE_MAP_URL,
   VENUE_NAME,
 } from "@/lib/event";
+import { formatDateTime } from "@/lib/timestamps";
 import { CalendarIcon, ClockIcon, DandiyaIcon, PinIcon, Toran } from "@/components/Ornaments";
 
 const statusCopy: Record<TicketStatus, { title: string; sub: string; color: string }> = {
@@ -37,27 +41,53 @@ const statusCopy: Record<TicketStatus, { title: string; sub: string; color: stri
   },
 };
 
-export default function TicketReveal({
-  status,
-  qrDataUrl,
-  transactionId,
-  party,
-  amount,
-}: {
-  status: TicketStatus;
-  qrDataUrl: string | null;
-  transactionId: string;
-  party: PartyCounts;
-  amount: number;
-}) {
-  const copy = statusCopy[status];
+/** Per-person labels; CATEGORY_LABEL is plural, for the counters. */
+const PERSON_LABEL: Record<Category, string> = {
+  adult: "Adult",
+  kid: "Kid",
+  student: "Student",
+};
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 text-xs">
+      <span className="text-[var(--muted)]">{label}</span>
+      <span className="text-[var(--foreground)] text-right">{value}</span>
+    </div>
+  );
+}
+
+export default function TicketReveal({ ticket }: { ticket: Ticket }) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  const copy = statusCopy[ticket.status];
+  const party = ticket.party ?? EMPTY_PARTY;
+  const attendees = Array.isArray(ticket.attendees) ? ticket.attendees : [];
+
+  useEffect(() => {
+    // Nothing to draw unless the booking is verified; the QR only renders in
+    // that state, so leaving any stale value alone is harmless.
+    if (ticket.status !== "verified") return;
+    let cancelled = false;
+    QRCode.toDataURL(ticket.id, {
+      width: 400,
+      margin: 2,
+      color: { dark: "#000000", light: "#ffffff" },
+    }).then((url) => {
+      if (!cancelled) setQrDataUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticket.id, ticket.status]);
 
   return (
-    <div className="w-full flex flex-col items-center gap-6">
+    <div className="w-full flex flex-col items-center gap-4">
       <motion.div
-        initial={{ opacity: 0, rotateX: -18, y: 20 }}
+        initial={{ opacity: 0, rotateX: -12, y: 16 }}
         animate={{ opacity: 1, rotateX: 0, y: 0 }}
-        transition={{ duration: 0.7, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="gold-border rounded-2xl w-full overflow-hidden"
         style={{ perspective: 800 }}
       >
@@ -94,18 +124,18 @@ export default function TicketReveal({
           </span>
           <p className="text-xs text-[var(--muted)] max-w-xs text-center">{copy.sub}</p>
 
-          {status === "verified" && qrDataUrl && (
+          {ticket.status === "verified" && qrDataUrl && (
             <motion.div
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
               className="mt-2 bg-white rounded-xl p-3"
             >
               <Image src={qrDataUrl} alt="Your pass QR code" width={260} height={260} />
             </motion.div>
           )}
 
-          {status === "checked_in" && (
+          {ticket.status === "checked_in" && (
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -125,13 +155,8 @@ export default function TicketReveal({
             </motion.div>
           )}
 
-          {(status === "verified" || status === "checked_in") && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.5 }}
-              className="w-full flex flex-col gap-2 mt-4 pt-4 border-t border-dashed border-[var(--border)]"
-            >
+          {(ticket.status === "verified" || ticket.status === "checked_in") && (
+            <div className="w-full flex flex-col gap-2 mt-4 pt-4 border-t border-dashed border-[var(--border)]">
               <div className="flex items-center gap-2.5 text-xs text-[var(--muted)]">
                 <span className="text-[var(--gold-3)]">
                   <CalendarIcon size={14} />
@@ -157,15 +182,94 @@ export default function TicketReveal({
                   {VENUE_NAME}
                 </span>
               </a>
-            </motion.div>
+            </div>
           )}
 
           <div className="w-full flex items-center justify-between text-[10px] text-[var(--muted)] mt-3 pt-3 border-t border-dashed border-[var(--border)] tracking-wide">
-            <span>TXN: {transactionId}</span>
-            <span className="text-[var(--gold-2)]">{rupees(amount)}</span>
+            <span>TXN: {ticket.transactionId}</span>
+            <span className="text-[var(--gold-2)]">{rupees(ticket.amount ?? 0)}</span>
           </div>
 
-          {status === "rejected" && (
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((open) => !open)}
+            aria-expanded={detailsOpen}
+            className="text-[11px] uppercase tracking-[0.2em] text-[var(--gold-1)] underline underline-offset-4 mt-1"
+          >
+            {detailsOpen ? "Hide details" : "View all details"}
+          </button>
+
+          <AnimatePresence initial={false}>
+            {detailsOpen && (
+              <motion.div
+                key="details"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className="w-full overflow-hidden"
+              >
+                <div className="flex flex-col gap-4 pt-4 mt-1 border-t border-dashed border-[var(--border)] text-left">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--gold-3)]">
+                      Booked by
+                    </p>
+                    <Row label="Name" value={ticket.name} />
+                    {ticket.username && <Row label="Username" value={`@${ticket.username}`} />}
+                    <Row label="Phone" value={ticket.phone} />
+                    {ticket.instagram && (
+                      <Row label="Instagram" value={`@${ticket.instagram.replace(/^@/, "")}`} />
+                    )}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--gold-3)]">
+                      Who is coming
+                    </p>
+                    {attendees.length === 0 && (
+                      <p className="text-xs text-[var(--muted)]">No names on this booking.</p>
+                    )}
+                    {attendees.map((attendee, i) => (
+                      <div key={i} className="flex items-start justify-between gap-4 text-xs">
+                        <span className="text-[var(--foreground)]">
+                          {attendee.name}
+                          {attendee.phone && (
+                            <span className="block text-[var(--muted)]">{attendee.phone}</span>
+                          )}
+                        </span>
+                        <span className="text-[var(--muted)] text-right whitespace-nowrap">
+                          {PERSON_LABEL[attendee.category] ?? attendee.category}
+                          {typeof attendee.age === "number" && !Number.isNaN(attendee.age)
+                            ? ` · ${attendee.age} yrs`
+                            : ""}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-[var(--gold-3)]">
+                      Payment
+                    </p>
+                    <Row label="Amount" value={rupees(ticket.amount ?? 0)} />
+                    <Row label="Transaction ID" value={ticket.transactionId} />
+                    {formatDateTime(ticket.createdAt) && (
+                      <Row label="Booked" value={formatDateTime(ticket.createdAt)} />
+                    )}
+                    {formatDateTime(ticket.verifiedAt) && (
+                      <Row label="Verified" value={formatDateTime(ticket.verifiedAt)} />
+                    )}
+                    {formatDateTime(ticket.checkedInAt) && (
+                      <Row label="Checked in" value={formatDateTime(ticket.checkedInAt)} />
+                    )}
+                    <Row label="Pass ID" value={ticket.id} />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {ticket.status === "rejected" && (
             <a
               href="/book"
               className="gold-btn rounded-xl px-8 py-2.5 text-xs uppercase tracking-wide mt-2"

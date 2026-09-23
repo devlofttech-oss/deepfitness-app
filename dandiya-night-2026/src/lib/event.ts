@@ -19,8 +19,6 @@ export const VENUE_MAP_URL =
 /** Hard cap on passes for the night — drives the scarcity copy on the site. */
 export const TOTAL_SLOTS = 400;
 
-/** Most people one booking may cover; bigger groups book twice or call us. */
-export const MAX_PARTY_SIZE = 12;
 
 export const CONTACT_PHONES = ["9019550010", "9743625871"];
 
