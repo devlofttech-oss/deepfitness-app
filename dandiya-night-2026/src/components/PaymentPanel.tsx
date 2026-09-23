@@ -61,7 +61,7 @@ export default function PaymentPanel({ amount }: { amount: number }) {
             >
               {CONTACT_PHONES[0]}
             </a>{" "}
-            to get the payment details, then submit your transaction ID below.
+            to get the payment details, then submit your transaction ID below
           </p>
         </div>
       )}
