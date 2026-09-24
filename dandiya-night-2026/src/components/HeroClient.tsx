@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { useAuth } from "@/lib/firebase/AuthProvider";
 import {
   CONTACT_PHONES,
-  TOTAL_SLOTS,
   EVENT_DATE,
   EVENT_NAME,
   EVENT_TAGLINE,
@@ -128,7 +127,7 @@ export default function HeroClient() {
         className="mt-6"
       >
         <span className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-[var(--marigold)] border border-[var(--border)] rounded-full px-4 py-2 bg-[rgba(27,4,9,0.55)] backdrop-blur-sm">
-          Limited slots &middot; only {TOTAL_SLOTS} passes
+          Limited slots
         </span>
       </motion.div>
 
