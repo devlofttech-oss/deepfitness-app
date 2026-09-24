@@ -48,12 +48,12 @@ service cloud.firestore {
       return request.time.toMillis() >= 1789669800000;
     }
 
-    // Public slot counter — how many heads are already confirmed, so the
-    // landing and event pages can show passes remaining without exposing the
-    // tickets collection. Written only by admins, in the same transaction that
-    // approves a booking.
+    // Slot counter — how many heads are already confirmed. Admins only, both
+    // ways: the public pages no longer show passes remaining, so there is no
+    // reason for this number to leave the admin screens. Written in the same
+    // transaction that approves a booking.
     match /stats/{docId} {
-      allow read: if true;
+      allow read: if isAdmin();
       allow write: if isAdmin() &&
         request.resource.data.confirmedHeads is int &&
         request.resource.data.confirmedHeads >= 0;

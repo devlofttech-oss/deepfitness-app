@@ -13,13 +13,13 @@ import {
   EVENT_TIME,
   HIGHLIGHTS,
   PRESENTER,
+  TOTAL_SLOTS,
   VENUE_ADDRESS,
   VENUE_NAME,
   VENUE_MAP_URL,
 } from "@/lib/event";
 import { KID_AGE_LIMIT, LATE_PRICE_NOTE, PRICE_TABLE, RATE, isLatePricing, rupees } from "@/lib/pricing";
 import Countdown from "@/components/Countdown";
-import SlotsLeft from "@/components/SlotsLeft";
 import {
   CalendarIcon,
   ClockIcon,
@@ -241,7 +241,7 @@ export default function EventDetails() {
         transition={{ delay: 0.56, duration: 0.5 }}
         className="mt-8 gold-border rounded-2xl p-5 text-center relative overflow-hidden"
       >
-        <SlotsLeft variant="card" />
+        <p className="font-display gold-text text-2xl">Only {TOTAL_SLOTS} passes</p>
 
         <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
           {CONTACT_PHONES.map((phone) => (
