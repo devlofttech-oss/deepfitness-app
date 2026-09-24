@@ -13,7 +13,6 @@ import {
   EVENT_TIME,
   HIGHLIGHTS,
   PRESENTER,
-  TOTAL_SLOTS,
   VENUE_ADDRESS,
   VENUE_NAME,
   VENUE_MAP_URL,
@@ -234,16 +233,18 @@ export default function EventDetails() {
         </div>
       </motion.section>
 
-      {/* Slots + contact */}
+      {/* Contact */}
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.56, duration: 0.5 }}
         className="mt-8 gold-border rounded-2xl p-5 text-center relative overflow-hidden"
       >
-        <p className="font-display gold-text text-2xl">Only {TOTAL_SLOTS} passes</p>
+        <p className="text-[10px] uppercase tracking-[0.3em] text-[var(--gold-3)]">
+          Questions? Call us
+        </p>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
+        <div className="flex flex-wrap items-center justify-center gap-2 mt-4">
           {CONTACT_PHONES.map((phone) => (
             <a
               key={phone}
