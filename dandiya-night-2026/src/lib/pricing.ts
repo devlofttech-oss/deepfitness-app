@@ -6,13 +6,13 @@
  * Rates confirmed by the organizers:
  *   Single ₹799 · Couple ₹1,299 · Kid (below 15) ₹399
  *   1 parent + 1 kid ₹999 · 2 parents + 1 kid ₹1,299
- *   Students ₹1,299 for three · flat ₹899 per head after 12 Oct
+ *   Student ₹399 with ID · flat ₹899 per head after 12 Oct
  *
  * "Above 15 years — ₹799" is the same amount as Single Entry, so it is one
  * option (RATE.adult) rather than two identical rows. Every kid below
  * KID_AGE_LIMIT pays the kid rate — there is no free age band, and the
- * rules on /rules are worded to match. Students beyond a multiple of three
- * pay the single-entry rate.
+ * rules on /rules are worded to match. Students pay a flat rate each, with
+ * a valid student ID at the gate.
  * ──────────────────────────────────────────────────────────────────────────
  */
 
@@ -33,7 +33,7 @@ export const KID_AGE_LIMIT = 15;
 export const RATE: Record<Category, number> = {
   adult: 799,
   kid: 399,
-  student: 799,
+  student: 399,
 };
 
 export const CATEGORY_LABEL: Record<Category, string> = {
@@ -45,7 +45,7 @@ export const CATEGORY_LABEL: Record<Category, string> = {
 export const CATEGORY_HINT: Record<Category, string> = {
   adult: `₹${RATE.adult} each · two adults book as a couple for ₹1,299`,
   kid: `₹${RATE.kid} each · cheaper booked with a parent`,
-  student: "3 students for ₹1,299 · student ID required at entry",
+  student: `₹${RATE.student} each · student ID required at entry`,
 };
 
 export interface Pack {
@@ -60,15 +60,6 @@ export interface Pack {
 
 /** Bundles. Applied automatically, best value first, then per-head rates. */
 export const PACKS: Pack[] = [
-  {
-    id: "student-trio",
-    label: "Students Offer (3 students)",
-    price: 1299,
-    adults: 0,
-    kids: 0,
-    students: 3,
-    note: "Valid student ID required at entry",
-  },
   {
     id: "family",
     label: "2 Parents + 1 Kid",
@@ -238,9 +229,9 @@ export const PRICE_TABLE: { label: string; price: number; note?: string }[] = [
     note: "Extra kids at the kid rate",
   },
   {
-    label: "Students Offer",
-    price: PACKS.find((p) => p.id === "student-trio")!.price,
-    note: "3 students · student ID required at entry",
+    label: "Student",
+    price: RATE.student,
+    note: "Valid student ID required at entry",
   },
 ];
 

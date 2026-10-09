@@ -19,7 +19,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
       "A booking is confirmed only after the organizers verify the payment against the transaction ID submitted. Until then the booking stays pending.",
       `Prices are as listed at the time of booking. After 12th October, all entries are charged at ${rupees(LATE_FLAT_PER_PERSON)} per person.`,
       "Entry is permitted only against a valid pass / wristband. The pass QR code is scanned once at the gate and cannot be reused.",
-      "Passes booked under the Students Offer require a valid student ID for every person in the group at entry.",
+      "Student passes require a valid student ID at entry for each student on the booking.",
     ],
   },
   {
