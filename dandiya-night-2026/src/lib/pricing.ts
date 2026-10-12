@@ -88,11 +88,13 @@ export const PACKS: Pack[] = [
 
 /**
  * From this moment every head costs a flat LATE_FLAT_PER_PERSON and all
- * packs stop applying — "After 12th October, all entries will be ₹899."
+ * packs stop applying — "After 15th October, all entries will be ₹899."
  */
-export const LATE_PRICE_FROM = new Date("2026-10-13T00:00:00+05:30").getTime();
+export const LATE_PRICE_FROM = new Date("2026-10-16T00:00:00+05:30").getTime();
 export const LATE_FLAT_PER_PERSON = 899;
-export const LATE_PRICE_NOTE = `After 12th October, all entries are ₹${LATE_FLAT_PER_PERSON} per person.`;
+/** Last day the listed prices and bundles apply — used in every notice. */
+export const OFFER_LAST_DAY = "15th October";
+export const LATE_PRICE_NOTE = `After ${OFFER_LAST_DAY}, all entries are ₹${LATE_FLAT_PER_PERSON} per person.`;
 
 export function isLatePricing(now: number = Date.now()): boolean {
   return now >= LATE_PRICE_FROM;
@@ -141,7 +143,7 @@ export function quoteFor(party: PartyCounts, now: number = Date.now()): Quote {
       late,
       lines: [
         {
-          label: "Entry (after 12th Oct rate)",
+          label: `Entry (after ${OFFER_LAST_DAY} rate)`,
           qty: people,
           unit: LATE_FLAT_PER_PERSON,
           amount,

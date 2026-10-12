@@ -1,4 +1,4 @@
-import { KID_AGE_LIMIT, LATE_FLAT_PER_PERSON, RATE, rupees } from "@/lib/pricing";
+import { KID_AGE_LIMIT, LATE_FLAT_PER_PERSON, OFFER_LAST_DAY, RATE, rupees } from "@/lib/pricing";
 import { EVENT_NAME, PRESENTER, VENUE_NAME } from "@/lib/event";
 
 export interface TermsSection {
@@ -17,7 +17,7 @@ export const TERMS_SECTIONS: TermsSection[] = [
       "All bookings are strictly NON-REFUNDABLE and NON-CANCELLABLE. Once a payment is submitted it cannot be reversed or called off, for any reason — including change of mind, inability to attend, weather, or any other personal or unforeseen circumstance.",
       "Passes are non-transferable and may not be sold on or handed to another person.",
       "A booking is confirmed only after the organizers verify the payment against the transaction ID submitted. Until then the booking stays pending.",
-      `Prices are as listed at the time of booking. After 12th October, all entries are charged at ${rupees(LATE_FLAT_PER_PERSON)} per person.`,
+      `Prices are as listed at the time of booking. After ${OFFER_LAST_DAY}, all entries are charged at ${rupees(LATE_FLAT_PER_PERSON)} per person.`,
       "Entry is permitted only against a valid pass / wristband. The pass QR code is scanned once at the gate and cannot be reused.",
       "Student passes require a valid student ID at entry for each student on the booking.",
     ],
