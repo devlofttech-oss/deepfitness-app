@@ -33,7 +33,7 @@ Tailwind v4 · Framer Motion · `qrcode` · `html5-qrcode` · Rozha One + Poppin
 
 | What | File |
 | --- | --- |
-| Every price, bundle and the post-12-Oct flat rate | `src/lib/pricing.ts` |
+| Every price, bundle and the post-15-Oct flat rate | `src/lib/pricing.ts` |
 | Date, time, venue, contact numbers, highlights, slot cap, payment QR switch | `src/lib/event.ts` |
 | When bookings open | `src/lib/launch.ts` (+ `isLaunched()` in `firestore.rules`) |
 | House rules shown on `/rules` | `src/lib/rules.ts` |
@@ -56,7 +56,7 @@ need confirming (both flagged in the file header):
 
 Everything else follows those numbers automatically: the booking page adds up
 the party, applies the best-value bundles first, then charges per head. From
-13 Oct the bundles switch off and every head is ₹899.
+16 Oct the bundles switch off and every head is ₹899.
 
 ## 1. Firebase setup
 
