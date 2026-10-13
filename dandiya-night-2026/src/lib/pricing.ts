@@ -6,7 +6,7 @@
  * Rates confirmed by the organizers:
  *   Single ₹799 · Couple ₹1,299 · Kid (below 15) ₹399
  *   1 parent + 1 kid ₹999 · 2 parents + 1 kid ₹1,299
- *   Student ₹399 with ID · flat ₹899 per head after 12 Oct
+ *   Student ₹399 with ID · flat ₹899 per head after 15 Oct
  *
  * "Above 15 years — ₹799" is the same amount as Single Entry, so it is one
  * option (RATE.adult) rather than two identical rows. Every kid below
