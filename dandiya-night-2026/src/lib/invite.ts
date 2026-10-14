@@ -39,7 +39,11 @@ function firstName(name: string | null | undefined): string {
   return (name ?? "").trim().split(/\s+/)[0] || "there";
 }
 
-/** The pre-written invite. WhatsApp renders *text* between asterisks as bold. */
+/**
+ * The pre-written invite. WhatsApp renders *text* between a pair of plain
+ * asterisks as bold, so the "costs extra" marker is U+2217 (∗), not "*" —
+ * four plain asterisks in the extras list would bold half the message.
+ */
 export function inviteMessage(ticket: Ticket): string {
   return [
     `Namaste ${firstName(ticket.name)}! 🪔`,
@@ -54,7 +58,18 @@ export function inviteMessage(ticket: Ticket): string {
     `Your booking: ${partySummary(ticket.party ?? EMPTY_PARTY)}.`,
     "Open My Pass on the site and show the QR code at the gate.",
     "",
-    "Live music and a DJ, a choreographer to get you moving, dinner, and dandiya sticks on us. Come in your finest chaniya choli and kediyu!",
+    "On the night:",
+    "• Live music and a DJ",
+    "• A choreographer to get you moving",
+    "• Food",
+    "• Complimentary dandiya sticks",
+    "• Posebox∗",
+    "• Face painting∗",
+    "• Accessory store∗",
+    "",
+    "∗ Charged separately at the venue",
+    "",
+    "👗 Traditional wear please — chaniya choli and kediyu.",
     "",
     "See you on the floor 💃🕺",
   ].join("\n");
