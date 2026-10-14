@@ -70,6 +70,7 @@ export function inviteMessage(ticket: Ticket): string {
     "∗ Charged separately at the venue",
     "",
     "👗 Traditional wear please.",
+    "⚠️ Kids and personal belongings are not our responsibility.",
     "",
     "See you on the floor 💃🕺",
   ].join("\n");
