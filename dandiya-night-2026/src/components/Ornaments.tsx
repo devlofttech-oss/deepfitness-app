@@ -179,6 +179,27 @@ export function PhoneIcon(props: IconProps) {
   );
 }
 
+/**
+ * WhatsApp — chat bubble with the tail at the lower left and the handset
+ * inside, at the same stroke weight as the other icons.
+ */
+export function WhatsAppIcon(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <path
+        d="M12 3.3a8.7 8.7 0 0 0-7.4 13.3l-1.2 4.1 4.2-1.2A8.7 8.7 0 1 0 12 3.3Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9.2 8.1c.32-.08.65.06.8.35l.73 1.37c.13.25.09.56-.11.76l-.5.5a5.9 5.9 0 0 0 2.8 2.8l.5-.5c.2-.2.5-.24.76-.11l1.37.73c.29.15.43.48.35.8-.2.78-.92 1.4-1.8 1.4-3.2 0-6.1-2.9-6.1-6.1 0-.88.62-1.6 1.4-1.8Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 export function TicketIcon(props: IconProps) {
   return (
     <svg {...svgProps(props)}>

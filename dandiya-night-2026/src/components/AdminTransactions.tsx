@@ -17,6 +17,7 @@ import { EMPTY_PARTY, partySummary, rupees, totalPeople } from "@/lib/pricing";
 import { TOTAL_SLOTS } from "@/lib/event";
 import { emailToUsername } from "@/lib/username";
 import { SLOTS_COLLECTION, SLOTS_DOC_ID, readConfirmedHeads } from "@/lib/slots";
+import WhatsAppInvite from "@/components/WhatsAppInvite";
 import type { Ticket, TicketStatus } from "@/lib/types";
 
 const STATUS_LABEL: Record<TicketStatus, string> = {
@@ -161,7 +162,10 @@ export default function AdminTransactions() {
                 {partySummary(t.party ?? EMPTY_PARTY)}
               </p>
               <p className="text-xs text-[var(--muted)] mt-1">@{t.username || emailToUsername(t.email)}</p>
-              <p className="text-xs text-[var(--muted)]">{t.phone}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-xs text-[var(--muted)]">{t.phone}</p>
+                <WhatsAppInvite ticket={t} />
+              </div>
               {t.instagram && (
                 <p className="text-xs text-[var(--muted)]">
                   Instagram: @{t.instagram.replace(/^@/, "")}
