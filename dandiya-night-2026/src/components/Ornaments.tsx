@@ -296,6 +296,17 @@ export function FamilyIcon(props: IconProps) {
   );
 }
 
+/** Bangles — three stacked glass rings, for the accessory stall. */
+export function BanglesIcon(props: IconProps) {
+  return (
+    <svg {...svgProps(props)}>
+      <ellipse cx="8.6" cy="12" rx="3.9" ry="6.3" stroke="currentColor" strokeWidth="1.5" />
+      <ellipse cx="12" cy="12" rx="3.9" ry="6.3" stroke="currentColor" strokeWidth="1.4" opacity="0.8" />
+      <ellipse cx="15.4" cy="12" rx="3.9" ry="6.3" stroke="currentColor" strokeWidth="1.3" opacity="0.6" />
+    </svg>
+  );
+}
+
 /** Maps a rule group from lib/rules.ts onto an ornament. */
 export const RULE_ICONS: Record<string, (p: IconProps) => React.JSX.Element> = {
   entry: TicketIcon,
@@ -311,9 +322,11 @@ export const HIGHLIGHT_ICONS: Record<string, (p: IconProps) => React.JSX.Element
   "Live Music & DJ": SpeakerIcon,
   "Food": ThaliIcon,
   "Expert Choreographer to Help You Move": DancerIcon,
-  "Selfie Booth": CameraIcon,
   "Attractive Decorations": MarigoldIcon,
   "Spacious Outdoor Field for Group Performances": FieldIcon,
+  "PebbleCo Accessory Store*": BanglesIcon,
+  "Face Painting*": LotusIcon,
+  "Posebox*": CameraIcon,
 };
 
 /**

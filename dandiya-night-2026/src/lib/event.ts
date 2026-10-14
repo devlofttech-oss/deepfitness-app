@@ -35,15 +35,24 @@ export const PAYMENT_QR = {
 /** Optional: shown under the QR if set, e.g. "skevents@okicici". */
 export const UPI_ID = "arjunkariyappa1990@oksbi";
 
+/**
+ * Shown on the event page. Anything marked with PAID_MARK is a stall the
+ * guest pays for at the venue, not something the pass covers — keep this in
+ * step with the WhatsApp invite in src/lib/invite.ts.
+ */
+export const PAID_MARK = "*";
 export const HIGHLIGHTS = [
   "Complimentary Dandiya Sticks",
   "Live Music & DJ",
   "Food",
   "Expert Choreographer to Help You Move",
-  "Selfie Booth",
   "Attractive Decorations",
   "Spacious Outdoor Field for Group Performances",
+  `PebbleCo Accessory Store${PAID_MARK}`,
+  `Face Painting${PAID_MARK}`,
+  `Posebox${PAID_MARK}`,
 ];
+export const HIGHLIGHTS_NOTE = `${PAID_MARK} Charged separately at the venue`;
 
 export const ABOUT =
   "One night of garba under the open sky — live music and a DJ driving the beat, a choreographer on the floor to get every pair of feet moving, dinner served hot, and a field wide enough for your whole group to perform. Dandiya sticks are on us. Come in your finest chaniya choli and kediyu. Let's garba!";

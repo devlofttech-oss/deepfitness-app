@@ -12,6 +12,7 @@ import {
   EVENT_NAME,
   EVENT_TIME,
   HIGHLIGHTS,
+  HIGHLIGHTS_NOTE,
   PRESENTER,
   VENUE_ADDRESS,
   VENUE_NAME,
@@ -159,6 +160,7 @@ export default function EventDetails() {
             );
           })}
         </div>
+        <p className="text-[10px] text-[var(--muted)] mt-3">{HIGHLIGHTS_NOTE}</p>
       </motion.section>
 
       <SectionDivider icon={KalashIcon} className="mt-8" />
