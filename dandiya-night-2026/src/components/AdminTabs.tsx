@@ -3,9 +3,11 @@
 import { useState } from "react";
 import AdminTransactions from "@/components/AdminTransactions";
 import AdminCheckedIn from "@/components/AdminCheckedIn";
+import AdminInvites from "@/components/AdminInvites";
 
 const TABS = [
   { id: "transactions", label: "Bookings" },
+  { id: "invites", label: "Invite" },
   { id: "checkedin", label: "Checked In" },
 ] as const;
 
@@ -32,6 +34,7 @@ export default function AdminTabs() {
         ))}
       </div>
       {active === "transactions" && <AdminTransactions />}
+      {active === "invites" && <AdminInvites />}
       {active === "checkedin" && <AdminCheckedIn />}
     </div>
   );

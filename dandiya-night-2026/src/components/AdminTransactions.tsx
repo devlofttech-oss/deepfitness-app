@@ -20,14 +20,14 @@ import { SLOTS_COLLECTION, SLOTS_DOC_ID, readConfirmedHeads } from "@/lib/slots"
 import WhatsAppInvite from "@/components/WhatsAppInvite";
 import type { Ticket, TicketStatus } from "@/lib/types";
 
-const STATUS_LABEL: Record<TicketStatus, string> = {
+export const STATUS_LABEL: Record<TicketStatus, string> = {
   pending: "Pending",
   verified: "Verified",
   rejected: "Rejected",
   checked_in: "Checked In",
 };
 
-const STATUS_COLOR: Record<TicketStatus, string> = {
+export const STATUS_COLOR: Record<TicketStatus, string> = {
   pending: "var(--warning)",
   verified: "var(--success)",
   rejected: "var(--danger)",
