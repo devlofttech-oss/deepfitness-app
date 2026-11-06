@@ -66,6 +66,12 @@ class MemberShell extends ConsumerWidget {
                   onTap: () => context.go('/progress'),
                 ),
                 _NavItem(
+                  icon: Icons.event_rounded,
+                  label: 'Gym',
+                  active: location == '/gym',
+                  onTap: () => context.go('/gym'),
+                ),
+                _NavItem(
                   icon: Icons.person_outline_rounded,
                   label: 'Profile',
                   active: location == '/profile',
@@ -100,7 +106,7 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(18),
         child: SizedBox(
-          width: 72,
+          width: 64,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

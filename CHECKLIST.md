@@ -40,10 +40,7 @@ them.
 1. **Rules tests in the emulator** — the rules are written but unverified, and
    the guide is explicit that rules written last are rules written loosely.
    This is the gate before any deploy.
-2. **Events and classes/booking** (modules 04 and 05) — models, rules and the
-   functions exist; the repositories, the member-side booking transaction and
-   the screens do not.
-3. **Charts on the progress screen** — `fl_chart` is in, nothing draws with it
+2. **Charts on the progress screen** — `fl_chart` is in, nothing draws with it
    yet, and the week/month presets are not exposed.
 4. **Notifications UI** — the in-app announcements list.
 5. **Admin dashboard** (module 08) on Flutter Web.
@@ -64,7 +61,7 @@ them.
 - [x] **Skip with reason** that still advances — `AppDataRepository.skipExercise`, reason required
 - [x] Skip surfaced in the UI — a "Skip this exercise" button opens a reason sheet with four one-tap presets and a free-text box
 - [x] Completion log written on completion — `completion_logs`, append-only, written with the index advance in one batch
-- [ ] Classes & events: browse class videos, book a live class, RSVP to events (module absent)
+- [x] Classes & events: browse class videos, book a live class, RSVP to events — the Gym tab
 - [x] Roles: member and trainer
 - [x] Role `admin` exists as a custom claim and in the rules
 - [ ] `admin` represented in the Dart `UserRole` enum (currently folded into `trainer`)
@@ -84,7 +81,7 @@ them.
 - [x] **[FB]** Cloud Functions (TypeScript) — all six from the guide, compiling clean
 - [x] **[FB]** Firebase Cloud Messaging wired — `PushService`, `fcmTokens[]`, iOS background mode declared
 - [ ] APNs key uploaded and push capability enabled in Xcode (needs the real project)
-- [ ] Class videos as external links (store `videoProvider` + `videoId`, embed the player)
+- [x] Class videos as external links — `videoProvider` + `videoId` stored, embed URL built, played in a webview
 - [x] Firebase Analytics + Crashlytics, release builds only — both gated on `kReleaseMode` in `main.dart`
 - [ ] Flutter Web admin dashboard on Firebase Hosting
 - [x] Request path: widget → provider → repository → SDK (`app_data_repository.dart` is the single gateway)
@@ -215,21 +212,22 @@ the plan's own status.
 
 ### Module 04 — Events
 - [x] `events` / `event_rsvps` modelled, ruled and indexed (`GymEvent`, `EventRsvp`)
-- [ ] Event list query: `startsAt >= now`, ascending, paginated — repository method not written
-- [ ] Event detail screen
-- [ ] RSVP creates one document; rules allow a member only their own
+- [x] Event list query: `startsAt >= now`, ascending, paginated — `EventsRepository.fetchUpcoming`
+- [x] Event detail on the card itself — image, description, venue and time
+- [ ] A separate full-page event screen, if the design calls for one
+- [x] RSVP creates one document, id `${eventId}_${memberId}`; the rules allow a member only their own
 - [x] Scheduled function sends a reminder push the day before — `dailyReminders`
-- [ ] Admin creates/edits events
+- [ ] Admin creates/edits events (needs the dashboard)
 
 ### Module 05 — Group Classes & Booking
-- [ ] Class list with thumbnails
+- [x] Class list with thumbnails
 - [x] Videos as external links — `videoProvider` + `videoId` stored, embed URL built by `VideoProvider.embedUrl`
-- [ ] Player embedded in-app (member is never thrown out to YouTube)
-- [ ] Session list per class
-- [ ] Booking runs in a transaction: read `bookedCount` against `capacity`, then write the booking and the counter together — two members tapping at once cannot oversell the last place
-- [ ] Full session adds a waitlisted booking with a position
+- [x] Player embedded in-app via `webview_flutter` — the member is never thrown out to YouTube
+- [x] Session list — upcoming sessions, soonest first, with this member's booking folded in
+- [x] Booking runs in a transaction — `ClassesRepository.book` reads `bookedCount` against `capacity` and writes the booking and the counter together; the rules also cap `bookedCount` at `capacity`
+- [x] A full session adds a waitlisted booking with a position, and the screen says which number you are
 - [x] Cancelling frees the slot and promotes the first waitlisted member in one transaction, then pushes them — `onBookingCancelled`
-- [ ] Admin view lists bookings per session
+- [ ] Admin view lists bookings per session (needs the dashboard)
 
 ### Module 06 — Notifications
 - [x] FCM wired on Android
@@ -277,15 +275,16 @@ the plan's own status.
 ## 9. Testing, release & handover (Guide §09)
 
 ### Testing
-- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation and membership state — 47 passing
-- [ ] Unit tests for booking capacity (the member-side booking transaction is not written yet)
+- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state and booking capacity — 65 passing
+- [x] Unit tests for booking capacity, status handling and video links — 65 passing
+- [ ] The booking transaction itself tested end to end (needs the emulator)
 - [x] Security-rules tests written: 67 cases across members, training and gym activity, per role
 - [ ] Those tests actually run — **blocked on this machine**: the Firestore emulator cannot start because the JVM cannot open a loopback socket pair (`IOException: Unable to establish loopback connection`). Firewall or security software is blocking loopback. They should run anywhere the emulator starts.
 - [ ] Widget tests for every plan screen state: locked, active, complete, skipped, empty — the login screen has three; the plan screens need a fake repository first
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators
 - [x] `flutter analyze` clean
-- [x] `flutter test` clean — 47 tests
+- [x] `flutter test` clean — 65 tests
 
 ### Release
 - [ ] Bump `version` in `pubspec.yaml`; build number increases on every store upload

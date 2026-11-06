@@ -1,6 +1,8 @@
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/presentation/login_screen.dart';
 import 'package:deepfitness/features/auth/presentation/onboarding_screen.dart';
+import 'package:deepfitness/features/classes/presentation/class_player_screen.dart';
+import 'package:deepfitness/features/gym/presentation/gym_screen.dart';
 import 'package:deepfitness/features/home/presentation/member_shell.dart';
 import 'package:deepfitness/features/home/presentation/today_screen.dart';
 import 'package:deepfitness/features/membership/presentation/renewal_screen.dart';
@@ -135,6 +137,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ),
           ),
           GoRoute(
+            path: '/gym',
+            pageBuilder: (context, state) =>
+                _smoothPage(state: state, child: const GymScreen()),
+          ),
+          GoRoute(
             path: '/profile',
             pageBuilder: (context, state) =>
                 _smoothPage(state: state, child: const ProfileScreen()),
@@ -182,6 +189,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             role: UserRole.member,
             fallbackRoute: '/login',
             child: WorkoutCompletionScreen(),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/classes/watch',
+        pageBuilder: (context, state) => _smoothPage(
+          state: state,
+          child: const _RoleGuard(
+            role: UserRole.member,
+            fallbackRoute: '/login',
+            child: ClassPlayerScreen(),
           ),
         ),
       ),
