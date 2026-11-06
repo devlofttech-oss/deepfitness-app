@@ -268,8 +268,12 @@ class AuthController extends AsyncNotifier<AuthSessionState> {
     }
 
     // A trainer signing in on the member screen (or the reverse) is sent back
-    // rather than quietly dropped into the wrong app.
-    if (identity.role != null && identity.role != expectedRole) {
+    // rather than quietly dropped into the wrong app. An admin is staff, so
+    // the trainer portal accepts them.
+    final matches = expectedRole == UserRole.trainer
+        ? (identity.role?.isStaff ?? false)
+        : identity.role == expectedRole;
+    if (identity.role != null && !matches) {
       await repository.signOut();
       final portal = expectedRole == UserRole.trainer ? 'trainer' : 'member';
       state = AsyncError(

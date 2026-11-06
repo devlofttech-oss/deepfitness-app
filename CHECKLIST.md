@@ -64,7 +64,7 @@ them.
 - [x] Classes & events: browse class videos, book a live class, RSVP to events — the Gym tab
 - [x] Roles: member and trainer
 - [x] Role `admin` exists as a custom claim and in the rules
-- [ ] `admin` represented in the Dart `UserRole` enum (currently folded into `trainer`)
+- [x] `admin` represented in the Dart `UserRole` enum, with `isStaff` / `isAdmin`
 - [x] Brand palette set once in the theme file (`app_colors.dart`, `app_theme.dart`)
 
 ---
@@ -83,7 +83,8 @@ them.
 - [ ] APNs key uploaded and push capability enabled in Xcode (needs the real project)
 - [x] Class videos as external links — `videoProvider` + `videoId` stored, embed URL built, played in a webview
 - [x] Firebase Analytics + Crashlytics, release builds only — both gated on `kReleaseMode` in `main.dart`
-- [ ] Flutter Web admin dashboard on Firebase Hosting
+- [x] Flutter Web admin dashboard built; hosting configured in `firebase.json`
+- [ ] Actually deployed to hosting (needs a real project)
 - [x] Request path: widget → provider → repository → SDK (`app_data_repository.dart` is the single gateway)
 - [x] Widgets never touch the backend SDK directly — everything goes through `AppFirebase`; no screen imports `cloud_firestore`
 - [x] Access control enforced server-side — `firestore.rules`, deny-by-default
@@ -100,7 +101,7 @@ them.
   - [ ] `shared/models/deepfitness_models.dart` moved into `core/models/` (UI models still live there)
   - [ ] `core/utils/` for formatters, validators, date helpers
   - [ ] `app/router.dart` + `app/theme.dart` (currently `core/router/`, `core/theme/`)
-- [ ] `admin/` folder for the Flutter Web dashboard
+- [x] `admin/` folder for the Flutter Web dashboard
 - [x] **[FB]** `functions/` (TypeScript), `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `firebase.json`, `.firebaserc`
 - [ ] **[FB]** FlutterFire CLI configured; `firebase_options.dart` generated per platform — currently a dart-define-driven placeholder, needs a real project
 - [x] **[FB]** Both platform config files are gitignored; the Google Services and Crashlytics Gradle plugins are applied and `minSdk` raised to 23
@@ -192,7 +193,7 @@ the plan's own status.
 ### Module 02 — Workout Plans *(the largest module)*
 - [x] Exercise library (admin/trainer side)
 - [x] Plan builder (trainer side)
-- [ ] Plan builder on the **web dashboard**
+- [ ] Plan builder on the **web dashboard** — the dashboard manages the library, members, events, classes and announcements; plan building is still trainer-app only
 - [x] Assignment **snapshots** exercise details onto `assigned_plans` — `AssignedExercise.snapshot`, taken in `saveWorkoutPlan`
 - [x] `currentIndex` drives the unlock — `AssignedPlan.isLockedAt`, enforced in the rules too (a member may only move it forward)
 - [x] Completing or skipping writes a log **and** advances `currentIndex` in one batch — `_writeCompletion`
@@ -217,7 +218,7 @@ the plan's own status.
 - [ ] A separate full-page event screen, if the design calls for one
 - [x] RSVP creates one document, id `${eventId}_${memberId}`; the rules allow a member only their own
 - [x] Scheduled function sends a reminder push the day before — `dailyReminders`
-- [ ] Admin creates/edits events (needs the dashboard)
+- [x] Admin creates/edits events
 
 ### Module 05 — Group Classes & Booking
 - [x] Class list with thumbnails
@@ -227,13 +228,13 @@ the plan's own status.
 - [x] Booking runs in a transaction — `ClassesRepository.book` reads `bookedCount` against `capacity` and writes the booking and the counter together; the rules also cap `bookedCount` at `capacity`
 - [x] A full session adds a waitlisted booking with a position, and the screen says which number you are
 - [x] Cancelling frees the slot and promotes the first waitlisted member in one transaction, then pushes them — `onBookingCancelled`
-- [ ] Admin view lists bookings per session (needs the dashboard)
+- [x] Admin view lists bookings per session, in waitlist order
 
 ### Module 06 — Notifications
 - [x] FCM wired on Android
 - [ ] FCM wired on iOS (APNs key uploaded, push capability enabled in Xcode)
 - [x] `sendAnnouncement` fans out to a topic and is admin-only
-- [ ] Admin compose UI (needs the dashboard)
+- [x] Admin compose UI
 - [x] Every push mirrored into `announcements` — written before the send, so a failed send is still on record
 - [x] In-app announcements list — the bell on Today opens it; it read a placeholder sheet before
 - [x] Invalid tokens pruned from `fcmTokens[]` on send failure — `pushToTokens`
@@ -247,13 +248,14 @@ the plan's own status.
 - [ ] Apple sign-in (required by App Store policy if any other social login is added)
 
 ### Module 08 — Admin Dashboard (Flutter Web)
-- [ ] Web target builds from the same codebase, sharing models and repositories
-- [ ] Manage the exercise library, plans and assignments
-- [ ] Create events, classes and class sessions
-- [ ] Member list with workout history
-- [ ] Compose and send announcements
-- [ ] Admin-only by custom claim, enforced in rules and not merely hidden in the UI
-- [ ] Deployed to hosting
+- [x] Web target builds from the same codebase, sharing models and repositories
+- [x] Manage the exercise library
+- [ ] Manage plans and assignments from the dashboard
+- [x] Create events, classes and class sessions
+- [x] Member list with workout history, membership state and role promotion
+- [x] Compose and send announcements
+- [x] Admin-only by custom claim — the route guard reads it, and the rules and callables enforce it
+- [ ] Deployed to hosting (needs a real project)
 
 ---
 
@@ -275,7 +277,7 @@ the plan's own status.
 ## 9. Testing, release & handover (Guide §09)
 
 ### Testing
-- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state and booking capacity — 65 passing
+- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state, booking capacity and roles — 72 passing
 - [x] Unit tests for booking capacity, status handling and video links — 65 passing
 - [ ] The booking transaction itself tested end to end (needs the emulator)
 - [x] Security-rules tests written: 67 cases across members, training and gym activity, per role
@@ -284,7 +286,7 @@ the plan's own status.
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators
 - [x] `flutter analyze` clean
-- [x] `flutter test` clean — 65 tests
+- [x] `flutter test` clean — 72 tests
 
 ### Release
 - [ ] Bump `version` in `pubspec.yaml`; build number increases on every store upload

@@ -291,8 +291,9 @@ class AuthRepository {
 
   static UserRole? _roleFrom(Object? value) {
     switch (value?.toString()) {
-      case 'trainer':
       case 'admin':
+        return UserRole.admin;
+      case 'trainer':
         return UserRole.trainer;
       case 'member':
         return UserRole.member;

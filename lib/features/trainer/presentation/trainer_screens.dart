@@ -1348,7 +1348,7 @@ class TrainerProfileScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.role == UserRole.trainer ? user.name : 'Trainer',
+                          user.role.isStaff ? user.name : 'Trainer',
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(fontWeight: FontWeight.w800),
                         ),

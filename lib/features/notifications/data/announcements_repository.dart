@@ -48,7 +48,7 @@ class AnnouncementsRepository {
 
       final audiences = <AnnouncementAudience>[
         AnnouncementAudience.all,
-        role == UserRole.trainer
+        role.isStaff
             ? AnnouncementAudience.trainers
             : AnnouncementAudience.members,
       ];

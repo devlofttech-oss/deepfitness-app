@@ -1,3 +1,5 @@
+import 'package:deepfitness/admin/presentation/admin_screens.dart';
+import 'package:deepfitness/admin/presentation/admin_shell.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/presentation/login_screen.dart';
 import 'package:deepfitness/features/auth/presentation/onboarding_screen.dart';
@@ -32,7 +34,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         '/register',
         '/trainer-login',
       }.contains(path);
-      final isTrainerRoute = path.startsWith('/trainer');
+      final isStaffRoute =
+          path.startsWith('/trainer') || path.startsWith('/admin');
       final isAuthLoading = authAsync.isLoading && !authAsync.hasValue;
       final isAuthenticated = authState?.isAuthenticated ?? false;
       final role = authState?.role;
@@ -53,7 +56,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return path == '/onboarding' ? null : '/onboarding';
       }
       if (path == '/onboarding') {
-        return role == UserRole.trainer ? '/trainer' : '/';
+        return (role?.isStaff ?? false) ? '/trainer' : '/';
       }
 
       // A lapsed membership closes off training but keeps the member's own
@@ -66,14 +69,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       }
 
       if (isAuthenticated && isAuthRoute) {
-        return role == UserRole.trainer ? '/trainer' : '/';
+        return (role?.isStaff ?? false) ? '/trainer' : '/';
       }
 
-      if (isAuthenticated && role == UserRole.trainer && !isTrainerRoute) {
+      if (isAuthenticated && (role?.isStaff ?? false) && !isStaffRoute) {
         return '/trainer';
       }
 
-      if (isAuthenticated && role == UserRole.member && isTrainerRoute) {
+      if (isAuthenticated && role == UserRole.member && isStaffRoute) {
         return '/';
       }
 
@@ -209,6 +212,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
         ),
       ),
+      ShellRoute(
+        builder: (context, state, child) => AdminShell(child: child),
+        routes: [
+          for (final section in AdminSection.values)
+            GoRoute(
+              path: section.path,
+              pageBuilder: (context, state) => _smoothPage(
+                state: state,
+                child: _AdminGuard(child: _adminScreenFor(section)),
+              ),
+            ),
+        ],
+      ),
       GoRoute(
         path: '/trainer',
         pageBuilder: (context, state) =>
@@ -328,7 +344,11 @@ class _RoleGuard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authControllerProvider);
     final session = auth.maybeWhen(data: (value) => value, orElse: () => null);
-    if (session?.isAuthenticated != true || session?.role != role) {
+    // A trainer page is staff-only, not trainer-only: an admin may use it.
+    final allowed = role == UserRole.trainer
+        ? (session?.role?.isStaff ?? false)
+        : session?.role == role;
+    if (session?.isAuthenticated != true || !allowed) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (context.mounted) context.go(fallbackRoute);
       });
@@ -344,4 +364,59 @@ bool _isTraining(String path) {
   return path == '/workout' ||
       path == '/workout-complete' ||
       path.startsWith('/exercise-');
+}
+
+Widget _adminScreenFor(AdminSection section) {
+  switch (section) {
+    case AdminSection.overview:
+      return const AdminOverviewScreen();
+    case AdminSection.members:
+      return const AdminMembersScreen();
+    case AdminSection.library:
+      return const AdminLibraryScreen();
+    case AdminSection.events:
+      return const AdminEventsScreen();
+    case AdminSection.classes:
+      return const AdminClassesScreen();
+    case AdminSection.announcements:
+      return const AdminAnnouncementsScreen();
+  }
+}
+
+/// The dashboard is admin-only by custom claim, and the Firestore rules say so
+/// too — hiding it in the UI alone would leave every query reachable with a
+/// token and the SDK.
+class _AdminGuard extends ConsumerWidget {
+  const _AdminGuard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authControllerProvider);
+    final session = auth.maybeWhen(data: (value) => value, orElse: () => null);
+
+    if (session?.isAuthenticated != true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) context.go('/trainer-login');
+      });
+      return const SizedBox.shrink();
+    }
+
+    if (session?.role?.isAdmin != true) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Text(
+            'The dashboard is for admins. Ask an admin to change your role if '
+            'you need access.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+        ),
+      );
+    }
+
+    return child;
+  }
 }

@@ -88,9 +88,11 @@ class Member {
       name: Val.toText(data['name'], fallback: 'Member'),
       email: Val.toText(data['email']),
       phone: Val.toNullableText(data['phone']),
-      role: data['role'] == 'trainer' || data['role'] == 'admin'
-          ? UserRole.trainer
-          : UserRole.member,
+      role: switch (data['role']) {
+        'admin' => UserRole.admin,
+        'trainer' => UserRole.trainer,
+        _ => UserRole.member,
+      },
       membershipStatus: MembershipStatus.fromName(data['membershipStatus']),
       joinedAt: Val.toDate(data['joinedAt'] ?? data[BaseFields.createdAt]),
       photoUrl: Val.toNullableText(data['photoUrl']),

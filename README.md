@@ -89,6 +89,25 @@ flutter run \
   --dart-define=FIREBASE_STORAGE_BUCKET=deepfitness-dev.appspot.com
 ```
 
+## Admin dashboard
+
+The dashboard is the same Dart codebase built for web, sharing the models and
+repositories with the app. It lives in `lib/admin/` and is served at `/admin`.
+
+It is admin-only by custom claim. The route guard hides it, and
+`firestore.rules` plus the `setUserRole` / `sendAnnouncement` callables enforce
+it — hiding it in the UI alone would leave every query reachable with a token
+and the SDK.
+
+```bash
+flutter build web --release
+firebase deploy --only hosting
+```
+
+The first admin has to be made by hand: set the `role` claim to `admin` once
+with the Admin SDK, after which `setUserRole` can promote anyone else from the
+dashboard.
+
 ## Verification
 
 ```bash

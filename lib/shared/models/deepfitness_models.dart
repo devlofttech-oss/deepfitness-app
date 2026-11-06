@@ -1,7 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deepfitness/core/utils/firestore_values.dart';
 
-enum UserRole { member, trainer }
+enum UserRole {
+  member,
+  trainer,
+  admin;
+
+  /// An admin can do everything a trainer can, and more besides. Anywhere
+  /// that gates on "staff" means this, not `== trainer`.
+  bool get isStaff => this == trainer || this == admin;
+
+  bool get isAdmin => this == admin;
+}
 
 class AppUser {
   const AppUser({
