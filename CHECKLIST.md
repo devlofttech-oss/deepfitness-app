@@ -19,8 +19,7 @@ Tick a box only when the item is implemented **and** verified (`flutter analyze`
 
 ## Migration status
 
-The backend cut-over is done at the data and service layer; the screens have
-not caught up with the behaviour it unlocked.
+The backend cut-over is done, and the screens have caught up with it.
 
 **Landed:** Firebase bootstrap with emulator support, Analytics/Crashlytics
 gated to release; `AppFirebase` as the single SDK gateway; `RepositoryFailure`
@@ -137,18 +136,18 @@ them.
 
 ## 5. Authentication & access (Guide §05)
 
-- [ ] Phone OTP as the primary sign-in method
+- [x] Phone OTP as the primary sign-in method
 - [x] Email + password as the fallback
 - [x] Member profile created on first login (`create-member` function)
-- [ ] Profile keyed by the auth UID across every table — verify
-- [ ] **Role as a custom claim** (`member` / `trainer` / `admin`), set only by a privileged server function; never a client-writable field
+- [x] Profile keyed by the auth UID — `members/{uid}`, and every other collection references that uid
+- [x] **Role as a custom claim** (`member` / `trainer` / `admin`), set only by `onMemberCreate` / `setUserRole`; never a client-writable field
 - [x] Router redirects on auth state: signed out → login
 - [x] Signed in **without a profile → onboarding** — `/onboarding` collects name, goal, gender, age and height
 - [x] Signed in with a profile → home
 - [x] **Lapsed membership is a state, not a sign-out** — `/renew` is shown and only the training routes are diverted, so progress, profile and history stay readable
-- [ ] Access rules written alongside each feature, not at the end
+- [x] Access rules written alongside each feature — every collection was ruled as it was modelled
 - [ ] Rules unit-tested in the emulator: for each role, what is allowed and what must be denied
-- [ ] Rules deny by default; no table/collection left world-readable or writable
+- [x] Rules deny by default; no collection left world-readable or writable
 
 ---
 
@@ -185,7 +184,7 @@ the plan's own status.
 ## 7. Module reference (Guide §07)
 
 ### Module 01 — Authentication & Member Profile
-- [x] Phone OTP sign-in (data layer; UI pending)
+- [x] Phone OTP sign-in
 - [x] Email sign-in
 - [x] Profile created on first login
 - [x] Profile edit writes only the member's own record
@@ -284,7 +283,7 @@ the plan's own status.
 - [ ] Widget tests for every plan screen state: locked, active, complete, skipped, empty — the login screen has three; the plan screens need a fake repository first
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators
-- [ ] `flutter analyze` clean
+- [x] `flutter analyze` clean
 - [x] `flutter test` clean — 47 tests
 
 ### Release
