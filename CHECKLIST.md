@@ -77,7 +77,7 @@ them.
 - [x] **[FB]** Cloud Firestore as the database
 - [x] **[FB]** Firebase Authentication (phone OTP + email/password)
 - [x] **[FB]** Firebase Cloud Storage wired, with `storage.rules` validating content type and size
-- [ ] Photo upload implemented in the app, resized on device before upload
+- [x] Photo upload implemented, resized on device before upload — `ProfilePhotoRepository`, capped at 1024px and 85% quality
 - [x] **[FB]** Cloud Functions (TypeScript) — all six from the guide, compiling clean
 - [x] **[FB]** Firebase Cloud Messaging wired — `PushService`, `fcmTokens[]`, iOS background mode declared
 - [ ] APNs key uploaded and push capability enabled in Xcode (needs the real project)
@@ -128,7 +128,7 @@ them.
 - [x] **Typed failures**: `RepositoryFailure` + `guard()`; every public repository method is wrapped
 - [x] **Naming**: plural `snake_case` collections in `FirestorePaths`, `snake_case.dart` files, `UpperCamelCase` classes
 - [x] `dart format`, `flutter analyze` and `flutter test` all clean as of this change
-- [ ] Enforced in CI
+- [x] Enforced in CI — `.github/workflows/ci.yml` runs format, analyze, test, the web build, the functions compile and the rules suite
 
 ---
 
@@ -187,7 +187,7 @@ the plan's own status.
 - [x] Profile created on first login
 - [x] Profile edit writes only the member's own record
 - [x] Profile edit enforced by server rules — `members/{uid}` update is key-restricted, so a member cannot set their own role or membership state
-- [ ] Photo upload, resized on device before upload
+- [x] Photo upload, resized on device before upload
 - [x] FCM token saved to `fcmTokens[]` on login and removed on logout — `PushService.start` / `stop`
 
 ### Module 02 — Workout Plans *(the largest module)*
@@ -281,7 +281,7 @@ the plan's own status.
 - [x] Unit tests for booking capacity, status handling and video links — 65 passing
 - [ ] The booking transaction itself tested end to end (needs the emulator)
 - [x] Security-rules tests written: 67 cases across members, training and gym activity, per role
-- [ ] Those tests actually run — **blocked on this machine**: the Firestore emulator cannot start because the JVM cannot open a loopback socket pair (`IOException: Unable to establish loopback connection`). Firewall or security software is blocking loopback. They should run anywhere the emulator starts.
+- [ ] Those tests actually run — **blocked on this machine**: the Firestore emulator cannot start because the JVM cannot open a loopback socket pair (`IOException: Unable to establish loopback connection`), which is firewall or security software blocking loopback. CI runs them on every push, so the first green run there is the real verification.
 - [x] Widget tests for every plan screen state: locked, active, part-way, complete, finished, skipped, empty — 7 cases driving the real `AssignedPlan` mapping
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators

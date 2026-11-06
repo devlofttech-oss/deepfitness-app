@@ -1,4 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/features/profile/data/profile_photo_repository.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/core/repositories/app_data_repository.dart';
 import 'package:deepfitness/core/models/app_models.dart';
@@ -9,6 +10,7 @@ import 'package:deepfitness/core/widgets/premium_scaffold.dart';
 import 'package:deepfitness/core/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -72,6 +74,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 context,
               ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
+            const SizedBox(height: 6),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(context);
+                _uploadPhoto(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from photos'),
+              onTap: () {
+                Navigator.pop(context);
+                _uploadPhoto(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.hide_image_outlined),
+              title: const Text('Use an icon instead'),
+              onTap: () {
+                Navigator.pop(context);
+                _removePhoto();
+              },
+            ),
+            const Divider(height: 24),
+            Text(
+              'Or pick an icon',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppColors.secondaryText(context),
+              ),
+            ),
             const SizedBox(height: 14),
             Row(
               children: [
@@ -100,6 +137,49 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  /// Picks a photo, which comes back already resized, and uploads it.
+  Future<void> _uploadPhoto(ImageSource source) async {
+    final repository = ref.read(profilePhotoRepositoryProvider);
+    try {
+      final picked = await repository.pick(source: source);
+      // Backing out of the picker is not an error.
+      if (picked == null) return;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Uploading your photo...')),
+        );
+      }
+
+      await repository.upload(picked);
+      ref.invalidate(currentUserProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Photo updated.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+      }
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    try {
+      await ref.read(profilePhotoRepositoryProvider).remove();
+      ref.invalidate(currentUserProvider);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+      }
+    }
   }
 }
 
@@ -242,6 +322,11 @@ class _ProfileSummaryCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 34,
                     backgroundColor: avatarColor,
+                    // A real photo wins over the chosen icon; the icon is the
+                    // fallback for members who have not uploaded one.
+                    foregroundImage: user.avatarUrl == null
+                        ? null
+                        : NetworkImage(user.avatarUrl!),
                     child: Icon(
                       avatarIcon,
                       color: AppColors.white,
