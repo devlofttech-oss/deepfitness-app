@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// Deep Fitness — Cloud Storage security rules.
+//
+// Every write validates content type and size. The app resizes images on the
+// device before upload, so these limits are a backstop against a client that
+// does not.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return isSignedIn() ? request.auth.token.role : '';
+    }
+
+    function isAdmin() {
+      return role() == 'admin';
+    }
+
+    function isTrainer() {
+      return role() == 'trainer' || isAdmin();
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isImage(maxMegabytes) {
+      return request.resource.contentType.matches('image/(jpeg|png|webp)')
+          && request.resource.size <= maxMegabytes * 1024 * 1024;
+    }
+
+    // A member's own profile photo.
+    match /members/{uid}/avatar/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if (isSelf(uid) || isTrainer()) && isImage(5);
+    }
+
+    // Exercise library photos, managed from the dashboard.
+    match /exercises/{exerciseId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer() && isImage(5);
+    }
+
+    // Event banners.
+    match /events/{eventId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer() && isImage(8);
+    }
+
+    // Class thumbnails. The videos themselves are never uploaded — only the
+    // provider and id are stored.
+    match /group_classes/{classId}/{fileName} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer() && isImage(5);
+    }
+
+    // Deny by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

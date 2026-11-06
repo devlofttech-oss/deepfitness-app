@@ -66,5 +66,31 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Deep Fitness uses the camera so you can take a profile photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Deep Fitness needs your photo library so you can choose a profile photo.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Deep Fitness saves your shared workout summary to your photo library.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<true/>
+	<!-- Phone sign-in falls back to a reCAPTCHA flow that returns through this
+	     URL scheme. Replace REVERSED_CLIENT_ID with the value from
+	     GoogleService-Info.plist once flutterfire configure has been run. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>REVERSED_CLIENT_ID</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

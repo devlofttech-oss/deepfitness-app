@@ -34,7 +34,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return _AuthScaffold(
       title: 'Welcome Back',
       error: _authError(authState),
-      isSupabaseConfigured: authState.value?.isSupabaseConfigured,
+      isBackendConfigured: authState.value?.isBackendConfigured,
       children: [
         _CredentialFields(
           identifierController: _identifierController,
@@ -130,7 +130,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       title: 'Create Account',
       subtitle: 'Start tracking your workouts, meals, and progress',
       error: _authError(authState),
-      isSupabaseConfigured: authState.value?.isSupabaseConfigured,
+      isBackendConfigured: authState.value?.isBackendConfigured,
       children: [
         const _FieldLabel('Full Name'),
         TextField(
@@ -223,7 +223,7 @@ class _TrainerLoginScreenState extends ConsumerState<TrainerLoginScreen> {
       title: 'Trainer Login',
       subtitle: 'Use your existing trainer account',
       error: _authError(authState),
-      isSupabaseConfigured: authState.value?.isSupabaseConfigured,
+      isBackendConfigured: authState.value?.isBackendConfigured,
       children: [
         _CredentialFields(
           identifierController: _identifierController,
@@ -288,14 +288,14 @@ class _AuthScaffold extends StatelessWidget {
     required this.children,
     this.subtitle,
     this.error,
-    this.isSupabaseConfigured,
+    this.isBackendConfigured,
   });
 
   final String title;
   final String? subtitle;
   final List<Widget> children;
   final String? error;
-  final bool? isSupabaseConfigured;
+  final bool? isBackendConfigured;
 
   @override
   Widget build(BuildContext context) {
@@ -330,8 +330,8 @@ class _AuthScaffold extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: 26),
-                  if (isSupabaseConfigured == false) ...[
-                    const _AuthError('Supabase is not configured.'),
+                  if (isBackendConfigured == false) ...[
+                    const _AuthError('Firebase is not configured.'),
                     const SizedBox(height: 14),
                   ],
                   if (error != null) ...[

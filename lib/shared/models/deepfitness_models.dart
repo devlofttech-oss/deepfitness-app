@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:deepfitness/core/utils/firestore_values.dart';
+
 enum UserRole { member, trainer }
 
 class AppUser {
@@ -45,6 +48,9 @@ class Exercise {
     required this.targetWeight,
     this.workoutExerciseId,
     this.isAssigned = true,
+    this.isLocked = false,
+    this.isSkipped = false,
+    this.skipReason,
     this.sourceId,
     this.equipment,
     this.level,
@@ -69,6 +75,14 @@ class Exercise {
   final int targetWeight;
   final String? workoutExerciseId;
   final bool isAssigned;
+
+  /// True when this exercise sits ahead of the plan's `currentIndex`, so the
+  /// member cannot open it yet.
+  final bool isLocked;
+
+  /// True when the member moved past this exercise without completing it.
+  final bool isSkipped;
+  final String? skipReason;
   final String? sourceId;
   final String? equipment;
   final String? level;
@@ -80,6 +94,101 @@ class Exercise {
   final int completedSetCount;
 
   bool get isCompleted => completedSetCount >= sets && sets > 0;
+
+  /// Done with, one way or the other — used by the plan screen to decide
+  /// whether to show a tick or a skip badge.
+  bool get isSettled => isCompleted || isSkipped;
+
+  /// Reads one document from the admin-managed `exercises` library.
+  factory Exercise.fromFirestore(DocumentSnapshot<Map<String, dynamic>> doc) {
+    final data = doc.data() ?? const <String, dynamic>{};
+    final instructions = Val.toTextList(data['instructions']);
+    final description = Val.toText(data['description']);
+    final muscleGroup = Val.toText(data['muscleGroup'], fallback: 'Full Body');
+    return Exercise(
+      id: doc.id,
+      name: Val.toText(data['name'], fallback: 'Exercise'),
+      description: description.isNotEmpty
+          ? description
+          : instructions.take(2).join(' '),
+      muscleGroup: muscleGroup,
+      sets: Val.toInt(data['defaultSets'], fallback: 3),
+      reps: Val.toText(data['defaultReps'], fallback: '10'),
+      restSeconds: Val.toInt(data['restSeconds'], fallback: 60),
+      icon: muscleGroup.toLowerCase(),
+      notes: '',
+      tracksWeight: Val.toBool(data['tracksWeight'], fallback: true),
+      targetWeight: Val.toInt(data['targetWeight']),
+      isAssigned: false,
+      sourceId: Val.toNullableText(data['sourceId']),
+      equipment: Val.toNullableText(data['equipment']),
+      level: Val.toNullableText(data['level']),
+      category: Val.toNullableText(data['category']),
+      primaryMuscles: Val.toTextList(data['primaryMuscles']),
+      secondaryMuscles: Val.toTextList(data['secondaryMuscles']),
+      instructions: instructions,
+      imageUrls: Val.toTextList(data['imageUrls']),
+    );
+  }
+
+  Map<String, Object?> toFirestore() => {
+    'name': name,
+    'description': description,
+    'muscleGroup': muscleGroup,
+    'defaultSets': sets,
+    'defaultReps': reps,
+    'restSeconds': restSeconds,
+    'tracksWeight': tracksWeight,
+    'targetWeight': targetWeight,
+    'sourceId': sourceId,
+    'equipment': equipment,
+    'level': level,
+    'category': category,
+    'primaryMuscles': primaryMuscles,
+    'secondaryMuscles': secondaryMuscles,
+    'instructions': instructions,
+    'imageUrls': imageUrls,
+  };
+
+  Exercise copyWith({
+    int? completedSetCount,
+    bool? isLocked,
+    bool? isSkipped,
+    String? skipReason,
+    int? sets,
+    String? reps,
+    int? restSeconds,
+    int? targetWeight,
+    String? notes,
+  }) {
+    return Exercise(
+      id: id,
+      name: name,
+      description: description,
+      muscleGroup: muscleGroup,
+      sets: sets ?? this.sets,
+      reps: reps ?? this.reps,
+      restSeconds: restSeconds ?? this.restSeconds,
+      icon: icon,
+      notes: notes ?? this.notes,
+      tracksWeight: tracksWeight,
+      targetWeight: targetWeight ?? this.targetWeight,
+      workoutExerciseId: workoutExerciseId,
+      isAssigned: isAssigned,
+      isLocked: isLocked ?? this.isLocked,
+      isSkipped: isSkipped ?? this.isSkipped,
+      skipReason: skipReason ?? this.skipReason,
+      sourceId: sourceId,
+      equipment: equipment,
+      level: level,
+      category: category,
+      primaryMuscles: primaryMuscles,
+      secondaryMuscles: secondaryMuscles,
+      instructions: instructions,
+      imageUrls: imageUrls,
+      completedSetCount: completedSetCount ?? this.completedSetCount,
+    );
+  }
 }
 
 class WorkoutPlan {
@@ -92,6 +201,8 @@ class WorkoutPlan {
     required this.level,
     required this.completionPercent,
     required this.exercises,
+    this.currentIndex = 0,
+    this.status = 'active',
   });
 
   final String id;
@@ -102,6 +213,38 @@ class WorkoutPlan {
   final String level;
   final double completionPercent;
   final List<Exercise> exercises;
+
+  /// Position of the exercise the member may work on now. Everything above it
+  /// is locked; everything below it is done or skipped.
+  final int currentIndex;
+  final String status;
+
+  bool get isEmpty => id == 'empty' || exercises.isEmpty;
+
+  bool get isFinished =>
+      exercises.isNotEmpty && currentIndex >= exercises.length;
+
+  /// The exercise the member should be on, or null once the plan is finished.
+  Exercise? get currentExercise =>
+      currentIndex >= 0 && currentIndex < exercises.length
+      ? exercises[currentIndex]
+      : null;
+
+  int indexOf(Exercise exercise) {
+    final key = exercise.workoutExerciseId;
+    if (key != null) {
+      final match = exercises.indexWhere(
+        (item) => item.workoutExerciseId == key,
+      );
+      if (match >= 0) return match;
+    }
+    return exercises.indexWhere((item) => item.id == exercise.id);
+  }
+
+  bool isUnlocked(Exercise exercise) {
+    final index = indexOf(exercise);
+    return index >= 0 && index <= currentIndex;
+  }
 }
 
 class ExerciseLog {

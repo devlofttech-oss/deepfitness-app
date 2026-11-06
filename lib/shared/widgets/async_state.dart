@@ -207,8 +207,8 @@ String friendlyErrorMessage(Object error) {
     return 'Check your internet connection and try again. Your screen is safe; we just could not reach the server.';
   }
 
-  if (raw.contains('Supabase is not configured')) {
-    return 'Supabase is not configured for this build. Add the project URL and anon key, then retry.';
+  if (raw.contains('Firebase is not configured')) {
+    return 'Firebase is not configured for this build. Run flutterfire configure, then retry.';
   }
 
   return raw.isEmpty ? 'Something went wrong. Please try again.' : raw;

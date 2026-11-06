@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "deepfitness-dev",
+    "dev": "deepfitness-dev",
+    "prod": "deepfitness-prod"
+  }
+}

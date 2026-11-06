@@ -49,3 +49,14 @@ app.*.map.json
 
 # Local scratch files
 /tmp/
+
+# Firebase — platform config and secrets are never committed
+/android/app/google-services.json
+/ios/Runner/GoogleService-Info.plist
+/macos/Runner/GoogleService-Info.plist
+/lib/firebase_options_dev.dart
+/lib/firebase_options_prod.dart
+.firebase/
+/functions/node_modules/
+/functions/lib/
+/functions/.runtimeconfig.json

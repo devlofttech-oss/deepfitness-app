@@ -1,14 +1,22 @@
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:deepfitness/core/models/assigned_plan.dart';
+import 'package:deepfitness/core/models/completion_log.dart';
+import 'package:deepfitness/core/models/member.dart';
+import 'package:deepfitness/core/repositories/paged_query.dart';
+import 'package:deepfitness/core/repositories/repository_failure.dart';
+import 'package:deepfitness/core/services/app_firebase.dart';
+import 'package:deepfitness/core/utils/firestore_values.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
-import 'package:deepfitness/services/supabase_service.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _appDataTimeout = Duration(seconds: 20);
 
 final appDataRepositoryProvider = Provider<AppDataRepository>(
-  (ref) => AppDataRepository(ref.watch(supabaseServiceProvider)),
+  (ref) => AppDataRepository(ref.watch(appFirebaseProvider)),
 );
 
 final currentAuthUserIdProvider = Provider<String?>((ref) {
@@ -29,6 +37,7 @@ final currentUserProvider = FutureProvider<AppUser>((ref) {
   );
 });
 
+/// The plan the member is on today, with the unlock state already applied.
 final workoutProvider = FutureProvider<WorkoutPlan>((ref) {
   return _loadForSignedInUser(
     ref,
@@ -119,20 +128,20 @@ Future<T> _loadForSignedInUser<T>(
       .watch(authControllerProvider.future)
       .timeout(
         _appDataTimeout,
-        onTimeout: () => throw TimeoutException(
+        onTimeout: () => throw const RepositoryFailure(
+          FailureKind.network,
           'Timed out while checking your login session.',
         ),
       );
   if (!session.isAuthenticated || session.userId == null) {
-    throw StateError('You are not logged in.');
+    throw const RepositoryFailure(
+      FailureKind.unauthenticated,
+      'You are not logged in.',
+    );
   }
 
   final repository = ref.watch(appDataRepositoryProvider);
-  return load(repository).timeout(
-    _appDataTimeout,
-    onTimeout: () =>
-        throw TimeoutException('Timed out while loading Deep Fitness data.'),
-  );
+  return load(repository);
 }
 
 final selectedExerciseProvider =
@@ -160,6 +169,19 @@ class ProgressDateRangeController
   ({DateTime start, DateTime end})? build() => null;
 
   void select(DateTime start, DateTime end) => state = (start: start, end: end);
+
+  /// Week and month presets, as the reports module calls for.
+  void selectLastWeek() {
+    final now = DateTime.now();
+    select(Val.startOfDay(now).subtract(const Duration(days: 6)), now);
+  }
+
+  void selectThisMonth() {
+    final now = DateTime.now();
+    select(DateTime(now.year, now.month, 1), now);
+  }
+
+  void clear() => state = null;
 }
 
 final exerciseLogsProvider =
@@ -168,677 +190,909 @@ final exerciseLogsProvider =
     );
 
 class AppDataRepository {
-  const AppDataRepository(this._supabaseService);
+  const AppDataRepository(this._firebase);
 
-  final SupabaseService _supabaseService;
+  final AppFirebase _firebase;
 
-  bool get _hasClient => _supabaseService.isConfigured;
+  FirebaseFirestore get _db => _firebase.firestore;
 
-  String? get _authUserId {
-    if (!_hasClient) return null;
-    return _supabaseService.client.auth.currentUser?.id;
-  }
+  String get _uid => _firebase.requireUserId();
 
-  void _requireClient() {
-    if (!_hasClient) throw StateError('Supabase is not configured.');
-  }
+  // ------------------------------------------------------------------ profile
 
-  Future<AppUser> fetchCurrentUser() async {
-    final authUser = _hasClient
-        ? _supabaseService.client.auth.currentUser
-        : null;
-    if (authUser == null) throw StateError('You are not logged in.');
+  Future<AppUser> fetchCurrentUser() {
+    return guard(() async {
+      final uid = _uid;
+      final doc = await _db
+          .collection(FirestorePaths.members)
+          .doc(uid)
+          .get();
 
-    final row = await _supabaseService.client
-        .from('users')
-        .select('id,name,email,phone,avatar_url,role,created_at')
-        .eq('id', authUser.id)
-        .maybeSingle();
-
-    if (row == null) {
-      await _supabaseService.client.auth.signOut();
-      throw StateError(
-        'Your saved session no longer matches an active profile. Please sign in again.',
-      );
-    }
-
-    final role = row['role'] == 'trainer' ? UserRole.trainer : UserRole.member;
-    String? trainerName;
-    String? goal;
-    double? heightCm;
-
-    if (role == UserRole.member) {
-      final memberRow = await _fetchMemberProfileRow(authUser.id);
-      goal = memberRow?['goal']?.toString();
-      heightCm = _toNullableDouble(memberRow?['height_cm']);
-      final age = _toNullableInt(memberRow?['age']);
-      final trainer = memberRow?['trainers'];
-      if (trainer is Map) trainerName = trainer['name']?.toString();
-      final trainerId = memberRow?['trainer_id']?.toString();
-      if ((trainerName == null || trainerName.trim().isEmpty) &&
-          trainerId != null &&
-          trainerId.isNotEmpty) {
-        final trainerRow = await _supabaseService.client
-            .from('trainers')
-            .select('name')
-            .eq('id', trainerId)
-            .maybeSingle();
-        trainerName = trainerRow?['name']?.toString();
+      if (!doc.exists) {
+        throw const RepositoryFailure(
+          FailureKind.notFound,
+          'Your saved session no longer matches an active profile. '
+          'Please sign in again.',
+        );
       }
-      return AppUser(
-        id: row['id'].toString(),
-        name: row['name'].toString(),
-        email: (row['email'] ?? '').toString(),
-        role: role,
-        createdAt: _toDateTime(row['created_at']),
-        phone: row['phone']?.toString(),
-        avatarUrl: row['avatar_url']?.toString(),
-        trainerName: trainerName,
-        goal: goal,
-        gender: memberRow?['gender']?.toString(),
-        heightCm: heightCm,
-        age: age,
-      );
-    }
 
-    return AppUser(
-      id: row['id'].toString(),
-      name: row['name'].toString(),
-      email: (row['email'] ?? '').toString(),
-      role: role,
-      createdAt: _toDateTime(row['created_at']),
-      phone: row['phone']?.toString(),
-      avatarUrl: row['avatar_url']?.toString(),
-      trainerName: trainerName,
-      goal: goal,
-      heightCm: heightCm,
-    );
+      return Member.fromFirestore(doc).toAppUser();
+    }, whileDoing: 'loading your profile');
   }
 
-  Future<Map<String, dynamic>?> _fetchMemberProfileRow(String userId) async {
-    try {
-      return await _supabaseService.client
-          .from('members')
-          .select('goal,height_cm,age,gender,trainer_id,trainers(name)')
-          .eq('id', userId)
-          .maybeSingle();
-    } catch (error) {
-      if (!_isMissingColumn(error, 'members.gender')) rethrow;
-      return _supabaseService.client
-          .from('members')
-          .select('goal,height_cm,age,trainer_id,trainers(name)')
-          .eq('id', userId)
-          .maybeSingle();
-    }
-  }
+  // ----------------------------------------------------------- today's plan
 
-  Future<WorkoutPlan> fetchTodayWorkout({
-    String? memberId,
-    DateTime? date,
-  }) async {
-    _requireClient();
-    final userId = memberId ?? _authUserId;
-    if (userId == null) throw StateError('You are not logged in.');
-    final selectedDay = _dateKey(date ?? DateTime.now());
+  /// The plan assigned for [date], or an empty placeholder when none is.
+  Future<WorkoutPlan> fetchTodayWorkout({String? memberId, DateTime? date}) {
+    return guard(() async {
+      final userId = memberId ?? _uid;
+      final dayKey = Val.dayKey(date ?? DateTime.now());
 
-    final day = await _supabaseService.client
-        .from('workout_days')
-        .select(
-          'id,workout_plan_id,title,duration_minutes,scheduled_date,workout_plans!inner(id,name,focus,estimated_calories,level,member_id)',
-        )
-        .eq('workout_plans.member_id', userId)
-        .eq('scheduled_date', selectedDay)
-        .order('created_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (day == null) return _emptyWorkout();
-    final plan = day['workout_plans'] as Map<String, dynamic>;
-
-    final rows = await _supabaseService.client
-        .from('workout_exercises')
-        .select(
-          'id,sets,reps,rest_seconds,target_weight_kg,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,default_sets,default_reps,tracks_weight,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
-        )
-        .eq('workout_day_id', day['id'])
-        .order('sort_order');
-
-    final exercises = rows.map<Exercise>((row) {
-      final exercise = row['exercises'] as Map<String, dynamic>;
-      return _exerciseFromRow(
-        exercise,
-        workoutExerciseId: row['id'].toString(),
-        sets: _toInt(row['sets']),
-        reps: row['reps'].toString(),
-        restSeconds: _toInt(row['rest_seconds']),
-        targetWeight: _toInt(row['target_weight_kg']),
-        notes: (row['trainer_notes'] ?? '').toString(),
-      );
-    }).toList();
-
-    final workoutExerciseIds = exercises
-        .map((exercise) => exercise.workoutExerciseId)
-        .whereType<String>()
-        .toList();
-    final completedSetsByExercise = await _completedSetsByWorkoutExercise(
-      userId,
-      workoutExerciseIds,
-    );
-    final enrichedExercises = exercises
-        .map(
-          (exercise) => _exerciseWithCompletedSets(
-            exercise,
-            completedSetsByExercise[exercise.workoutExerciseId] ?? 0,
-          ),
-        )
-        .toList();
-    final totalSets = exercises.fold<int>(
-      0,
-      (sum, exercise) => sum + exercise.sets,
-    );
-
-    return WorkoutPlan(
-      id: plan['id'].toString(),
-      name: (day['title'] ?? plan['name']).toString(),
-      focus: (plan['focus'] ?? 'Assigned Program').toString(),
-      durationMinutes: _toInt(day['duration_minutes']),
-      estimatedCalories: _toInt(plan['estimated_calories']),
-      level: (plan['level'] ?? '').toString(),
-      completionPercent: _completionFromCounts(enrichedExercises, totalSets),
-      exercises: enrichedExercises,
-    );
-  }
-
-  Future<NutritionPlan> fetchNutritionPlan({
-    String? memberId,
-    DateTime? date,
-  }) async {
-    _requireClient();
-    final userId = memberId ?? _authUserId;
-    if (userId == null) throw StateError('You are not logged in.');
-    final selectedDate = date ?? DateTime.now();
-    final selectedDay = _dateKey(selectedDate);
-    final waterGoal = await _fetchWaterGoal(userId);
-    final waterLiters = await _fetchWaterLitersForDate(userId, selectedDate);
-
-    final plan = await _fetchNutritionPlanRow(userId, selectedDay);
-    if (plan == null) {
-      return _emptyNutrition(
-        waterLiters: waterLiters,
-        waterGoalLiters: waterGoal,
-      );
-    }
-
-    final mealRows = await _supabaseService.client
-        .from('diet_meals')
-        .select()
-        .eq('diet_plan_id', plan['id'])
-        .order('sort_order');
-
-    final mealIds = mealRows
-        .map<String>((row) => row['id'].toString())
-        .toList();
-    final loggedMealIds = mealIds.isEmpty
-        ? <String>{}
-        : (await _supabaseService.client
-                  .from('diet_logs')
-                  .select('diet_meal_id')
-                  .eq('member_id', userId)
-                  .eq('logged_date', selectedDay)
-                  .eq('consumed', true)
-                  .inFilter('diet_meal_id', mealIds))
-              .map<String>((row) => row['diet_meal_id'].toString())
-              .toSet();
-
-    final meals = mealRows.map<DietMeal>((row) {
-      final mealId = row['id'].toString();
-      return DietMeal(
-        id: mealId,
-        name: row['name'].toString(),
-        time: _formatTime(row['meal_time']?.toString()),
-        description: (row['description'] ?? '').toString(),
-        calories: _toInt(row['calories']),
-        icon: row['name'].toString().toLowerCase(),
-        logged: loggedMealIds.contains(mealId),
-      );
-    }).toList();
-
-    final consumed = meals
-        .where((meal) => meal.logged)
-        .fold<int>(0, (sum, meal) => sum + meal.calories);
-    final goal = _toInt(plan['daily_calories']);
-
-    return NutritionPlan(
-      calories: consumed,
-      goalCalories: goal,
-      protein: _macroConsumed(_toInt(plan['protein_g']), consumed, goal),
-      carbs: _macroConsumed(_toInt(plan['carbs_g']), consumed, goal),
-      fats: _macroConsumed(_toInt(plan['fats_g']), consumed, goal),
-      caloriesLeft: (goal - consumed).clamp(0, goal),
-      waterLiters: waterLiters,
-      waterGoalLiters: waterGoal,
-      meals: meals,
-    );
-  }
-
-  Future<Map<String, dynamic>?> _fetchNutritionPlanRow(
-    String userId,
-    String selectedDay,
-  ) async {
-    try {
-      final row = await _supabaseService.client
-          .from('diet_plans')
-          .select()
-          .eq('member_id', userId)
-          .eq('scheduled_date', selectedDay)
-          .order('created_at', ascending: false)
+      final snapshot = await _db
+          .collection(FirestorePaths.assignedPlans)
+          .where('memberId', isEqualTo: userId)
+          .where('scheduledDate', isEqualTo: dayKey)
+          .where(BaseFields.deletedAt, isNull: true)
+          .orderBy('assignedAt', descending: true)
           .limit(1)
-          .maybeSingle();
-      return _nullableMap(row);
-    } catch (error) {
-      if (!_isMissingColumn(error, 'diet_plans.scheduled_date')) rethrow;
-      final row = await _supabaseService.client
-          .from('diet_plans')
-          .select()
-          .eq('member_id', userId)
-          .order('created_at', ascending: false)
-          .limit(1)
-          .maybeSingle();
-      return _nullableMap(row);
-    }
+          .get();
+
+      if (snapshot.docs.isEmpty) return _emptyWorkout();
+
+      final plan = AssignedPlan.fromFirestore(snapshot.docs.first);
+      return _withProgress(plan);
+    }, whileDoing: 'loading your workout');
   }
 
+  /// Reads the in-progress drafts and finished logs for [plan] and folds the
+  /// completed set counts back onto the exercises.
+  Future<WorkoutPlan> _withProgress(AssignedPlan plan) async {
+    final completedByOrder = <int, int>{};
+
+    final drafts = await _db
+        .collection(FirestorePaths.assignedPlans)
+        .doc(plan.id)
+        .collection('progress')
+        .get();
+
+    for (final doc in drafts.docs) {
+      final order = int.tryParse(doc.id);
+      if (order == null) continue;
+      final sets = Val.toMapList(doc.data()['sets']);
+      completedByOrder[order] = sets
+          .where((set) => Val.toBool(set['completed'], fallback: true))
+          .length;
+    }
+
+    final logs = await _db
+        .collection(FirestorePaths.completionLogs)
+        .where('assignedPlanId', isEqualTo: plan.id)
+        .where(BaseFields.deletedAt, isNull: true)
+        .get();
+
+    for (final doc in logs.docs) {
+      final log = CompletionLog.fromFirestore(doc);
+      if (log.skipped) continue;
+      completedByOrder[log.exerciseIndex] = log.setsDone;
+    }
+
+    return plan.toWorkoutPlan(completedSetsByOrder: completedByOrder);
+  }
+
+  Future<AssignedPlan?> _loadAssignedPlan(String planId) async {
+    if (planId == 'empty') return null;
+    final doc = await _db
+        .collection(FirestorePaths.assignedPlans)
+        .doc(planId)
+        .get();
+    if (!doc.exists) return null;
+    return AssignedPlan.fromFirestore(doc);
+  }
+
+  // --------------------------------------------------- complete / skip / log
+
+  /// Writes the completion log and advances the unlock, in one batch.
+  ///
+  /// Both halves have to land together: a log without the advance leaves the
+  /// member stuck on an exercise they have finished, and an advance without a
+  /// log loses the work from every report.
+  Future<void> completeExercise({
+    required WorkoutPlan workout,
+    required Exercise exercise,
+    required List<ExerciseLog> logs,
+  }) {
+    return guard(() async {
+      final uid = _uid;
+      final plan = await _loadAssignedPlan(workout.id);
+      if (plan == null) {
+        throw const RepositoryFailure(
+          FailureKind.notFound,
+          'That plan is no longer assigned to you.',
+        );
+      }
+
+      final index = workout.indexOf(exercise);
+      if (index < 0) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'That exercise is not part of this plan.',
+        );
+      }
+      if (plan.isLockedAt(index)) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'Finish the exercise before this one first.',
+        );
+      }
+
+      final snapshot = plan.exercises[index];
+      final completedSets = logs
+          .where((log) => log.completed)
+          .map(CompletedSet.fromLog)
+          .toList()
+        ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+
+      await _writeCompletion(
+        uid: uid,
+        plan: plan,
+        index: index,
+        snapshot: snapshot,
+        sets: completedSets,
+        skipped: false,
+        skipReason: null,
+      );
+    }, whileDoing: 'saving your exercise');
+  }
+
+  /// Moves past an exercise without completing it.
+  ///
+  /// A reason is required and the index still advances, so a member can never
+  /// be stuck behind an exercise they cannot do.
+  Future<void> skipExercise({
+    required WorkoutPlan workout,
+    required Exercise exercise,
+    required String reason,
+  }) {
+    return guard(() async {
+      final uid = _uid;
+      final trimmed = reason.trim();
+      if (trimmed.isEmpty) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'Tell your trainer why you are skipping this one.',
+        );
+      }
+
+      final plan = await _loadAssignedPlan(workout.id);
+      if (plan == null) {
+        throw const RepositoryFailure(
+          FailureKind.notFound,
+          'That plan is no longer assigned to you.',
+        );
+      }
+
+      final index = workout.indexOf(exercise);
+      if (index < 0) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'That exercise is not part of this plan.',
+        );
+      }
+
+      await _writeCompletion(
+        uid: uid,
+        plan: plan,
+        index: index,
+        snapshot: plan.exercises[index],
+        sets: const [],
+        skipped: true,
+        skipReason: trimmed,
+      );
+    }, whileDoing: 'skipping that exercise');
+  }
+
+  Future<void> _writeCompletion({
+    required String uid,
+    required AssignedPlan plan,
+    required int index,
+    required AssignedExercise snapshot,
+    required List<CompletedSet> sets,
+    required bool skipped,
+    required String? skipReason,
+  }) async {
+    final batch = _db.batch();
+
+    final logRef = _db.collection(FirestorePaths.completionLogs).doc();
+    final log = CompletionLog(
+      id: logRef.id,
+      memberId: uid,
+      assignedPlanId: plan.id,
+      exerciseIndex: index,
+      exerciseId: snapshot.exerciseId,
+      exerciseName: snapshot.name,
+      muscleGroup: snapshot.muscleGroup,
+      setsPlanned: snapshot.sets,
+      setsDone: sets.length,
+      sets: sets,
+      skipped: skipped,
+      skipReason: skipReason,
+      completedAt: DateTime.now(),
+      tracksWeight: snapshot.tracksWeight,
+    );
+    batch.set(logRef, {
+      ...log.toFirestore(),
+      ...BaseFields.onCreate(by: uid),
+    });
+
+    // Never move the index backwards: a member re-opening a finished exercise
+    // must not re-lock the ones after it.
+    final nextIndex = index + 1 > plan.currentIndex
+        ? index + 1
+        : plan.currentIndex;
+    final isFinished = nextIndex >= plan.exercises.length;
+
+    batch.update(_db.collection(FirestorePaths.assignedPlans).doc(plan.id), {
+      'currentIndex': nextIndex,
+      if (isFinished) 'status': AssignedPlanStatus.completed.name,
+      if (isFinished) 'completedAt': FieldValue.serverTimestamp(),
+      ...BaseFields.onUpdate(),
+    });
+
+    await batch.commit();
+  }
+
+  /// In-progress sets for an exercise, so a half-finished set survives the
+  /// app being closed.
+  Future<List<ExerciseLog>> fetchExerciseLogs(Exercise exercise) {
+    return guard(() async {
+      _firebase.requireConfigured();
+      final ref = _progressRef(exercise);
+      if (ref == null) return _defaultLogs(exercise);
+
+      final doc = await ref.get();
+      final sets = Val.toMapList(doc.data()?['sets']);
+      if (sets.isEmpty) return _defaultLogs(exercise);
+
+      final logs = sets
+          .map(
+            (set) => ExerciseLog(
+              setNumber: Val.toInt(set['setNumber'], fallback: 1),
+              weight: Val.toInt(set['weight']),
+              reps: Val.toInt(set['reps']),
+              completed: Val.toBool(set['completed'], fallback: true),
+            ),
+          )
+          .toList()
+        ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+      return logs;
+    }, whileDoing: 'loading your sets');
+  }
+
+  Future<void> saveExerciseLogs(Exercise exercise, List<ExerciseLog> logs) {
+    return guard(() async {
+      final uid = _uid;
+      final ref = _progressRef(exercise);
+      if (ref == null) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'Open an assigned workout exercise before saving sets.',
+        );
+      }
+
+      final unique = <int, ExerciseLog>{};
+      for (final log in logs) {
+        unique[log.setNumber] = log;
+      }
+      final sorted = unique.values.toList()
+        ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+
+      await ref.set({
+        'memberId': uid,
+        'exerciseId': exercise.id,
+        'sets': [
+          for (final log in sorted)
+            {
+              'setNumber': log.setNumber,
+              'weight': log.weight,
+              'reps': log.reps,
+              'completed': log.completed,
+            },
+        ],
+        ...BaseFields.onUpdate(),
+      }, SetOptions(merge: true));
+    }, whileDoing: 'saving your sets');
+  }
+
+  Future<void> saveExerciseNote(Exercise exercise, String note) {
+    return guard(() async {
+      final uid = _uid;
+      final ref = _progressRef(exercise);
+      if (ref == null) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'Open an assigned workout exercise before saving notes.',
+        );
+      }
+      await ref.set({
+        'memberId': uid,
+        'note': note.trim(),
+        ...BaseFields.onUpdate(),
+      }, SetOptions(merge: true));
+    }, whileDoing: 'saving your note');
+  }
+
+  Future<String> fetchExerciseNote(Exercise exercise) {
+    return guard(() async {
+      _firebase.requireConfigured();
+      final ref = _progressRef(exercise);
+      if (ref == null) return '';
+      final doc = await ref.get();
+      return Val.toText(doc.data()?['note']);
+    }, whileDoing: 'loading your note');
+  }
+
+  /// `assigned_plans/{planId}/progress/{order}` — the draft for one exercise.
+  DocumentReference<Map<String, dynamic>>? _progressRef(Exercise exercise) {
+    final key = exercise.workoutExerciseId;
+    if (key == null || !key.contains(':')) return null;
+    final parts = key.split(':');
+    if (parts.length != 2) return null;
+    return _db
+        .collection(FirestorePaths.assignedPlans)
+        .doc(parts[0])
+        .collection('progress')
+        .doc(parts[1]);
+  }
+
+  /// Marks the whole plan finished. The per-exercise logs are what the reports
+  /// read; this only closes the plan out.
+  Future<void> completeWorkout(WorkoutPlan workout) {
+    return guard(() async {
+      _uid;
+      if (workout.isEmpty) return;
+      await _db.collection(FirestorePaths.assignedPlans).doc(workout.id).update(
+        {
+          'status': AssignedPlanStatus.completed.name,
+          'currentIndex': workout.exercises.length,
+          'completedAt': FieldValue.serverTimestamp(),
+          ...BaseFields.onUpdate(),
+        },
+      );
+    }, whileDoing: 'finishing your workout');
+  }
+
+  /// Puts a plan back to the start.
+  ///
+  /// The completion logs are soft-deleted rather than removed — the guide is
+  /// explicit that nothing is hard-deleted through the app.
+  Future<void> resetWorkoutProgress(WorkoutPlan workout) {
+    return guard(() async {
+      _uid;
+      if (workout.isEmpty) return;
+
+      final batch = _db.batch();
+      final planRef = _db
+          .collection(FirestorePaths.assignedPlans)
+          .doc(workout.id);
+
+      final logs = await _db
+          .collection(FirestorePaths.completionLogs)
+          .where('assignedPlanId', isEqualTo: workout.id)
+          .where(BaseFields.deletedAt, isNull: true)
+          .get();
+      for (final doc in logs.docs) {
+        batch.update(doc.reference, BaseFields.onDelete());
+      }
+
+      final drafts = await planRef.collection('progress').get();
+      for (final doc in drafts.docs) {
+        batch.delete(doc.reference);
+      }
+
+      batch.update(planRef, {
+        'currentIndex': 0,
+        'status': AssignedPlanStatus.active.name,
+        'completedAt': null,
+        ...BaseFields.onUpdate(),
+      });
+
+      await batch.commit();
+    }, whileDoing: 'resetting your workout');
+  }
+
+  // ------------------------------------------------------------------ reports
+
+  /// Everything on the progress screen, derived from the completion log.
   Future<MemberProgress> fetchProgress({
     String? memberId,
     DateTime? startDate,
     DateTime? endDate,
-  }) async {
-    _requireClient();
-    final userId = memberId ?? _authUserId;
-    if (userId == null) throw StateError('You are not logged in.');
+  }) {
+    return guard(() async {
+      final userId = memberId ?? _uid;
 
-    final measurements = await _supabaseService.client
-        .from('measurements')
-        .select()
-        .eq('member_id', userId)
-        .order('measured_at', ascending: false)
-        .limit(2);
-    final currentWeight = measurements.isNotEmpty
-        ? _toDouble(measurements.first['weight'])
-        : 0.0;
-    final previousWeight = measurements.length > 1
-        ? _toDouble(measurements[1]['weight'], fallback: currentWeight)
-        : currentWeight;
+      final measurements = await _db
+          .collection(FirestorePaths.measurements)
+          .where('memberId', isEqualTo: userId)
+          .where(BaseFields.deletedAt, isNull: true)
+          .orderBy('measuredAt', descending: true)
+          .limit(2)
+          .get();
 
-    var logsQuery = _supabaseService.client
-        .from('exercise_logs')
-        .select(
-          'weight,reps,completed,logged_at,exercises(name,muscle_group,tracks_weight)',
-        )
-        .eq('member_id', userId);
+      final currentWeight = measurements.docs.isEmpty
+          ? 0.0
+          : Val.toDouble(measurements.docs.first.data()['weight']);
+      final previousWeight = measurements.docs.length > 1
+          ? Val.toDouble(
+              measurements.docs[1].data()['weight'],
+              fallback: currentWeight,
+            )
+          : currentWeight;
 
-    if (startDate != null) {
-      logsQuery = logsQuery.gte('logged_at', _startOfDay(startDate));
-    }
-    if (endDate != null) {
-      logsQuery = logsQuery.lt('logged_at', _dayAfter(endDate));
-    }
-
-    final logs = await logsQuery.order('logged_at', ascending: false);
-
-    final allCompletions = await _supabaseService.client
-        .from('workout_completions')
-        .select('id')
-        .eq('member_id', userId);
-    final completedLogs = logs.where((row) => row['completed'] != false);
-    final assignmentStats = await _exerciseAssignmentStats(
-      memberId: userId,
-      startDate: startDate,
-      endDate: endDate,
-    );
-
-    final personalBests = <String, int>{};
-    final muscleCounts = <String, int>{};
-    for (final row in completedLogs) {
-      final exercise = row['exercises'];
-      if (exercise is! Map) continue;
-      final name = exercise['name'].toString();
-      final muscle = _mainMuscleGroup(exercise['muscle_group'].toString());
-      final weight = _toInt(row['weight']);
-      if (exercise['tracks_weight'] != false &&
-          weight > 0 &&
-          (!personalBests.containsKey(name) || weight > personalBests[name]!)) {
-        personalBests[name] = weight;
-      }
-      muscleCounts[muscle] = (muscleCounts[muscle] ?? 0) + 1;
-    }
-    final sortedMuscles = muscleCounts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final sortedBests = personalBests.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return MemberProgress(
-      currentWeight: currentWeight,
-      weightDelta: double.parse(
-        (currentWeight - previousWeight).toStringAsFixed(1),
-      ),
-      workoutsCompleted: allCompletions.length,
-      goalCompletion: await _latestWorkoutCompletion(userId),
-      dayStreak: _dayStreakFromLogs(logs),
-      muscleProgress: Map.fromEntries(
-        sortedMuscles
-            .take(6)
-            .map(
-              (entry) => MapEntry(entry.key, (entry.value * 7).clamp(8, 100)),
-            ),
-      ),
-      personalBests: Map.fromEntries(sortedBests.take(6)),
-      assignedExercises: assignmentStats.assigned,
-      completedExercises: assignmentStats.completed,
-      missedExercises: assignmentStats.missed,
-      adherence: assignmentStats.adherence,
-    );
-  }
-
-  Future<AppSettings> fetchSettings() async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final row = await _supabaseService.client
-        .from('users')
-        .select('notifications_enabled,preferred_unit')
-        .eq('id', _authUserId!)
-        .maybeSingle();
-    return AppSettings(
-      notificationsEnabled: row?['notifications_enabled'] != false,
-      preferredUnit: (row?['preferred_unit'] ?? 'kg').toString(),
-    );
-  }
-
-  Future<void> updateNotificationsEnabled(bool enabled) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    await _supabaseService.client
-        .from('users')
-        .update({'notifications_enabled': enabled})
-        .eq('id', _authUserId!);
-  }
-
-  Future<void> updatePreferredUnit(String unit) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    await _supabaseService.client
-        .from('users')
-        .update({'preferred_unit': unit})
-        .eq('id', _authUserId!);
-  }
-
-  Future<void> addWater(double liters, {DateTime? date}) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final selectedDay = _dateKey(date ?? DateTime.now());
-    await _supabaseService.client.from('water_logs').upsert({
-      'member_id': _authUserId,
-      'logged_date': selectedDay,
-      'liters': liters.clamp(0, 20),
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'member_id,logged_date');
-  }
-
-  Future<List<MemberSummary>> fetchMembers() async {
-    _requireClient();
-
-    final rows = await _supabaseService.client
-        .from('members')
-        .select(
-          'id,goal,height_cm,users(name,email,phone,avatar_url),trainers(name),measurements(weight,measured_at)',
-        )
-        .order('created_at');
-
-    return rows.map<MemberSummary>((row) {
-      final user = row['users'] as Map?;
-      final trainer = row['trainers'] as Map?;
-      final measurements = row['measurements'];
-      double weight = 0;
-      if (measurements is List && measurements.isNotEmpty) {
-        weight = _toDouble(measurements.first['weight'], fallback: weight);
-      }
-      return MemberSummary(
-        id: row['id'].toString(),
-        name: (user?['name'] ?? 'Member').toString(),
-        email: (user?['email'] ?? '').toString(),
-        phone: user?['phone']?.toString(),
-        avatarUrl: user?['avatar_url']?.toString(),
-        goal: (row['goal'] ?? 'Fitness').toString(),
-        heightCm: _toDouble(row['height_cm']),
-        currentWeight: weight,
-        trainerName: (trainer?['name'] ?? '').toString(),
-      );
-    }).toList();
-  }
-
-  Future<List<Exercise>> fetchExerciseLibrary() async {
-    _requireClient();
-    final rows = await _supabaseService.client
-        .from('exercises')
-        .select()
-        .order('muscle_group')
-        .order('name');
-    return rows.map<Exercise>((row) {
-      return _exerciseFromRow(
-        row,
-        sets: _toInt(row['default_sets']),
-        reps: (row['default_reps'] ?? '').toString(),
-        notes: '',
-        isAssigned: false,
-      );
-    }).toList();
-  }
-
-  Future<TrainerDashboardStats> fetchTrainerStats() async {
-    final members = await fetchMembers();
-    final plans = await _supabaseService.client
-        .from('workout_plans')
-        .select('id');
-    return TrainerDashboardStats(
-      memberCount: members.length,
-      activePlanCount: plans.length,
-    );
-  }
-
-  Future<List<WorkoutPlan>> fetchSavedWorkoutPlans() async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final rows = await _supabaseService.client
-        .from('workout_plans')
-        .select('id')
-        .eq('trainer_id', _authUserId!)
-        .order('created_at', ascending: false)
-        .limit(8);
-    final plans = <WorkoutPlan>[];
-    for (final row in rows) {
-      plans.add(await _fetchWorkoutPlanById(row['id'].toString()));
-    }
-    return plans;
-  }
-
-  Future<List<NutritionPlan>> fetchSavedDietPlans() async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final rows = await _supabaseService.client
-        .from('diet_plans')
-        .select('id')
-        .eq('trainer_id', _authUserId!)
-        .order('created_at', ascending: false)
-        .limit(8);
-    final plans = <NutritionPlan>[];
-    for (final row in rows) {
-      plans.add(await _fetchDietPlanById(row['id'].toString()));
-    }
-    return plans;
-  }
-
-  Future<List<ExerciseLog>> fetchExerciseLogs(Exercise exercise) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    var query = _supabaseService.client
-        .from('exercise_logs')
-        .select()
-        .eq('member_id', _authUserId!);
-    final workoutExerciseId = exercise.workoutExerciseId;
-    if (workoutExerciseId != null) {
-      query = query.eq('workout_exercise_id', workoutExerciseId);
-    } else {
-      query = query.eq('exercise_id', exercise.id);
-    }
-    final rows = await query.order('set_number', ascending: true);
-    if (rows.isEmpty) return _defaultLogs(exercise);
-    final logs = rows.map<ExerciseLog>((row) {
-      return ExerciseLog(
-        id: row['id'].toString(),
-        setNumber: _toInt(row['set_number']),
-        weight: _toInt(row['weight']),
-        reps: _toInt(row['reps']),
-        completed: row['completed'] != false,
-      );
-    }).toList();
-    logs.sort((a, b) => a.setNumber.compareTo(b.setNumber));
-    return logs;
-  }
-
-  Future<void> saveExerciseLogs(
-    Exercise exercise,
-    List<ExerciseLog> logs,
-  ) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final uniqueLogs = <int, ExerciseLog>{};
-    for (final log in logs) {
-      uniqueLogs[log.setNumber] = log;
-    }
-    final sortedLogs = uniqueLogs.values.toList()
-      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
-    final payload = sortedLogs.map((log) {
-      return {
-        'member_id': _authUserId,
-        'workout_exercise_id': exercise.workoutExerciseId,
-        'exercise_id': exercise.id,
-        'set_number': log.setNumber,
-        'weight': log.weight,
-        'reps': log.reps,
-        'completed': log.completed,
-      };
-    }).toList();
-    await _supabaseService.client
-        .from('exercise_logs')
-        .upsert(
-          payload,
-          onConflict: 'member_id,workout_exercise_id,set_number',
+      // One query on completedAt over the selected range, as the guide asks.
+      var query = _db
+          .collection(FirestorePaths.completionLogs)
+          .where('memberId', isEqualTo: userId)
+          .where(BaseFields.deletedAt, isNull: true);
+      if (startDate != null) {
+        query = query.where(
+          'completedAt',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(Val.startOfDay(startDate)),
         );
+      }
+      if (endDate != null) {
+        query = query.where(
+          'completedAt',
+          isLessThan: Timestamp.fromDate(Val.endOfDay(endDate)),
+        );
+      }
+
+      final logs = await fetchAllPaged<CompletionLog>(
+        query: query.orderBy('completedAt', descending: true),
+        fromDoc: CompletionLog.fromFirestore,
+      );
+
+      final done = logs.where((log) => !log.skipped).toList();
+
+      final personalBests = <String, int>{};
+      final muscleCounts = <String, int>{};
+      for (final log in done) {
+        final muscle = _mainMuscleGroup(log.muscleGroup);
+        muscleCounts[muscle] = (muscleCounts[muscle] ?? 0) + 1;
+        final best = log.topWeight;
+        if (best > 0 &&
+            (!personalBests.containsKey(log.exerciseName) ||
+                best > personalBests[log.exerciseName]!)) {
+          personalBests[log.exerciseName] = best;
+        }
+      }
+
+      final sortedMuscles = muscleCounts.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+      final sortedBests = personalBests.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      final plans = await _plansInRange(
+        memberId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      final stats = _assignmentStats(plans, logs);
+      final member = await _db
+          .collection(FirestorePaths.members)
+          .doc(userId)
+          .get();
+
+      return MemberProgress(
+        currentWeight: currentWeight,
+        weightDelta: double.parse(
+          (currentWeight - previousWeight).toStringAsFixed(1),
+        ),
+        workoutsCompleted: plans
+            .where((plan) => plan.status == AssignedPlanStatus.completed)
+            .length,
+        goalCompletion: await _latestPlanCompletion(userId),
+        dayStreak: _dayStreak(done),
+        muscleProgress: Map.fromEntries(
+          sortedMuscles
+              .take(6)
+              .map(
+                (entry) => MapEntry(entry.key, (entry.value * 7).clamp(8, 100)),
+              ),
+        ),
+        personalBests: Map.fromEntries(sortedBests.take(6)),
+        assignedExercises: stats.assigned,
+        completedExercises: stats.completed,
+        missedExercises: stats.missed,
+        adherence: stats.adherence,
+        gender: Val.toNullableText(member.data()?['gender']),
+      );
+    }, whileDoing: 'building your report');
   }
 
-  Future<void> completeWorkout(WorkoutPlan workout) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    if (workout.id == 'empty') return;
-    final latestDay = await _supabaseService.client
-        .from('workout_days')
-        .select('id')
-        .eq('workout_plan_id', workout.id)
-        .order('scheduled_date', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (latestDay == null) return;
-    final today = _dateKey(DateTime.now());
-    await _supabaseService.client.from('workout_completions').upsert({
-      'member_id': _authUserId,
-      'workout_plan_id': workout.id,
-      'workout_day_id': latestDay['id'],
-      'completed_date': today,
-      'completed_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'member_id,workout_plan_id,workout_day_id,completed_date');
-  }
-
-  Future<void> setMealLogged(
-    DietMeal meal,
-    bool logged, {
-    DateTime? date,
+  Future<List<AssignedPlan>> _plansInRange({
+    required String memberId,
+    DateTime? startDate,
+    DateTime? endDate,
   }) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final mealId = meal.id;
-    if (mealId == null) throw StateError('Open an assigned meal first.');
-    final row = await _supabaseService.client
-        .from('diet_meals')
-        .select('diet_plan_id')
-        .eq('id', mealId)
-        .single();
-    final selectedDay = _dateKey(date ?? DateTime.now());
-    await _supabaseService.client.from('diet_logs').upsert({
-      'member_id': _authUserId,
-      'diet_plan_id': row['diet_plan_id'],
-      'diet_meal_id': mealId,
-      'logged_date': selectedDay,
-      'consumed': logged,
-      'consumed_at': logged ? DateTime.now().toIso8601String() : null,
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'member_id,diet_meal_id,logged_date');
+    final now = DateTime.now();
+    // Today is still in progress, so it does not count against adherence.
+    final yesterday = Val.startOfDay(now).subtract(const Duration(days: 1));
+    final effectiveStart = startDate ?? DateTime(now.year, now.month, 1);
+    final effectiveEnd = endDate == null || endDate.isAfter(yesterday)
+        ? yesterday
+        : endDate;
+    if (effectiveEnd.isBefore(effectiveStart)) return const [];
+
+    return fetchAllPaged<AssignedPlan>(
+      query: _db
+          .collection(FirestorePaths.assignedPlans)
+          .where('memberId', isEqualTo: memberId)
+          .where(
+            'scheduledDate',
+            isGreaterThanOrEqualTo: Val.dayKey(effectiveStart),
+          )
+          .where('scheduledDate', isLessThanOrEqualTo: Val.dayKey(effectiveEnd))
+          .orderBy('scheduledDate', descending: true),
+      fromDoc: AssignedPlan.fromFirestore,
+    );
   }
 
-  Future<void> saveExerciseNote(Exercise exercise, String note) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final workoutExerciseId = exercise.workoutExerciseId;
-    if (workoutExerciseId == null) {
-      throw StateError(
-        'Open an assigned workout exercise before saving notes.',
+  ({int assigned, int completed, int missed, double adherence})
+  _assignmentStats(List<AssignedPlan> plans, List<CompletionLog> logs) {
+    final assigned = plans.fold<int>(
+      0,
+      (total, plan) => total + plan.exercises.length,
+    );
+    if (assigned == 0) {
+      return (assigned: 0, completed: 0, missed: 0, adherence: 0.0);
+    }
+
+    final planIds = plans.map((plan) => plan.id).toSet();
+    final completed = logs
+        .where((log) => !log.skipped && planIds.contains(log.assignedPlanId))
+        .map((log) => '${log.assignedPlanId}:${log.exerciseIndex}')
+        .toSet()
+        .length;
+
+    final missed = (assigned - completed).clamp(0, assigned);
+    return (
+      assigned: assigned,
+      completed: completed,
+      missed: missed,
+      adherence: completed / assigned,
+    );
+  }
+
+  Future<double> _latestPlanCompletion(String memberId) async {
+    final snapshot = await _db
+        .collection(FirestorePaths.assignedPlans)
+        .where('memberId', isEqualTo: memberId)
+        .where(BaseFields.deletedAt, isNull: true)
+        .orderBy('assignedAt', descending: true)
+        .limit(1)
+        .get();
+    if (snapshot.docs.isEmpty) return 0;
+
+    final plan = AssignedPlan.fromFirestore(snapshot.docs.first);
+    if (plan.exercises.isEmpty) return 0;
+    return (plan.currentIndex / plan.exercises.length).clamp(0.0, 1.0);
+  }
+
+  int _dayStreak(List<CompletionLog> logs) {
+    final days = logs.map((log) => Val.startOfDay(log.completedAt)).toSet();
+    if (days.isEmpty) return 0;
+
+    var cursor = Val.startOfDay(DateTime.now());
+    if (!days.contains(cursor)) {
+      final yesterday = cursor.subtract(const Duration(days: 1));
+      if (!days.contains(yesterday)) return 0;
+      cursor = yesterday;
+    }
+
+    var streak = 0;
+    while (days.contains(cursor)) {
+      streak++;
+      cursor = cursor.subtract(const Duration(days: 1));
+    }
+    return streak;
+  }
+
+  // ----------------------------------------------------------------- settings
+
+  Future<AppSettings> fetchSettings() {
+    return guard(() async {
+      final doc = await _db
+          .collection(FirestorePaths.members)
+          .doc(_uid)
+          .get();
+      final data = doc.data() ?? const <String, dynamic>{};
+      return AppSettings(
+        notificationsEnabled: Val.toBool(
+          data['notificationsEnabled'],
+          fallback: true,
+        ),
+        preferredUnit: Val.toText(data['preferredUnit'], fallback: 'kg'),
+      );
+    }, whileDoing: 'loading your settings');
+  }
+
+  Future<void> updateNotificationsEnabled(bool enabled) {
+    return guard(() async {
+      await _db.collection(FirestorePaths.members).doc(_uid).update({
+        'notificationsEnabled': enabled,
+        ...BaseFields.onUpdate(),
+      });
+    }, whileDoing: 'saving your settings');
+  }
+
+  Future<void> updatePreferredUnit(String unit) {
+    return guard(() async {
+      await _db.collection(FirestorePaths.members).doc(_uid).update({
+        'preferredUnit': unit,
+        ...BaseFields.onUpdate(),
+      });
+    }, whileDoing: 'saving your settings');
+  }
+
+  // -------------------------------------------------------------- trainer side
+
+  /// Members this trainer coaches, newest first, one page at a time.
+  Future<List<MemberSummary>> fetchMembers({
+    int limit = 50,
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) {
+    return guard(() async {
+      _firebase.requireConfigured();
+      final page = await fetchPage<MemberSummary>(
+        query: _db
+            .collection(FirestorePaths.members)
+            .where('role', isEqualTo: 'member')
+            .orderBy(BaseFields.createdAt, descending: true),
+        fromDoc: (doc) {
+          final member = Member.fromFirestore(doc);
+          return member.toSummary(
+            currentWeight: Val.toDouble(doc.data()?['currentWeight']),
+          );
+        },
+        startAfter: startAfter,
+        limit: limit,
+      );
+      return page.items;
+    }, whileDoing: 'loading members');
+  }
+
+  Future<List<Exercise>> fetchExerciseLibrary() {
+    return guard(() async {
+      _firebase.requireConfigured();
+      return fetchAllPaged<Exercise>(
+        query: _db
+            .collection(FirestorePaths.exercises)
+            .orderBy('muscleGroup')
+            .orderBy('name'),
+        fromDoc: Exercise.fromFirestore,
+      );
+    }, whileDoing: 'loading the exercise library');
+  }
+
+  Future<TrainerDashboardStats> fetchTrainerStats() {
+    return guard(() async {
+      _firebase.requireConfigured();
+
+      // count() keeps this a server-side aggregate rather than a full read.
+      final members = await _db
+          .collection(FirestorePaths.members)
+          .where('role', isEqualTo: 'member')
+          .where(BaseFields.deletedAt, isNull: true)
+          .count()
+          .get();
+
+      final plans = await _db
+          .collection(FirestorePaths.assignedPlans)
+          .where('status', isEqualTo: AssignedPlanStatus.active.name)
+          .where(BaseFields.deletedAt, isNull: true)
+          .count()
+          .get();
+
+      return TrainerDashboardStats(
+        memberCount: members.count ?? 0,
+        activePlanCount: plans.count ?? 0,
+      );
+    }, whileDoing: 'loading your dashboard');
+  }
+
+  /// Reusable plan templates this trainer has built.
+  Future<List<WorkoutPlan>> fetchSavedWorkoutPlans({int limit = 8}) {
+    return guard(() async {
+      final uid = _uid;
+      final page = await fetchPage<WorkoutPlan>(
+        query: _db
+            .collection(FirestorePaths.workoutPlans)
+            .where(BaseFields.createdBy, isEqualTo: uid)
+            .orderBy(BaseFields.createdAt, descending: true),
+        fromDoc: _workoutPlanFromTemplate,
+        limit: limit,
+      );
+      return page.items;
+    }, whileDoing: 'loading your saved plans');
+  }
+
+  WorkoutPlan _workoutPlanFromTemplate(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data() ?? const <String, dynamic>{};
+    final raw = Val.toMapList(data['exercises']);
+    final exercises = <Exercise>[
+      for (var i = 0; i < raw.length; i++)
+        AssignedExercise.fromMap(raw[i], order: i).toExercise(
+          planId: doc.id,
+          completedSetCount: 0,
+          isLocked: false,
+        ),
+    ];
+
+    return WorkoutPlan(
+      id: doc.id,
+      name: Val.toText(data['title'], fallback: 'Plan'),
+      focus: Val.toText(data['focus'], fallback: 'Assigned Program'),
+      durationMinutes: Val.toInt(data['durationMinutes']),
+      estimatedCalories: Val.toInt(data['estimatedCalories']),
+      level: Val.toText(data['level']),
+      completionPercent: 0,
+      exercises: exercises,
+    );
+  }
+
+  /// Saves a reusable template and assigns it, snapshotting the exercises.
+  Future<void> saveWorkoutPlan({
+    required String memberId,
+    required String name,
+    required String focus,
+    required List<Exercise> exercises,
+    DateTime? scheduledFor,
+  }) {
+    return guard(() async {
+      final uid = _uid;
+      if (exercises.isEmpty) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'Add at least one exercise to the plan.',
+        );
+      }
+
+      final snapshots = <AssignedExercise>[
+        for (var i = 0; i < exercises.length; i++)
+          AssignedExercise.snapshot(exercises[i], i),
+      ];
+      final durationMinutes = _estimatedDurationMinutes(exercises);
+      final batch = _db.batch();
+
+      final templateRef = _db.collection(FirestorePaths.workoutPlans).doc();
+      batch.set(templateRef, {
+        'title': name,
+        'focus': focus,
+        'level': '',
+        'durationMinutes': durationMinutes,
+        'estimatedCalories': durationMinutes * 8,
+        'exercises': snapshots.map((item) => item.toMap()).toList(),
+        ...BaseFields.onCreate(by: uid),
+      });
+
+      final assignedRef = _db.collection(FirestorePaths.assignedPlans).doc();
+      final plan = AssignedPlan(
+        id: assignedRef.id,
+        memberId: memberId,
+        planId: templateRef.id,
+        title: name,
+        focus: focus,
+        level: '',
+        durationMinutes: durationMinutes,
+        estimatedCalories: durationMinutes * 8,
+        scheduledDate: Val.dayKey(scheduledFor ?? DateTime.now()),
+        exercises: snapshots,
+        currentIndex: 0,
+        status: AssignedPlanStatus.active,
+        assignedAt: DateTime.now(),
+        assignedBy: uid,
+      );
+      batch.set(assignedRef, {
+        ...plan.toFirestore(),
+        'assignedAt': FieldValue.serverTimestamp(),
+        ...BaseFields.onCreate(by: uid),
+      });
+
+      await batch.commit();
+    }, whileDoing: 'saving the plan');
+  }
+
+  Future<void> createQuickWorkoutPlan(String memberId) async {
+    final exercises = await fetchExerciseLibrary();
+    if (exercises.isEmpty) {
+      throw const RepositoryFailure(
+        FailureKind.invalid,
+        'Add exercises to the library first.',
       );
     }
-    await _supabaseService.client.from('exercise_notes').upsert({
-      'member_id': _authUserId,
-      'workout_exercise_id': workoutExerciseId,
-      'exercise_id': exercise.id,
-      'note': note.trim(),
-      'updated_at': DateTime.now().toIso8601String(),
-    }, onConflict: 'member_id,workout_exercise_id,exercise_id');
+    await saveWorkoutPlan(
+      memberId: memberId,
+      name: 'Quick Workout',
+      focus: 'Assigned Workout',
+      exercises: exercises.take(4).toList(),
+    );
   }
 
-  Future<String> fetchExerciseNote(Exercise exercise) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final workoutExerciseId = exercise.workoutExerciseId;
-    if (workoutExerciseId == null) return '';
-    final row = await _supabaseService.client
-        .from('exercise_notes')
-        .select('note')
-        .eq('member_id', _authUserId!)
-        .eq('exercise_id', exercise.id)
-        .eq('workout_exercise_id', workoutExerciseId)
-        .maybeSingle();
-    return (row?['note'] ?? '').toString();
+  Future<void> addMeasurement(String memberId, double weight) {
+    return guard(() async {
+      final uid = _uid;
+      final batch = _db.batch();
+
+      batch.set(_db.collection(FirestorePaths.measurements).doc(), {
+        'memberId': memberId,
+        'weight': weight,
+        'notes': 'Trainer update',
+        'measuredAt': FieldValue.serverTimestamp(),
+        ...BaseFields.onCreate(by: uid),
+      });
+
+      // Denormalised onto the member so the member list is one query rather
+      // than one per row.
+      batch.update(_db.collection(FirestorePaths.members).doc(memberId), {
+        'currentWeight': weight,
+        ...BaseFields.onUpdate(),
+      });
+
+      await batch.commit();
+    }, whileDoing: 'saving the measurement');
   }
 
-  Future<void> resetWorkoutProgress(WorkoutPlan workout) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final workoutExerciseIds = workout.exercises
-        .map((exercise) => exercise.workoutExerciseId)
-        .whereType<String>()
-        .toList();
-    if (workoutExerciseIds.isEmpty) return;
-    await _supabaseService.client
-        .from('exercise_logs')
-        .delete()
-        .eq('member_id', _authUserId!)
-        .inFilter('workout_exercise_id', workoutExerciseIds);
-    await _supabaseService.client
-        .from('exercise_notes')
-        .delete()
-        .eq('member_id', _authUserId!)
-        .inFilter('workout_exercise_id', workoutExerciseIds);
-    await _supabaseService.client
-        .from('workout_completions')
-        .delete()
-        .eq('member_id', _authUserId!)
-        .eq('workout_plan_id', workout.id);
+  /// Creates a member account. Privileged, so it goes through a callable
+  /// function — the client has no business writing another user's auth record.
+  Future<CreatedMemberInvite> createMember({
+    required String name,
+    required String? email,
+    required String? phone,
+    required String password,
+    required String goal,
+    required String gender,
+    required int? age,
+    required double heightCm,
+    required double weight,
+  }) {
+    return guard(() async {
+      _firebase.requireConfigured();
+      final callable = FirebaseFunctions.instance.httpsCallable('createMember');
+      final response = await callable.call<Map<String, dynamic>>({
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'password': password,
+        'goal': goal,
+        'gender': gender,
+        'age': age,
+        'heightCm': heightCm,
+        'weight': weight,
+      });
+
+      final data = Map<String, dynamic>.from(response.data);
+      final memberData = Val.toMap(data['member']);
+
+      return CreatedMemberInvite(
+        member: MemberSummary(
+          id: Val.toText(memberData['id']),
+          name: Val.toText(memberData['name'], fallback: name),
+          email: Val.toText(memberData['email'], fallback: email ?? ''),
+          phone: Val.toNullableText(memberData['phone']) ?? phone,
+          goal: Val.toText(memberData['goal'], fallback: goal),
+          heightCm: Val.toDouble(memberData['heightCm'], fallback: heightCm),
+          currentWeight: Val.toDouble(
+            memberData['weight'],
+            fallback: weight,
+          ),
+          trainerName: Val.toText(memberData['trainerName'], fallback: 'You'),
+        ),
+        inviteText: Val.toText(data['inviteText']),
+      );
+    }, whileDoing: 'creating the member', timeout: const Duration(seconds: 45));
   }
 
   String workoutShareText(WorkoutPlan workout) {
@@ -854,83 +1108,191 @@ class AppDataRepository {
     buffer.writeln();
     for (final exercise in workout.exercises) {
       buffer.writeln(
-        '- ${exercise.name}: ${exercise.sets} sets x ${exercise.reps}, rest ${exercise.restSeconds}s',
+        '- ${exercise.name}: ${exercise.sets} sets x ${exercise.reps}, '
+        'rest ${exercise.restSeconds}s',
       );
     }
     return buffer.toString().trim();
   }
 
-  Future<void> createQuickWorkoutPlan(String memberId) async {
-    final exercises = await fetchExerciseLibrary();
-    if (exercises.isEmpty) throw StateError('Add exercises first.');
-    await saveWorkoutPlan(
-      memberId: memberId,
-      name: 'Quick Workout',
-      focus: 'Assigned Workout',
-      exercises: exercises.take(4).toList(),
-    );
+  // --------------------------------------------------------------------- diet
+  // Hidden in the UI, retained so the feature can be restored.
+
+  Future<NutritionPlan> fetchNutritionPlan({String? memberId, DateTime? date}) {
+    return guard(() async {
+      final userId = memberId ?? _uid;
+      final selected = date ?? DateTime.now();
+      final dayKey = Val.dayKey(selected);
+
+      final memberDoc = await _db
+          .collection(FirestorePaths.members)
+          .doc(userId)
+          .get();
+      final waterGoal = Val.toDouble(memberDoc.data()?['waterGoalLiters']);
+      final waterLiters = await _waterForDay(userId, dayKey);
+
+      final snapshot = await _db
+          .collection(FirestorePaths.dietPlans)
+          .where('memberId', isEqualTo: userId)
+          .where('scheduledDate', isEqualTo: dayKey)
+          .where(BaseFields.deletedAt, isNull: true)
+          .orderBy(BaseFields.createdAt, descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        return _emptyNutrition(
+          waterLiters: waterLiters,
+          waterGoalLiters: waterGoal,
+        );
+      }
+
+      final doc = snapshot.docs.first;
+      final data = doc.data();
+      final logged = await _loggedMealIds(userId, doc.id, dayKey);
+
+      final meals = <DietMeal>[
+        for (final raw in Val.toMapList(data['meals']))
+          DietMeal(
+            id: Val.toText(raw['id']),
+            name: Val.toText(raw['name'], fallback: 'Meal'),
+            time: Val.toText(raw['time']),
+            description: Val.toText(raw['description']),
+            calories: Val.toInt(raw['calories']),
+            icon: Val.toText(raw['name']).toLowerCase(),
+            logged: logged.contains(Val.toText(raw['id'])),
+          ),
+      ];
+
+      final consumed = meals
+          .where((meal) => meal.logged)
+          .fold<int>(0, (total, meal) => total + meal.calories);
+      final goal = Val.toInt(data['dailyCalories']);
+
+      return NutritionPlan(
+        calories: consumed,
+        goalCalories: goal,
+        protein: _macroConsumed(Val.toInt(data['proteinG']), consumed, goal),
+        carbs: _macroConsumed(Val.toInt(data['carbsG']), consumed, goal),
+        fats: _macroConsumed(Val.toInt(data['fatsG']), consumed, goal),
+        caloriesLeft: (goal - consumed).clamp(0, goal),
+        waterLiters: waterLiters,
+        waterGoalLiters: waterGoal,
+        meals: meals,
+      );
+    }, whileDoing: 'loading your diet plan');
   }
 
-  Future<void> saveWorkoutPlan({
-    required String memberId,
-    required String name,
-    required String focus,
-    required List<Exercise> exercises,
-  }) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final durationMinutes = _estimatedDurationMinutes(exercises);
-    final plan = await _supabaseService.client
-        .from('workout_plans')
-        .insert({
-          'trainer_id': _authUserId,
-          'member_id': memberId,
-          'name': name,
-          'focus': focus,
-          'estimated_calories': durationMinutes * 8,
-        })
-        .select('id')
-        .single();
-    final day = await _supabaseService.client
-        .from('workout_days')
-        .insert({
-          'workout_plan_id': plan['id'],
-          'scheduled_date': DateTime.now().toIso8601String().substring(0, 10),
-          'title': name,
-          'duration_minutes': durationMinutes,
-        })
-        .select('id')
-        .single();
-    await _supabaseService.client.from('workout_exercises').insert([
-      for (var i = 0; i < exercises.length; i++)
-        {
-          'workout_day_id': day['id'],
-          'exercise_id': exercises[i].id,
-          'sort_order': i + 1,
-          'sets': exercises[i].sets,
-          'reps': exercises[i].reps,
-          'target_weight_kg': exercises[i].tracksWeight
-              ? exercises[i].targetWeight
-              : 0,
-          'rest_seconds': exercises[i].restSeconds,
-          'trainer_notes': exercises[i].notes.isEmpty
-              ? 'Controlled reps. Leave one rep in reserve.'
-              : exercises[i].notes,
-        },
-    ]);
+  Future<Set<String>> _loggedMealIds(
+    String memberId,
+    String planId,
+    String dayKey,
+  ) async {
+    final snapshot = await _db
+        .collection(FirestorePaths.dietLogs)
+        .where('memberId', isEqualTo: memberId)
+        .where('dietPlanId', isEqualTo: planId)
+        .where('loggedDate', isEqualTo: dayKey)
+        .where('consumed', isEqualTo: true)
+        .get();
+    return snapshot.docs
+        .map((doc) => Val.toText(doc.data()['mealId']))
+        .where((id) => id.isNotEmpty)
+        .toSet();
   }
 
-  Future<void> createQuickDietPlan(String memberId) async {
-    final meals = await fetchMealTemplates();
-    if (meals.isEmpty) throw StateError('Create or save diet meals first.');
-    await saveDietPlan(
-      memberId: memberId,
-      name: 'Quick Diet',
-      dailyCalories: meals.fold<int>(0, (sum, meal) => sum + meal.calories),
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      meals: meals.take(3).toList(),
+  Future<double> _waterForDay(String memberId, String dayKey) async {
+    final doc = await _db
+        .collection(FirestorePaths.waterLogs)
+        .doc('${memberId}_$dayKey')
+        .get();
+    return Val.toDouble(doc.data()?['liters']);
+  }
+
+  Future<void> addWater(double liters, {DateTime? date}) {
+    return guard(() async {
+      final uid = _uid;
+      final dayKey = Val.dayKey(date ?? DateTime.now());
+      await _db
+          .collection(FirestorePaths.waterLogs)
+          .doc('${uid}_$dayKey')
+          .set({
+            'memberId': uid,
+            'loggedDate': dayKey,
+            'liters': liters.clamp(0, 20),
+            ...BaseFields.onUpdate(),
+          }, SetOptions(merge: true));
+    }, whileDoing: 'saving your water log');
+  }
+
+  Future<void> setMealLogged(DietMeal meal, bool logged, {DateTime? date}) {
+    return guard(() async {
+      final uid = _uid;
+      final mealId = meal.id;
+      if (mealId == null || mealId.isEmpty) {
+        throw const RepositoryFailure(
+          FailureKind.invalid,
+          'Open an assigned meal first.',
+        );
+      }
+      final dayKey = Val.dayKey(date ?? DateTime.now());
+      await _db
+          .collection(FirestorePaths.dietLogs)
+          .doc('${uid}_${mealId}_$dayKey')
+          .set({
+            'memberId': uid,
+            'mealId': mealId,
+            'loggedDate': dayKey,
+            'consumed': logged,
+            'consumedAt': logged ? FieldValue.serverTimestamp() : null,
+            ...BaseFields.onUpdate(),
+          }, SetOptions(merge: true));
+    }, whileDoing: 'saving your meal');
+  }
+
+  Future<List<NutritionPlan>> fetchSavedDietPlans({int limit = 8}) {
+    return guard(() async {
+      final uid = _uid;
+      final page = await fetchPage<NutritionPlan>(
+        query: _db
+            .collection(FirestorePaths.dietPlans)
+            .where(BaseFields.createdBy, isEqualTo: uid)
+            .orderBy(BaseFields.createdAt, descending: true),
+        fromDoc: _nutritionPlanFromDoc,
+        limit: limit,
+      );
+      return page.items;
+    }, whileDoing: 'loading your saved diet plans');
+  }
+
+  NutritionPlan _nutritionPlanFromDoc(
+    DocumentSnapshot<Map<String, dynamic>> doc,
+  ) {
+    final data = doc.data() ?? const <String, dynamic>{};
+    final meals = <DietMeal>[
+      for (final raw in Val.toMapList(data['meals']))
+        DietMeal(
+          id: Val.toText(raw['id']),
+          name: Val.toText(raw['name'], fallback: 'Meal'),
+          time: Val.toText(raw['time']),
+          description: Val.toText(raw['description']),
+          calories: Val.toInt(raw['calories']),
+          icon: Val.toText(raw['name']).toLowerCase(),
+        ),
+    ];
+    final consumed = meals.fold<int>(0, (total, meal) => total + meal.calories);
+    final goal = Val.toInt(data['dailyCalories'], fallback: consumed);
+
+    return NutritionPlan(
+      calories: consumed,
+      goalCalories: goal,
+      protein: Val.toInt(data['proteinG']),
+      carbs: Val.toInt(data['carbsG']),
+      fats: Val.toInt(data['fatsG']),
+      caloriesLeft: (goal - consumed).clamp(0, goal),
+      waterLiters: 0,
+      waterGoalLiters: 0,
+      meals: meals,
     );
   }
 
@@ -942,119 +1304,65 @@ class AppDataRepository {
     required int carbs,
     required int fats,
     required List<DietMeal> meals,
-  }) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final plan = await _supabaseService.client
-        .from('diet_plans')
-        .insert({
-          'trainer_id': _authUserId,
-          'member_id': memberId,
-          'name': name,
-          'daily_calories': dailyCalories,
-          'scheduled_date': DateTime.now().toIso8601String().substring(0, 10),
-          'protein_g': protein,
-          'carbs_g': carbs,
-          'fats_g': fats,
-        })
-        .select('id')
-        .single();
-    await _supabaseService.client.from('diet_meals').insert([
-      for (var i = 0; i < meals.length; i++)
-        {
-          'diet_plan_id': plan['id'],
-          'name': meals[i].name,
-          'meal_time': _toDatabaseTime(meals[i].time),
-          'description': meals[i].description,
-          'calories': meals[i].calories,
-          'sort_order': i + 1,
-        },
-    ]);
+  }) {
+    return guard(() async {
+      final uid = _uid;
+      await _db.collection(FirestorePaths.dietPlans).add({
+        'memberId': memberId,
+        'title': name,
+        'dailyCalories': dailyCalories,
+        'proteinG': protein,
+        'carbsG': carbs,
+        'fatsG': fats,
+        'scheduledDate': Val.dayKey(DateTime.now()),
+        'meals': [
+          for (var i = 0; i < meals.length; i++)
+            {
+              'id': '$i',
+              'name': meals[i].name,
+              'time': meals[i].time,
+              'description': meals[i].description,
+              'calories': meals[i].calories,
+              'order': i,
+            },
+        ],
+        ...BaseFields.onCreate(by: uid),
+      });
+    }, whileDoing: 'saving the diet plan');
   }
 
-  Future<void> addMeasurement(String memberId, double weight) async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    await _supabaseService.client.from('measurements').insert({
-      'member_id': memberId,
-      'trainer_id': _authUserId,
-      'weight': weight,
-      'notes': 'Trainer update',
-    });
-  }
-
-  Future<CreatedMemberInvite> createMember({
-    required String name,
-    required String? email,
-    required String? phone,
-    required String password,
-    required String goal,
-    required String gender,
-    required int? age,
-    required double heightCm,
-    required double weight,
-  }) async {
-    _requireClient();
-    final response = await _supabaseService.client.functions.invoke(
-      'create-member',
-      body: {
-        'name': name,
-        'email': email,
-        'phone': phone,
-        'password': password,
-        'goal': goal,
-        'gender': gender,
-        'age': age,
-        'height_cm': heightCm,
-        'weight': weight,
-      },
-    );
-    if (response.status >= 400) {
-      throw StateError(response.data?.toString() ?? 'Could not create member.');
+  Future<void> createQuickDietPlan(String memberId) async {
+    final meals = await fetchMealTemplates();
+    if (meals.isEmpty) {
+      throw const RepositoryFailure(
+        FailureKind.invalid,
+        'Create or save diet meals first.',
+      );
     }
-    final data = Map<String, dynamic>.from(response.data as Map);
-    final memberData = Map<String, dynamic>.from(data['member'] as Map);
-    final member = MemberSummary(
-      id: memberData['id'].toString(),
-      name: memberData['name'].toString(),
-      email: (memberData['email'] ?? '').toString(),
-      phone: memberData['phone']?.toString(),
-      goal: (memberData['goal'] ?? 'Fitness').toString(),
-      heightCm: _toDouble(memberData['height_cm'], fallback: heightCm),
-      currentWeight: _toDouble(memberData['weight'], fallback: weight),
-      trainerName: (memberData['trainer_name'] ?? 'You').toString(),
-    );
-    return CreatedMemberInvite(
-      member: member,
-      inviteText: (data['invite_text'] ?? '').toString(),
+    await saveDietPlan(
+      memberId: memberId,
+      name: 'Quick Diet',
+      dailyCalories: meals.fold<int>(0, (total, meal) => total + meal.calories),
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+      meals: meals.take(3).toList(),
     );
   }
 
-  Future<List<DietMeal>> fetchMealTemplates() async {
-    _requireClient();
-    if (_authUserId == null) throw StateError('You are not logged in.');
-    final rows = await _supabaseService.client
-        .from('diet_meals')
-        .select(
-          'name,meal_time,description,calories,diet_plans!inner(trainer_id)',
-        )
-        .eq('diet_plans.trainer_id', _authUserId!)
-        .order('name')
-        .limit(30);
-    final seen = <String>{};
-    return rows
-        .map<DietMeal>((row) {
-          return DietMeal(
-            name: row['name'].toString(),
-            time: _formatTime(row['meal_time']?.toString()),
-            description: (row['description'] ?? '').toString(),
-            calories: _toInt(row['calories']),
-            icon: row['name'].toString().toLowerCase(),
-          );
-        })
-        .where((meal) => seen.add(meal.name.toLowerCase()))
-        .toList();
+  Future<List<DietMeal>> fetchMealTemplates() {
+    return guard(() async {
+      final plans = await fetchSavedDietPlans(limit: 10);
+      final seen = <String>{};
+      return [
+        for (final plan in plans)
+          for (final meal in plan.meals)
+            if (seen.add(meal.name.toLowerCase())) meal,
+      ].take(30).toList();
+    }, whileDoing: 'loading your meals');
   }
+
+  // ------------------------------------------------------------------ helpers
 
   List<ExerciseLog> _defaultLogs(Exercise exercise) {
     final reps = int.tryParse(exercise.reps.split('-').first) ?? 10;
@@ -1069,61 +1377,34 @@ class AppDataRepository {
     ];
   }
 
-  Future<Map<String, int>> _completedSetsByWorkoutExercise(
-    String memberId,
-    List<String> workoutExerciseIds,
-  ) async {
-    if (workoutExerciseIds.isEmpty) return const {};
-    final rows = await _supabaseService.client
-        .from('exercise_logs')
-        .select('workout_exercise_id,completed')
-        .eq('member_id', memberId)
-        .inFilter('workout_exercise_id', workoutExerciseIds);
-    final counts = <String, int>{};
-    for (final row in rows) {
-      if (row['completed'] == false) continue;
-      final id = row['workout_exercise_id']?.toString();
-      if (id == null) continue;
-      counts[id] = (counts[id] ?? 0) + 1;
-    }
-    return counts;
-  }
-
-  Exercise _exerciseWithCompletedSets(Exercise exercise, int completedSets) {
-    return Exercise(
-      id: exercise.id,
-      name: exercise.name,
-      description: exercise.description,
-      muscleGroup: exercise.muscleGroup,
-      sets: exercise.sets,
-      reps: exercise.reps,
-      restSeconds: exercise.restSeconds,
-      icon: exercise.icon,
-      notes: exercise.notes,
-      tracksWeight: exercise.tracksWeight,
-      targetWeight: exercise.targetWeight,
-      workoutExerciseId: exercise.workoutExerciseId,
-      isAssigned: exercise.isAssigned,
-      sourceId: exercise.sourceId,
-      equipment: exercise.equipment,
-      level: exercise.level,
-      category: exercise.category,
-      primaryMuscles: exercise.primaryMuscles,
-      secondaryMuscles: exercise.secondaryMuscles,
-      instructions: exercise.instructions,
-      imageUrls: exercise.imageUrls,
-      completedSetCount: completedSets.clamp(0, exercise.sets),
+  WorkoutPlan _emptyWorkout({String? name}) {
+    return WorkoutPlan(
+      id: 'empty',
+      name: name ?? 'No Workout Assigned',
+      focus: 'Ask your trainer to assign a plan',
+      durationMinutes: 0,
+      estimatedCalories: 0,
+      level: '',
+      completionPercent: 0,
+      exercises: const [],
     );
   }
 
-  double _completionFromCounts(List<Exercise> exercises, int totalSets) {
-    if (exercises.isEmpty || totalSets <= 0) return 0;
-    final completed = exercises.fold<int>(
-      0,
-      (sum, exercise) =>
-          sum + exercise.completedSetCount.clamp(0, exercise.sets),
+  NutritionPlan _emptyNutrition({
+    double waterLiters = 0,
+    double waterGoalLiters = 0,
+  }) {
+    return NutritionPlan(
+      calories: 0,
+      goalCalories: 0,
+      protein: 0,
+      carbs: 0,
+      fats: 0,
+      caloriesLeft: 0,
+      waterLiters: waterLiters,
+      waterGoalLiters: waterGoalLiters,
+      meals: const [],
     );
-    return (completed / totalSets).clamp(0.0, 1.0);
   }
 
   int _macroConsumed(int planned, int consumedCalories, int goalCalories) {
@@ -1131,83 +1412,18 @@ class AppDataRepository {
     return (planned * (consumedCalories / goalCalories)).round();
   }
 
-  static int _toInt(Object? value, {int fallback = 0}) {
-    if (value is int) return value;
-    if (value is num) return value.round();
-    return int.tryParse(value?.toString() ?? '') ?? fallback;
-  }
-
-  static double _toDouble(Object? value, {double fallback = 0}) {
-    if (value is num) return value.toDouble();
-    return double.tryParse(value?.toString() ?? '') ?? fallback;
-  }
-
-  static double? _toNullableDouble(Object? value) {
-    if (value == null) return null;
-    if (value is num) return value.toDouble();
-    return double.tryParse(value.toString());
-  }
-
-  static int? _toNullableInt(Object? value) {
-    if (value == null) return null;
-    if (value is int) return value;
-    if (value is num) return value.round();
-    return int.tryParse(value.toString());
-  }
-
-  static DateTime _toDateTime(Object? value) {
-    return DateTime.tryParse(value?.toString() ?? '') ?? DateTime.now();
-  }
-
-  static Map<String, dynamic>? _nullableMap(Object? value) {
-    if (value == null) return null;
-    if (value is Map<String, dynamic>) return value;
-    if (value is Map) return Map<String, dynamic>.from(value);
-    return null;
-  }
-
-  static bool _isMissingColumn(Object error, String columnName) {
-    final message = error.toString().toLowerCase();
-    final normalizedColumn = columnName.toLowerCase();
-    return message.contains('42703') &&
-        (message.contains(normalizedColumn) ||
-            message.contains(normalizedColumn.split('.').last));
-  }
-
-  static String _dateKey(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).toIso8601String().substring(0, 10);
-  }
-
-  static String _startOfDay(DateTime date) {
-    return DateTime(date.year, date.month, date.day).toIso8601String();
-  }
-
-  static String _dayAfter(DateTime date) {
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-    ).add(const Duration(days: 1)).toIso8601String();
-  }
-
   static int _estimatedDurationMinutes(List<Exercise> exercises) {
-    final seconds = exercises.fold<int>(0, (sum, exercise) {
+    final seconds = exercises.fold<int>(0, (total, exercise) {
       final sets = exercise.sets <= 0 ? 1 : exercise.sets;
       final restSeconds = exercise.restSeconds <= 0 ? 60 : exercise.restSeconds;
-      return sum + (sets * 45) + ((sets - 1) * restSeconds);
+      return total + (sets * 45) + ((sets - 1) * restSeconds);
     });
     return seconds <= 0 ? 0 : (seconds + 59) ~/ 60;
   }
 
   static String _mainMuscleGroup(String value) {
     final muscle = value.toLowerCase();
-    if (muscle.contains('chest') || muscle.contains('pector')) {
-      return 'Chest';
-    }
+    if (muscle.contains('chest') || muscle.contains('pector')) return 'Chest';
     if (muscle.contains('back') ||
         muscle.contains('lat') ||
         muscle.contains('trap') ||
@@ -1251,352 +1467,6 @@ class AppDataRepository {
         )
         .join(' ');
   }
-
-  Future<double> _latestWorkoutCompletion(String memberId) async {
-    final plan = await _supabaseService.client
-        .from('workout_plans')
-        .select('id')
-        .eq('member_id', memberId)
-        .order('created_at', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (plan == null) return 0;
-    final day = await _supabaseService.client
-        .from('workout_days')
-        .select('id')
-        .eq('workout_plan_id', plan['id'])
-        .order('scheduled_date', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (day == null) return 0;
-    final rows = await _supabaseService.client
-        .from('workout_exercises')
-        .select('id,sets')
-        .eq('workout_day_id', day['id']);
-    final ids = rows.map<String>((row) => row['id'].toString()).toList();
-    final totalSets = rows.fold<int>(
-      0,
-      (sum, row) => sum + _toInt(row['sets']),
-    );
-    return _workoutCompletion(memberId, ids, totalSets);
-  }
-
-  Future<({int assigned, int completed, int missed, double adherence})>
-  _exerciseAssignmentStats({
-    required String memberId,
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    final today = DateTime.now();
-    final yesterday = DateTime(
-      today.year,
-      today.month,
-      today.day,
-    ).subtract(const Duration(days: 1));
-    final effectiveStart = startDate ?? DateTime(today.year, today.month, 1);
-    final effectiveEnd = endDate == null || endDate.isAfter(yesterday)
-        ? yesterday
-        : endDate;
-    if (effectiveEnd.isBefore(effectiveStart)) {
-      return (assigned: 0, completed: 0, missed: 0, adherence: 0.0);
-    }
-    final rows = await _supabaseService.client
-        .from('workout_days')
-        .select(
-          'id,scheduled_date,workout_plans!inner(member_id),workout_exercises(id)',
-        )
-        .eq('workout_plans.member_id', memberId)
-        .gte('scheduled_date', _dateKey(effectiveStart))
-        .lte('scheduled_date', _dateKey(effectiveEnd));
-
-    final assignedIds = <String>{};
-    for (final row in rows) {
-      final exercises = row['workout_exercises'];
-      if (exercises is! List) continue;
-      for (final exercise in exercises) {
-        if (exercise is Map && exercise['id'] != null) {
-          assignedIds.add(exercise['id'].toString());
-        }
-      }
-    }
-
-    if (assignedIds.isEmpty) {
-      return (assigned: 0, completed: 0, missed: 0, adherence: 0.0);
-    }
-
-    final completedIds =
-        (await _supabaseService.client
-                .from('exercise_logs')
-                .select('workout_exercise_id')
-                .eq('member_id', memberId)
-                .eq('completed', true)
-                .inFilter('workout_exercise_id', assignedIds.toList()))
-            .map<String?>((row) => row['workout_exercise_id']?.toString())
-            .whereType<String>()
-            .toSet();
-    final completed = completedIds.length;
-    final assigned = assignedIds.length;
-    final missed = (assigned - completed).clamp(0, assigned);
-    return (
-      assigned: assigned,
-      completed: completed,
-      missed: missed,
-      adherence: assigned == 0 ? 0.0 : completed / assigned,
-    );
-  }
-
-  Future<double> _workoutCompletion(
-    String memberId,
-    List<String> workoutExerciseIds,
-    int totalSets,
-  ) async {
-    if (workoutExerciseIds.isEmpty || totalSets <= 0) return 0;
-    final logs = await _supabaseService.client
-        .from('exercise_logs')
-        .select('set_number,completed,workout_exercise_id')
-        .eq('member_id', memberId)
-        .inFilter('workout_exercise_id', workoutExerciseIds);
-    final completed = logs.where((row) => row['completed'] != false).length;
-    return (completed / totalSets).clamp(0.0, 1.0);
-  }
-
-  Future<double> _fetchWaterLitersForDate(
-    String memberId,
-    DateTime date,
-  ) async {
-    final loggedDate = date.toIso8601String().substring(0, 10);
-    final row = await _supabaseService.client
-        .from('water_logs')
-        .select('liters')
-        .eq('member_id', memberId)
-        .eq('logged_date', loggedDate)
-        .maybeSingle();
-    return _toDouble(row?['liters']);
-  }
-
-  Future<double> _fetchWaterGoal(String memberId) async {
-    final row = await _supabaseService.client
-        .from('members')
-        .select('water_goal_liters')
-        .eq('id', memberId)
-        .maybeSingle();
-    return _toDouble(row?['water_goal_liters']);
-  }
-
-  int _dayStreakFromLogs(List<dynamic> logs) {
-    final dates = <DateTime>{};
-    for (final row in logs) {
-      if (row is! Map || row['completed'] == false) continue;
-      final loggedAt = DateTime.tryParse(row['logged_at'].toString());
-      if (loggedAt == null) continue;
-      dates.add(DateTime(loggedAt.year, loggedAt.month, loggedAt.day));
-    }
-    if (dates.isEmpty) return 0;
-    var cursor = DateTime.now();
-    cursor = DateTime(cursor.year, cursor.month, cursor.day);
-    if (!dates.contains(cursor)) {
-      final yesterday = cursor.subtract(const Duration(days: 1));
-      if (!dates.contains(yesterday)) return 0;
-      cursor = yesterday;
-    }
-    var streak = 0;
-    while (dates.contains(cursor)) {
-      streak++;
-      cursor = cursor.subtract(const Duration(days: 1));
-    }
-    return streak;
-  }
-
-  static String _formatTime(String? value) {
-    if (value == null || value.isEmpty) return '';
-    final parts = value.split(':');
-    if (parts.length < 2) return value;
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = parts[1];
-    final suffix = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    return '$displayHour:$minute $suffix';
-  }
-
-  static String _toDatabaseTime(String value) {
-    final trimmed = value.trim();
-    if (trimmed.contains(':') && !trimmed.contains(' ')) return trimmed;
-    final match = RegExp(
-      r'^(\d{1,2}):(\d{2})\s*([AP]M)$',
-      caseSensitive: false,
-    ).firstMatch(trimmed);
-    if (match == null) return '08:00';
-    var hour = int.tryParse(match.group(1) ?? '8') ?? 8;
-    final minute = match.group(2) ?? '00';
-    final suffix = (match.group(3) ?? 'AM').toUpperCase();
-    if (suffix == 'PM' && hour < 12) hour += 12;
-    if (suffix == 'AM' && hour == 12) hour = 0;
-    return '${hour.toString().padLeft(2, '0')}:$minute';
-  }
-
-  Future<WorkoutPlan> _fetchWorkoutPlanById(String planId) async {
-    final plan = await _supabaseService.client
-        .from('workout_plans')
-        .select()
-        .eq('id', planId)
-        .single();
-    final day = await _supabaseService.client
-        .from('workout_days')
-        .select()
-        .eq('workout_plan_id', planId)
-        .order('scheduled_date', ascending: false)
-        .limit(1)
-        .maybeSingle();
-    if (day == null) return _emptyWorkout(name: plan['name']?.toString());
-    final rows = await _supabaseService.client
-        .from('workout_exercises')
-        .select(
-          'id,sets,reps,rest_seconds,target_weight_kg,trainer_notes,sort_order,exercises(id,source_id,name,description,muscle_group,default_sets,default_reps,tracks_weight,rest_seconds,equipment,level,category,primary_muscles,secondary_muscles,instructions,image_urls)',
-        )
-        .eq('workout_day_id', day['id'])
-        .order('sort_order');
-    final exercises = rows.map<Exercise>((row) {
-      final exercise = row['exercises'] as Map<String, dynamic>;
-      return _exerciseFromRow(
-        exercise,
-        workoutExerciseId: row['id'].toString(),
-        sets: _toInt(row['sets']),
-        reps: row['reps'].toString(),
-        restSeconds: _toInt(row['rest_seconds']),
-        targetWeight: _toInt(row['target_weight_kg']),
-        notes: (row['trainer_notes'] ?? '').toString(),
-      );
-    }).toList();
-    return WorkoutPlan(
-      id: plan['id'].toString(),
-      name: (day['title'] ?? plan['name']).toString(),
-      focus: (plan['focus'] ?? 'Assigned Program').toString(),
-      durationMinutes: _toInt(day['duration_minutes']),
-      estimatedCalories: _toInt(plan['estimated_calories']),
-      level: (plan['level'] ?? '').toString(),
-      completionPercent: 0,
-      exercises: exercises,
-    );
-  }
-
-  Future<NutritionPlan> _fetchDietPlanById(String planId) async {
-    final plan = await _supabaseService.client
-        .from('diet_plans')
-        .select()
-        .eq('id', planId)
-        .single();
-    final rows = await _supabaseService.client
-        .from('diet_meals')
-        .select()
-        .eq('diet_plan_id', planId)
-        .order('sort_order');
-    final meals = rows.map<DietMeal>((row) {
-      return DietMeal(
-        name: row['name'].toString(),
-        time: _formatTime(row['meal_time']?.toString()),
-        description: (row['description'] ?? '').toString(),
-        calories: _toInt(row['calories']),
-        icon: row['name'].toString().toLowerCase(),
-      );
-    }).toList();
-    final consumed = meals.fold<int>(0, (sum, meal) => sum + meal.calories);
-    final goal = _toInt(plan['daily_calories'], fallback: consumed);
-    return NutritionPlan(
-      calories: consumed,
-      goalCalories: goal,
-      protein: _toInt(plan['protein_g']),
-      carbs: _toInt(plan['carbs_g']),
-      fats: _toInt(plan['fats_g']),
-      caloriesLeft: (goal - consumed).clamp(0, goal),
-      waterLiters: 0,
-      waterGoalLiters: 0,
-      meals: meals,
-    );
-  }
-
-  WorkoutPlan _emptyWorkout({String? name}) {
-    return WorkoutPlan(
-      id: 'empty',
-      name: name ?? 'No Workout Assigned',
-      focus: 'Ask your trainer to assign a plan',
-      durationMinutes: 0,
-      estimatedCalories: 0,
-      level: '',
-      completionPercent: 0,
-      exercises: const [],
-    );
-  }
-
-  Exercise _exerciseFromRow(
-    Map<String, dynamic> row, {
-    required int sets,
-    required String reps,
-    String? workoutExerciseId,
-    int? restSeconds,
-    int? targetWeight,
-    String notes = '',
-    bool isAssigned = true,
-  }) {
-    final muscleGroup = row['muscle_group'].toString();
-    final instructions = _toStringList(row['instructions']);
-    final description = (row['description'] ?? '').toString().trim();
-    return Exercise(
-      id: row['id'].toString(),
-      workoutExerciseId: workoutExerciseId,
-      name: row['name'].toString(),
-      description: description.isNotEmpty
-          ? description
-          : instructions.take(2).join(' '),
-      muscleGroup: muscleGroup,
-      sets: sets,
-      reps: reps,
-      restSeconds: restSeconds ?? _toInt(row['rest_seconds'], fallback: 60),
-      icon: muscleGroup.toLowerCase(),
-      notes: notes,
-      tracksWeight: row['tracks_weight'] != false,
-      targetWeight: targetWeight ?? _toInt(row['target_weight_kg']),
-      isAssigned: isAssigned,
-      sourceId: row['source_id']?.toString(),
-      equipment: row['equipment']?.toString(),
-      level: row['level']?.toString(),
-      category: row['category']?.toString(),
-      primaryMuscles: _toStringList(row['primary_muscles']),
-      secondaryMuscles: _toStringList(row['secondary_muscles']),
-      instructions: instructions,
-      imageUrls: _toStringList(row['image_urls']),
-    );
-  }
-
-  static List<String> _toStringList(Object? value) {
-    if (value is List) {
-      return value
-          .where((item) => item != null)
-          .map((item) => item.toString())
-          .where((item) => item.trim().isNotEmpty)
-          .toList();
-    }
-    if (value is String && value.trim().isNotEmpty) {
-      return [value];
-    }
-    return const [];
-  }
-
-  NutritionPlan _emptyNutrition({
-    double waterLiters = 0,
-    double waterGoalLiters = 0,
-  }) {
-    return NutritionPlan(
-      calories: 0,
-      goalCalories: 0,
-      protein: 0,
-      carbs: 0,
-      fats: 0,
-      caloriesLeft: 0,
-      waterLiters: waterLiters,
-      waterGoalLiters: waterGoalLiters,
-      meals: const [],
-    );
-  }
 }
 
 class ExerciseLogsController extends AsyncNotifier<List<ExerciseLog>> {
@@ -1634,7 +1504,7 @@ class ExerciseLogsController extends AsyncNotifier<List<ExerciseLog>> {
     final current = [...(state.value ?? const <ExerciseLog>[])]
       ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
     await ref
-        .watch(appDataRepositoryProvider)
+        .read(appDataRepositoryProvider)
         .saveExerciseLogs(exercise, current);
   }
 
@@ -1654,7 +1524,37 @@ class ExerciseLogsController extends AsyncNotifier<List<ExerciseLog>> {
         .toList();
     state = AsyncData(completed);
     await ref
-        .watch(appDataRepositoryProvider)
+        .read(appDataRepositoryProvider)
         .saveExerciseLogs(exercise, completed);
+  }
+
+  /// Writes the completion log and advances the plan's unlock.
+  Future<void> finishExercise({
+    required WorkoutPlan workout,
+    required Exercise exercise,
+  }) async {
+    final current = [...(state.value ?? const <ExerciseLog>[])]
+      ..sort((a, b) => a.setNumber.compareTo(b.setNumber));
+    final completed = current
+        .map(
+          (log) => ExerciseLog(
+            id: log.id,
+            setNumber: log.setNumber,
+            weight: log.weight,
+            reps: log.reps,
+            completed: true,
+          ),
+        )
+        .toList();
+    state = AsyncData(completed);
+
+    final repository = ref.read(appDataRepositoryProvider);
+    await repository.saveExerciseLogs(exercise, completed);
+    await repository.completeExercise(
+      workout: workout,
+      exercise: exercise,
+      logs: completed,
+    );
+    ref.invalidate(workoutProvider);
   }
 }

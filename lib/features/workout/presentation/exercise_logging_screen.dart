@@ -436,7 +436,7 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Sets saved to Supabase.'),
+                              content: Text('Sets saved.'),
                             ),
                           );
                         }

@@ -1,0 +1,277 @@
+rules_version = '2';
+
+// Deep Fitness — Firestore security rules.
+//
+// These rules are the access control, not the UI. The app hides what a member
+// cannot use, but anything the rules allow is reachable with the SDK and a
+// token, so nothing here may be relaxed for convenience.
+//
+// Roles live in the `role` custom claim, set only by the setUserRole function.
+// The `role` field on a member document is a convenience for the UI and is
+// never trusted for an access decision.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- helpers
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return isSignedIn() ? request.auth.token.role : '';
+    }
+
+    function isAdmin() {
+      return role() == 'admin';
+    }
+
+    function isTrainer() {
+      return role() == 'trainer' || isAdmin();
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Only the listed keys may differ between the stored and incoming document.
+    function onlyChanged(keys) {
+      return incoming().diff(existing()).affectedKeys().hasOnly(keys);
+    }
+
+    function notDeleted() {
+      return existing().deletedAt == null;
+    }
+
+    // Writes must carry a server timestamp, never a device clock.
+    function hasServerUpdatedAt() {
+      return incoming().updatedAt == request.time;
+    }
+
+    function hasServerCreatedAt() {
+      return incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+    }
+
+    // ---------------------------------------------------------------- members
+
+    match /members/{uid} {
+      // A member reads only their own document; staff read any.
+      allow get: if isSelf(uid) || isTrainer();
+      allow list: if isTrainer();
+
+      // Creating and deleting a member account is a privileged operation and
+      // happens in onMemberCreate / createMember, which bypass these rules.
+      allow create: if isAdmin();
+      allow delete: if false;
+
+      // A member may edit their own profile but may not grant themselves a
+      // role, change their membership state, or alter the audit fields.
+      allow update: if (
+        isSelf(uid)
+        && onlyChanged([
+             'name', 'photoUrl', 'phone', 'email', 'goal', 'gender',
+             'heightCm', 'age', 'waterGoalLiters', 'notificationsEnabled',
+             'preferredUnit', 'fcmTokens', 'updatedAt'
+           ])
+        && hasServerUpdatedAt()
+      ) || (
+        isTrainer()
+        && onlyChanged([
+             'name', 'photoUrl', 'phone', 'email', 'goal', 'gender',
+             'heightCm', 'age', 'trainerId', 'trainerName', 'currentWeight',
+             'waterGoalLiters', 'membershipStatus', 'expiryDate', 'updatedAt'
+           ])
+        && hasServerUpdatedAt()
+      );
+    }
+
+    match /trainers/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // -------------------------------------------------------------- exercises
+
+    // The library is readable by anyone signed in and written only by staff.
+    match /exercises/{exerciseId} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer();
+    }
+
+    // Reusable plan templates are staff-only; members never see them.
+    match /workout_plans/{planId} {
+      allow read: if isTrainer();
+      allow write: if isTrainer();
+    }
+
+    // --------------------------------------------------------- assigned plans
+
+    match /assigned_plans/{planId} {
+      allow get: if isSelf(existing().memberId) || isTrainer();
+      allow list: if isTrainer()
+                  || (isSignedIn()
+                      && request.query.limit <= 50
+                      && resource == null)
+                  || isSelf(existing().memberId);
+
+      allow create, delete: if isTrainer();
+
+      // A member may only tick progress on their own plan. The exercise
+      // snapshot, the member it belongs to and the audit fields are closed to
+      // them, so progress can never rewrite what was assigned.
+      allow update: if (
+        isSelf(existing().memberId)
+        && notDeleted()
+        && onlyChanged(['currentIndex', 'status', 'completedAt', 'updatedAt'])
+        && incoming().currentIndex >= existing().currentIndex
+        && incoming().currentIndex <= existing().exercises.size()
+        && hasServerUpdatedAt()
+      ) || isTrainer();
+
+      // In-progress sets and notes, one document per exercise.
+      match /progress/{order} {
+        allow read, write: if isSelf(
+                                get(/databases/$(database)/documents/assigned_plans/$(planId))
+                                  .data.memberId
+                              )
+                           || isTrainer();
+      }
+    }
+
+    // -------------------------------------------------------- completion logs
+
+    // Append-only. A member writes their own logs and may never edit or
+    // remove one, because every report is derived from this collection.
+    match /completion_logs/{logId} {
+      allow get: if isSelf(existing().memberId) || isTrainer();
+      allow list: if isTrainer() || isSelf(existing().memberId);
+
+      allow create: if isSelf(incoming().memberId)
+                    && incoming().setsDone >= 0
+                    && incoming().skipped is bool
+                    && (incoming().skipped == false
+                        || incoming().skipReason is string)
+                    && incoming().completedAt == request.time
+                    && hasServerCreatedAt();
+
+      // Soft delete only, and only to undo a member's own plan reset.
+      allow update: if (isSelf(existing().memberId) || isTrainer())
+                    && onlyChanged(['deletedAt', 'updatedAt'])
+                    && hasServerUpdatedAt();
+      allow delete: if false;
+    }
+
+    match /measurements/{measurementId} {
+      allow get, list: if isSelf(existing().memberId) || isTrainer();
+      allow create, update: if isTrainer();
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------------------ gym events
+
+    match /events/{eventId} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer();
+    }
+
+    // One RSVP per member per event; the id is ${eventId}_${memberId}, so a
+    // member cannot create one on anybody else's behalf.
+    match /event_rsvps/{rsvpId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSelf(incoming().memberId)
+                    && rsvpId == incoming().eventId + '_' + request.auth.uid
+                    && hasServerCreatedAt();
+      allow delete: if isSelf(existing().memberId) || isTrainer();
+      allow update: if isTrainer();
+    }
+
+    // ------------------------------------------------- classes and bookings
+
+    match /group_classes/{classId} {
+      allow read: if isSignedIn();
+      allow write: if isTrainer();
+    }
+
+    match /class_sessions/{sessionId} {
+      allow read: if isSignedIn();
+      allow create, delete: if isTrainer();
+
+      // The counters are only ever moved inside the booking transaction, and
+      // only by one place at a time.
+      allow update: if isTrainer() || (
+        isSignedIn()
+        && onlyChanged(['bookedCount', 'waitlistCount', 'updatedAt'])
+        && incoming().bookedCount >= 0
+        && incoming().bookedCount <= existing().capacity
+        && incoming().waitlistCount >= 0
+        && hasServerUpdatedAt()
+      );
+    }
+
+    match /bookings/{bookingId} {
+      allow get, list: if isSelf(existing().memberId) || isTrainer();
+
+      allow create: if isSelf(incoming().memberId)
+                    && bookingId == incoming().sessionId + '_' + request.auth.uid
+                    && incoming().status in ['booked', 'waitlisted']
+                    && hasServerCreatedAt();
+
+      // A member may cancel their own place; promotion off the waitlist is
+      // done by onBookingCancelled, which bypasses these rules.
+      allow update: if (
+        isSelf(existing().memberId)
+        && onlyChanged(['status', 'position', 'updatedAt'])
+        && incoming().status == 'cancelled'
+        && hasServerUpdatedAt()
+      ) || isTrainer();
+
+      allow delete: if false;
+    }
+
+    // ---------------------------------------------------------- announcements
+
+    // Written only by sendAnnouncement, which runs with admin credentials.
+    match /announcements/{announcementId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------------- diet
+    // Hidden in the UI; the rules stay in place so the data is never open.
+
+    match /diet_plans/{planId} {
+      allow get, list: if isSelf(existing().memberId) || isTrainer();
+      allow write: if isTrainer();
+    }
+
+    match /diet_logs/{logId} {
+      allow get, list: if isSelf(existing().memberId) || isTrainer();
+      allow create, update: if isSelf(incoming().memberId)
+                            && hasServerUpdatedAt();
+      allow delete: if false;
+    }
+
+    match /water_logs/{logId} {
+      allow get, list: if isSelf(existing().memberId) || isTrainer();
+      allow create, update: if isSelf(incoming().memberId)
+                            && logId.split('_')[0] == request.auth.uid
+                            && hasServerUpdatedAt();
+      allow delete: if false;
+    }
+
+    // Deny by default. Any collection not matched above is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1263,7 +1263,7 @@ class _ExerciseLibraryScreenState extends ConsumerState<ExerciseLibraryScreen> {
                 return const AppEmptyState(
                   title: 'No exercises yet',
                   message:
-                      'Create exercises in Supabase to make them available here.',
+                      'Create exercises in the dashboard to make them available here.',
                   icon: Icons.menu_book_outlined,
                 );
               }

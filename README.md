@@ -2,38 +2,100 @@
 
 Premium Flutter gym management and fitness tracking app.
 
+The technical specification is `guide/Deep-Fitness-Developer-Guide.pdf`. It is
+the source of truth; `CHECKLIST.md` tracks the work against it.
+
 ## Current scope
 
-The diet/nutrition member tab and trainer diet-assignment entry points are temporarily hidden. The underlying diet data model and implementation files remain in the codebase so the feature can be restored later.
+The diet/nutrition member tab and trainer diet-assignment entry points are
+temporarily hidden. The underlying diet data model and implementation files
+remain in the codebase so the feature can be restored later.
+
+## Backend
+
+Firebase: Cloud Firestore, Firebase Authentication, Cloud Storage, Cloud
+Functions (TypeScript) and Cloud Messaging. There is no custom API server — the
+app reads and writes Firestore directly, and `firestore.rules` is the access
+control. The app previously ran on Supabase; that schema is kept, unused, in
+`legacy/supabase/` only until the live data has been moved across.
 
 ## Theming
 
-The app is dark-only. `AppTheme.dark` is the single theme, `MaterialApp` pins `themeMode` to dark so the OS appearance setting cannot flip it, and the Android launch theme/background matches the `#121212` canvas. There is no light palette and no dark-mode toggle in settings — colours should come from `AppColors` rather than being hardcoded per screen.
+The app is dark-only. `AppTheme.dark` is the single theme, `MaterialApp` pins
+`themeMode` to dark so the OS appearance setting cannot flip it, and the Android
+launch theme/background matches the `#121212` canvas. There is no light palette
+and no dark-mode toggle in settings — colours should come from `AppColors`
+rather than being hardcoded per screen.
 
-## Supabase setup
+## Firebase setup
 
-1. Create a Supabase project.
-2. Open the Supabase SQL editor.
-3. Run `supabase/schema.sql`.
-4. Run the SQL in `supabase/migrations/202606120001_production_auth.sql`.
-5. Deploy `supabase/functions/create-member` with `SUPABASE_SERVICE_ROLE_KEY` set as a function secret.
-6. Create trainer accounts in Supabase Auth or another admin-only process with user metadata `{ "role": "trainer", "name": "Trainer Name" }`.
+1. Create two Firebase projects: `deepfitness-dev` and `deepfitness-prod`.
+   Flavors select between them at build time; never point a debug build at
+   production data.
+2. Install the FlutterFire CLI and generate the options:
 
-Members can create their own account from the app. Trainers use the separate trainer login screen.
+   ```bash
+   dart pub global activate flutterfire_cli
+   flutterfire configure --project=deepfitness-dev
+   ```
 
-Run the app with Supabase enabled:
+   This overwrites `lib/firebase_options.dart`, which is currently a
+   dart-define-driven placeholder.
+3. Place `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
+   in their platform folders. Neither is committed.
+4. In `ios/Runner/Info.plist`, replace `REVERSED_CLIENT_ID` with the value of
+   that key from `GoogleService-Info.plist` — phone sign-in's reCAPTCHA
+   fallback returns through that URL scheme.
+5. Enable Phone and Email/Password sign-in in the Firebase console. Upload the
+   APNs key for iOS push and enable the push capability in Xcode.
+6. Install and deploy the functions:
+
+   ```bash
+   cd functions && npm install && npm run build
+   firebase deploy --only functions
+   ```
+
+7. Deploy rules and indexes. Deploy rules *before* any client that depends on
+   them:
+
+   ```bash
+   firebase deploy --only firestore:rules,firestore:indexes,storage
+   ```
+
+8. Give the first admin their claim by calling `setUserRole` from an account
+   that already has the `admin` claim, or by setting the claim once with the
+   Admin SDK.
+9. Scheduled functions require the Blaze plan. Set a budget alert on the
+   project at setup.
+
+### Local development
+
+```bash
+firebase emulators:start
+flutter run --dart-define=USE_EMULATOR=true
+```
+
+On the Android emulator the host is reachable at `10.0.2.2`, so add
+`--dart-define=EMULATOR_HOST=10.0.2.2`.
+
+### Running against a project without flutterfire configure
 
 ```bash
 flutter run \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+  --dart-define=FIREBASE_API_KEY=... \
+  --dart-define=FIREBASE_APP_ID=... \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID=... \
+  --dart-define=FIREBASE_PROJECT_ID=deepfitness-dev \
+  --dart-define=FIREBASE_STORAGE_BUCKET=deepfitness-dev.appspot.com
 ```
-
-Without those dart defines, the app uses the configured project in `SupabaseConfig`.
 
 ## Verification
 
 ```bash
 flutter analyze
 flutter test
+```
+
+```bash
+cd functions && npm run build
 ```
