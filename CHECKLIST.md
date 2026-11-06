@@ -193,7 +193,7 @@ the plan's own status.
 ### Module 02 — Workout Plans *(the largest module)*
 - [x] Exercise library (admin/trainer side)
 - [x] Plan builder (trainer side)
-- [ ] Plan builder on the **web dashboard** — the dashboard manages the library, members, events, classes and announcements; plan building is still trainer-app only
+- [x] Plan builder on the **web dashboard** — search the library, order the exercises, set sets and reps, pick the day, assign
 - [x] Assignment **snapshots** exercise details onto `assigned_plans` — `AssignedExercise.snapshot`, taken in `saveWorkoutPlan`
 - [x] `currentIndex` drives the unlock — `AssignedPlan.isLockedAt`, enforced in the rules too (a member may only move it forward)
 - [x] Completing or skipping writes a log **and** advances `currentIndex` in one batch — `_writeCompletion`
@@ -250,7 +250,7 @@ the plan's own status.
 ### Module 08 — Admin Dashboard (Flutter Web)
 - [x] Web target builds from the same codebase, sharing models and repositories — `flutter build web --release` passes
 - [x] Manage the exercise library
-- [ ] Manage plans and assignments from the dashboard
+- [x] Manage plans and assignments from the dashboard
 - [x] Create events, classes and class sessions
 - [x] Member list with workout history, membership state and role promotion
 - [x] Compose and send announcements

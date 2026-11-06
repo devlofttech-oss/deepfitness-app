@@ -1,5 +1,6 @@
 import 'package:deepfitness/admin/data/admin_repository.dart';
 import 'package:deepfitness/admin/presentation/admin_shell.dart';
+import 'package:deepfitness/admin/presentation/plan_builder.dart';
 import 'package:deepfitness/core/models/announcement.dart';
 import 'package:deepfitness/core/models/completion_log.dart';
 import 'package:deepfitness/core/models/group_class.dart';
@@ -239,6 +240,11 @@ class _MemberDetail extends ConsumerWidget {
               onPressed: () => _promote(context, ref),
               icon: const Icon(Icons.shield_outlined, size: 18),
               label: const Text('Make trainer'),
+            ),
+            FilledButton.icon(
+              onPressed: () => showPlanBuilder(context, ref, member),
+              icon: const Icon(Icons.playlist_add_rounded, size: 18),
+              label: const Text('Assign a plan'),
             ),
           ],
         ),
