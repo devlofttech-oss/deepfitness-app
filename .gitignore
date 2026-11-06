@@ -60,3 +60,6 @@ app.*.map.json
 /functions/node_modules/
 /functions/lib/
 /functions/.runtimeconfig.json
+/rules-tests/node_modules/
+firestore-debug.log
+ui-debug.log

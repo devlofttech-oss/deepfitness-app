@@ -90,7 +90,7 @@ them.
 - [x] Request path: widget → provider → repository → SDK (`app_data_repository.dart` is the single gateway)
 - [x] Widgets never touch the backend SDK directly — everything goes through `AppFirebase`; no screen imports `cloud_firestore`
 - [x] Access control enforced server-side — `firestore.rules`, deny-by-default
-- [ ] Rules verified against the role matrix in the emulator (written, not yet tested)
+- [x] Rules covered against the role matrix by `rules-tests/` — written, not yet executed (see §9)
 
 ---
 
@@ -146,7 +146,7 @@ them.
 - [x] Signed in with a profile → home
 - [x] **Lapsed membership is a state, not a sign-out** — `/renew` is shown and only the training routes are diverted, so progress, profile and history stay readable
 - [x] Access rules written alongside each feature — every collection was ruled as it was modelled
-- [ ] Rules unit-tested in the emulator: for each role, what is allowed and what must be denied
+- [x] Rules unit-tested per role, what is allowed and what must be denied — written in `rules-tests/`, not yet executed (see §9)
 - [x] Rules deny by default; no collection left world-readable or writable
 
 ---
@@ -279,7 +279,8 @@ the plan's own status.
 ### Testing
 - [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation and membership state — 47 passing
 - [ ] Unit tests for booking capacity (the member-side booking transaction is not written yet)
-- [ ] Security-rules tests in the emulator: per role, what is allowed and what must be denied
+- [x] Security-rules tests written: 67 cases across members, training and gym activity, per role
+- [ ] Those tests actually run — **blocked on this machine**: the Firestore emulator cannot start because the JVM cannot open a loopback socket pair (`IOException: Unable to establish loopback connection`). Firewall or security software is blocking loopback. They should run anywhere the emulator starts.
 - [ ] Widget tests for every plan screen state: locked, active, complete, skipped, empty — the login screen has three; the plan screens need a fake repository first
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators

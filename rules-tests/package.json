@@ -1,0 +1,17 @@
+{
+  "name": "deepfitness-rules-tests",
+  "description": "Security-rules tests for Deep Fitness, run against the Firestore emulator",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test",
+    "test:emulator": "firebase emulators:exec --only firestore --project demo-deepfitness \"npm --prefix rules-tests test\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.2.0"
+  }
+}
