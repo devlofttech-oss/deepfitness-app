@@ -1,7 +1,9 @@
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/presentation/login_screen.dart';
+import 'package:deepfitness/features/auth/presentation/onboarding_screen.dart';
 import 'package:deepfitness/features/home/presentation/member_shell.dart';
 import 'package:deepfitness/features/home/presentation/today_screen.dart';
+import 'package:deepfitness/features/membership/presentation/renewal_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
 import 'package:deepfitness/features/progress/presentation/progress_screen.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
@@ -20,13 +22,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
-      final isSplash = state.uri.path == '/splash';
+      final path = state.uri.path;
+      final isSplash = path == '/splash';
       final isAuthRoute = {
         '/login',
         '/register',
         '/trainer-login',
-      }.contains(state.uri.path);
-      final isTrainerRoute = state.uri.path.startsWith('/trainer');
+      }.contains(path);
+      final isTrainerRoute = path.startsWith('/trainer');
       final isAuthLoading = authAsync.isLoading && !authAsync.hasValue;
       final isAuthenticated = authState?.isAuthenticated ?? false;
       final role = authState?.role;
@@ -39,6 +42,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       if (!isAuthenticated && !isAuthRoute) {
         return '/login';
+      }
+
+      // Signed in with no member document: finish the profile first, or every
+      // screen behind this would read an empty one.
+      if (isAuthenticated && (authState?.needsOnboarding ?? false)) {
+        return path == '/onboarding' ? null : '/onboarding';
+      }
+      if (path == '/onboarding') {
+        return role == UserRole.trainer ? '/trainer' : '/';
+      }
+
+      // A lapsed membership closes off training but keeps the member's own
+      // history readable, so only the workout routes are diverted.
+      if (isAuthenticated && (authState?.isLapsed ?? false) && _isTraining(path)) {
+        return '/renew';
+      }
+      if (path == '/renew' && !(authState?.isLapsed ?? false)) {
+        return '/';
       }
 
       if (isAuthenticated && isAuthRoute) {
@@ -75,6 +96,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/trainer-login',
         pageBuilder: (context, state) =>
             _smoothPage(state: state, child: const TrainerLoginScreen()),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) =>
+            _smoothPage(state: state, child: const OnboardingScreen()),
+      ),
+      GoRoute(
+        path: '/renew',
+        pageBuilder: (context, state) =>
+            _smoothPage(state: state, child: const RenewalScreen()),
       ),
       ShellRoute(
         builder: (context, state, child) => MemberShell(child: child),
@@ -281,4 +312,12 @@ class _RoleGuard extends ConsumerWidget {
     }
     return child;
   }
+}
+
+/// The routes a lapsed member cannot use. Everything else — progress, profile,
+/// their own history — stays open.
+bool _isTraining(String path) {
+  return path == '/workout' ||
+      path == '/workout-complete' ||
+      path.startsWith('/exercise-');
 }

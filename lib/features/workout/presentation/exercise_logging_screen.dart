@@ -458,9 +458,14 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                     outline: true,
                     onPressed: () async {
                       try {
+                        // Writes the completion log and advances the plan's
+                        // unlock in one batch.
                         await ref
                             .read(exerciseLogsProvider.notifier)
-                            .completeAllAndSave(exercise);
+                            .finishExercise(
+                              workout: workout,
+                              exercise: exercise,
+                            );
                       } catch (error) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -471,34 +476,17 @@ class _ExerciseLoggingContent extends ConsumerWidget {
                         }
                         return;
                       }
-                      final currentIndex = _exerciseIndex(workout, exercise);
-                      if (currentIndex >= 0 &&
-                          currentIndex < workout.exercises.length - 1) {
-                        ref
-                            .read(selectedExerciseProvider.notifier)
-                            .select(workout.exercises[currentIndex + 1]);
-                        ref.invalidate(exerciseLogsProvider);
-                        ref.invalidate(workoutProvider);
-                      } else {
-                        try {
-                          await ref
-                              .read(appDataRepositoryProvider)
-                              .completeWorkout(workout);
-                        } catch (error) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(friendlyErrorMessage(error)),
-                              ),
-                            );
-                          }
-                          return;
-                        }
-                        ref.invalidate(workoutProvider);
-                        ref.invalidate(progressProvider);
-                        if (context.mounted) context.go('/workout-complete');
-                      }
+                      if (context.mounted) await _moveToNext(context, ref);
                     },
+                  ),
+                  const SizedBox(height: 14),
+                  TextButton.icon(
+                    onPressed: () => _skipExercise(context, ref, workout, exercise),
+                    icon: const Icon(Icons.redo_rounded, size: 18),
+                    label: const Text('Skip this exercise'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.secondaryText(context),
+                    ),
                   ),
                 ],
               ],
@@ -1181,6 +1169,78 @@ void _showHelp(BuildContext context) {
   );
 }
 
+/// Moves on to whatever the plan unlocked, or finishes the workout.
+///
+/// The plan is read back rather than advanced locally: `currentIndex` is the
+/// authority on what comes next, and it was just written server-side.
+Future<void> _moveToNext(BuildContext context, WidgetRef ref) async {
+  final WorkoutPlan updated;
+  try {
+    updated = await ref.refresh(workoutProvider.future);
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+    }
+    return;
+  }
+
+  final next = updated.currentExercise;
+  if (next != null) {
+    ref.read(selectedExerciseProvider.notifier).select(next);
+    ref.invalidate(exerciseLogsProvider);
+    return;
+  }
+
+  try {
+    await ref.read(appDataRepositoryProvider).completeWorkout(updated);
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+    }
+    return;
+  }
+
+  ref.invalidate(workoutProvider);
+  ref.invalidate(progressProvider);
+  if (context.mounted) context.go('/workout-complete');
+}
+
+/// Asks why, then skips. The reason is required by the repository and by the
+/// rules, so a member is never stuck behind an exercise they cannot do.
+Future<void> _skipExercise(
+  BuildContext context,
+  WidgetRef ref,
+  WorkoutPlan workout,
+  Exercise exercise,
+) async {
+  final reason = await showModalBottomSheet<String>(
+    context: context,
+    isScrollControlled: true,
+    showDragHandle: true,
+    builder: (context) => _SkipReasonSheet(exerciseName: exercise.name),
+  );
+  if (reason == null || !context.mounted) return;
+
+  try {
+    await ref
+        .read(appDataRepositoryProvider)
+        .skipExercise(workout: workout, exercise: exercise, reason: reason);
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(friendlyErrorMessage(error))));
+    }
+    return;
+  }
+
+  if (context.mounted) await _moveToNext(context, ref);
+}
+
 int _exerciseIndex(WorkoutPlan workout, Exercise exercise) {
   final workoutExerciseId = exercise.workoutExerciseId;
   if (workoutExerciseId != null) {
@@ -1348,5 +1408,105 @@ void _goBackOr(BuildContext context, String fallbackRoute) {
     context.pop();
   } else {
     context.go(fallbackRoute);
+  }
+}
+
+/// Collects the reason a member is skipping an exercise.
+///
+/// Common reasons are one tap, because a member mid-workout will not type a
+/// sentence — and a reason nobody gives is a reason the trainer never sees.
+class _SkipReasonSheet extends StatefulWidget {
+  const _SkipReasonSheet({required this.exerciseName});
+
+  final String exerciseName;
+
+  @override
+  State<_SkipReasonSheet> createState() => _SkipReasonSheetState();
+}
+
+class _SkipReasonSheetState extends State<_SkipReasonSheet> {
+  static const _presets = <String>[
+    'Equipment in use',
+    'Injury or pain',
+    'Too difficult today',
+    'Short on time',
+  ];
+
+  final _controller = TextEditingController();
+  String? _selected;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  String get _reason =>
+      _selected ?? _controller.text.trim();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        20,
+        4,
+        20,
+        24 + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Skip ${widget.exerciseName}?',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Your trainer sees why, so they can adjust your plan.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.secondaryText(context),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final preset in _presets)
+                ChoiceChip(
+                  label: Text(preset),
+                  selected: _selected == preset,
+                  onSelected: (selected) => setState(() {
+                    _selected = selected ? preset : null;
+                    if (selected) _controller.clear();
+                  }),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _controller,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: const InputDecoration(
+              labelText: 'Or say it in your own words',
+            ),
+            onChanged: (value) => setState(() {
+              if (value.trim().isNotEmpty) _selected = null;
+            }),
+          ),
+          const SizedBox(height: 20),
+          PrimaryButton(
+            label: 'Skip and move on',
+            icon: Icons.redo_rounded,
+            onPressed: _reason.isEmpty
+                ? null
+                : () => Navigator.pop(context, _reason),
+          ),
+        ],
+      ),
+    );
   }
 }

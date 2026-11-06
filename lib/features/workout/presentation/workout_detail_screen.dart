@@ -363,9 +363,20 @@ class _WorkoutDetailContent extends ConsumerWidget {
                   exercise: workout.exercises[index],
                   showDivider: index != workout.exercises.length - 1,
                   onTap: () {
+                    final exercise = workout.exercises[index];
+                    if (exercise.isLocked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Finish the exercise before this one first.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
                     ref
                         .read(selectedExerciseProvider.notifier)
-                        .select(workout.exercises[index]);
+                        .select(exercise);
                     context.push('/exercise-preview');
                   },
                 ),
@@ -492,16 +503,14 @@ Exercise _selectedWorkoutExercise(WorkoutPlan workout, Exercise? selected) {
   return workout.exercises.first;
 }
 
+/// The exercise the plan has unlocked, which is the only one "Start Workout"
+/// may open.
 Exercise _firstIncompleteExercise(WorkoutPlan workout) {
-  return workout.exercises.firstWhere(
-    (exercise) => !exercise.isCompleted,
-    orElse: () => workout.exercises.first,
-  );
+  return workout.currentExercise ?? workout.exercises.first;
 }
 
-bool _hasPendingRequiredSets(WorkoutPlan workout) {
-  return workout.exercises.any((exercise) => !exercise.isCompleted);
-}
+bool _hasPendingRequiredSets(WorkoutPlan workout) =>
+    workout.exercises.isNotEmpty && !workout.isFinished;
 
 void _showWorkoutOptions(
   BuildContext context,
@@ -612,66 +621,97 @@ class _ExerciseRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final locked = exercise.isLocked;
+
     return InkWell(
       onTap: onTap,
       child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 14),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 20,
-                  backgroundColor: AppColors.chipBackground(context),
-                  child: Text(
-                    '$index',
-                    style: const TextStyle(
-                      color: AppColors.goldBright,
-                      fontWeight: FontWeight.w800,
+            child: Opacity(
+              // A locked row stays readable so the member can see what is
+              // coming, but it is plainly not theirs to open yet.
+              opacity: locked ? 0.45 : 1,
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: AppColors.chipBackground(context),
+                    child: locked
+                        ? Icon(
+                            Icons.lock_rounded,
+                            size: 18,
+                            color: AppColors.secondaryText(context),
+                          )
+                        : Text(
+                            '$index',
+                            style: const TextStyle(
+                              color: AppColors.goldBright,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+                  SizedBox(
+                    width: 66,
+                    height: 50,
+                    child: _ExerciseThumb(exercise: exercise),
+                  ),
+                  const SizedBox(width: 18),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          exercise.name,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${exercise.sets} Sets  •  ${exercise.reps} Reps',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: AppColors.secondaryText(context),
+                              ),
+                        ),
+                        Text(
+                          exercise.isSkipped
+                              ? 'Skipped${exercise.skipReason == null ? '' : ' — ${exercise.skipReason}'}'
+                              : 'Rest ${exercise.restSeconds} sec',
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(
+                                color: exercise.isSkipped
+                                    ? AppColors.gold
+                                    : AppColors.secondaryText(context),
+                              ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                SizedBox(
-                  width: 66,
-                  height: 50,
-                  child: _ExerciseThumb(exercise: exercise),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercise.name,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${exercise.sets} Sets  •  ${exercise.reps} Reps',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.secondaryText(context),
-                        ),
-                      ),
-                      Text(
-                        'Rest ${exercise.restSeconds} sec',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.secondaryText(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (exercise.isCompleted)
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    color: AppColors.success,
-                    size: 22,
-                  )
-                else
-                  const Icon(Icons.chevron_right_rounded, size: 22),
-              ],
+                  if (exercise.isCompleted)
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.success,
+                      size: 22,
+                    )
+                  else if (exercise.isSkipped)
+                    const Icon(
+                      Icons.redo_rounded,
+                      color: AppColors.gold,
+                      size: 22,
+                    )
+                  else if (locked)
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 20,
+                      color: AppColors.secondaryText(context),
+                    )
+                  else
+                    const Icon(Icons.chevron_right_rounded, size: 22),
+                ],
+              ),
             ),
           ),
           if (showDivider) const Divider(height: 1),

@@ -12,15 +12,19 @@ class PrimaryButton extends StatelessWidget {
   });
 
   final String label;
-  final VoidCallback onPressed;
+
+  /// Null disables the button, for a form that is not ready to submit.
+  final VoidCallback? onPressed;
   final IconData? icon;
   final bool outline;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final foreground = outline ? AppColors.gold : AppColors.black;
     final textStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
       fontWeight: FontWeight.w700,
-      color: outline ? AppColors.gold : AppColors.black,
+      color: enabled ? foreground : AppColors.secondaryText(context),
     );
 
     return PressableScale(
@@ -33,8 +37,13 @@ class PrimaryButton extends StatelessWidget {
             backgroundColor: outline
                 ? AppColors.surface(context)
                 : AppColors.goldBright,
+            // styleFrom's explicit background wins over the theme's disabled
+            // colour, so the disabled look has to be spelled out too.
+            disabledBackgroundColor: AppColors.subtle(context),
             side: BorderSide(
-              color: outline ? AppColors.gold : AppColors.goldBright,
+              color: enabled
+                  ? (outline ? AppColors.gold : AppColors.goldBright)
+                  : AppColors.subtle(context),
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -48,7 +57,9 @@ class PrimaryButton extends StatelessWidget {
                 Icon(
                   icon,
                   size: 19,
-                  color: outline ? AppColors.gold : AppColors.black,
+                  color: enabled
+                      ? foreground
+                      : AppColors.secondaryText(context),
                 ),
                 const SizedBox(width: 10),
               ],

@@ -32,15 +32,20 @@ phone OTP and email fallback, roles as custom claims; `firestore.rules`,
 `storage.rules` and `firestore.indexes.json`; all six Cloud Functions in
 TypeScript; Android and iOS platform wiring.
 
+The screens have now caught up with it: locking, skipping, OTP, onboarding
+and the renewal screen are all wired, with 47 unit and widget tests behind
+them.
+
 **Next, in order:**
 
-1. **UI for what the data layer now supports** — lock/skip controls on the
-   workout screens, the OTP form on the login screen, onboarding and the
-   renewal screen the router has no route for yet.
-2. **Rules tests in the emulator** — the rules are written but unverified, and
+1. **Rules tests in the emulator** — the rules are written but unverified, and
    the guide is explicit that rules written last are rules written loosely.
-3. **Events and classes/booking** (modules 04 and 05) — models, rules and the
-   functions exist; the repositories and screens do not.
+   This is the gate before any deploy.
+2. **Events and classes/booking** (modules 04 and 05) — models, rules and the
+   functions exist; the repositories, the member-side booking transaction and
+   the screens do not.
+3. **Charts on the progress screen** — `fl_chart` is in, nothing draws with it
+   yet, and the week/month presets are not exposed.
 4. **Notifications UI** — the in-app announcements list.
 5. **Admin dashboard** (module 08) on Flutter Web.
 6. **Data migration** (B1a) and the release checklist.
@@ -53,12 +58,12 @@ TypeScript; Android and iOS platform wiring.
 - [x] **[FB]** Firebase as the backend
 - [x] Member signs in; profile row created
 - [x] Phone OTP sign-in as the **primary** method — `AuthRepository.sendOtp` / `confirmOtp`; a non-email identifier routes to OTP, email falls back to password
-- [ ] Phone OTP wired into the login screen UI (repository and controller are done; `login_screen.dart` still only renders the password form)
+- [x] Phone OTP wired into the login screen UI — a Phone/Email segmented control, phone first, with a send-code then verify step
 - [x] Assigned plan visible on the home screen
 - [x] **Sequential unlock** in the data layer: `AssignedPlan.currentIndex` + `isLockedAt`, surfaced as `Exercise.isLocked` / `WorkoutPlan.isUnlocked`
-- [ ] Sequential unlock enforced in the UI — `exercise_logging_screen.dart` and `workout_detail_screen.dart` still let any exercise be opened
+- [x] Sequential unlock enforced in the UI — a locked row is dimmed with a lock icon and refuses the tap; "Start Workout" opens `currentExercise`
 - [x] **Skip with reason** that still advances — `AppDataRepository.skipExercise`, reason required
-- [ ] Skip surfaced in the UI (no skip control on the exercise screen yet)
+- [x] Skip surfaced in the UI — a "Skip this exercise" button opens a reason sheet with four one-tap presets and a free-text box
 - [x] Completion log written on completion — `completion_logs`, append-only, written with the index advance in one batch
 - [ ] Classes & events: browse class videos, book a live class, RSVP to events (module absent)
 - [x] Roles: member and trainer
@@ -138,9 +143,9 @@ TypeScript; Android and iOS platform wiring.
 - [ ] Profile keyed by the auth UID across every table — verify
 - [ ] **Role as a custom claim** (`member` / `trainer` / `admin`), set only by a privileged server function; never a client-writable field
 - [x] Router redirects on auth state: signed out → login
-- [ ] Signed in **without a profile → onboarding** (no onboarding route exists)
+- [x] Signed in **without a profile → onboarding** — `/onboarding` collects name, goal, gender, age and height
 - [x] Signed in with a profile → home
-- [ ] **Lapsed membership is a state, not a sign-out**: show a renewal screen and keep read access to the member's own history (no `membershipStatus` / `expiryDate` handling)
+- [x] **Lapsed membership is a state, not a sign-out** — `/renew` is shown and only the training routes are diverted, so progress, profile and history stay readable
 - [ ] Access rules written alongside each feature, not at the end
 - [ ] Rules unit-tested in the emulator: for each role, what is allowed and what must be denied
 - [ ] Rules deny by default; no table/collection left world-readable or writable
@@ -273,13 +278,14 @@ the plan's own status.
 ## 9. Testing, release & handover (Guide §09)
 
 ### Testing
-- [ ] Unit tests for the rules that matter: unlock advance, skip, booking capacity, report maths
+- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation and membership state — 47 passing
+- [ ] Unit tests for booking capacity (the member-side booking transaction is not written yet)
 - [ ] Security-rules tests in the emulator: per role, what is allowed and what must be denied
-- [ ] Widget tests for every plan screen state: locked, active, complete, skipped, empty
+- [ ] Widget tests for every plan screen state: locked, active, complete, skipped, empty — the login screen has three; the plan screens need a fake repository first
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators
 - [ ] `flutter analyze` clean
-- [ ] `flutter test` clean (only the stub `test/widget_test.dart` exists today)
+- [x] `flutter test` clean — 47 tests
 
 ### Release
 - [ ] Bump `version` in `pubspec.yaml`; build number increases on every store upload
