@@ -1,6 +1,6 @@
-import 'package:deepfitness/core/theme/app_theme.dart';
+import 'package:deepfitness/app/theme.dart';
 import 'package:deepfitness/features/progress/presentation/shareable_summary.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

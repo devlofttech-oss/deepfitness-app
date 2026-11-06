@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:share_plus/share_plus.dart';

@@ -1,5 +1,5 @@
 import 'package:deepfitness/core/models/assigned_plan.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 AssignedExercise _exercise(int order, {String? name, int sets = 3}) {

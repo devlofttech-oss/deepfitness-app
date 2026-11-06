@@ -1,6 +1,6 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
-import 'package:deepfitness/shared/widgets/brand_mark.dart';
+import 'package:deepfitness/core/widgets/brand_mark.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

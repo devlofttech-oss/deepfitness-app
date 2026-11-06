@@ -94,20 +94,20 @@ them.
 
 ## 3. Project structure & setup (Guide §03)
 
-- [ ] Restructure `lib/` to the guide's layout: `app/`, `core/{models,repositories,services,widgets,utils}`, `features/<module>/{data,domain,presentation}`, `admin/`
+- [x] Restructured `lib/` to the guide's layout: `app/`, `core/{models,repositories,services,widgets,utils,constants,config}`, `features/`, `admin/`
   - [x] `features/` is feature-first
-  - [ ] Each feature split into `data/` + `domain/` + `presentation/` (only `auth/` is; the rest are presentation-only)
+  - [ ] Each feature split into `data/` + `domain/` + `presentation/` — `auth`, `classes`, `events` and `notifications` have `data/`; the rest are presentation-only because they read shared repositories
   - [x] `core/models/`, `core/repositories/`, `core/services/`, `core/utils/` created and in use
-  - [ ] `shared/models/deepfitness_models.dart` moved into `core/models/` (UI models still live there)
-  - [ ] `core/utils/` for formatters, validators, date helpers
-  - [ ] `app/router.dart` + `app/theme.dart` (currently `core/router/`, `core/theme/`)
+  - [x] `shared/` is gone — models in `core/models/app_models.dart`, widgets in `core/widgets/`
+  - [x] `core/utils/` holds the value readers and date helpers
+  - [x] `app/router.dart`, `app/theme.dart`, `app/colors.dart`, `app/flavor.dart`
 - [x] `admin/` folder for the Flutter Web dashboard
 - [x] **[FB]** `functions/` (TypeScript), `firestore.rules`, `storage.rules`, `firestore.indexes.json`, `firebase.json`, `.firebaserc`
 - [ ] **[FB]** FlutterFire CLI configured; `firebase_options.dart` generated per platform — currently a dart-define-driven placeholder, needs a real project
 - [x] **[FB]** Both platform config files are gitignored; the Google Services and Crashlytics Gradle plugins are applied and `minSdk` raised to 23
 - [ ] **[FB]** `google-services.json` / `GoogleService-Info.plist` placed (needs a real project)
 - [x] **[FB]** Emulator suite configured in `firebase.json` and honoured by `main.dart` via `USE_EMULATOR`
-- [ ] Two environments (dev + prod) selected by build flavor, so a debug build can never point at production data
+- [x] Two environments selected by build flavor — Android product flavors plus a `FLAVOR` define, and a debug build pointed at prod throws on startup
 - [x] Setup documented in `README.md`, rewritten for Firebase
 
 ---
@@ -127,7 +127,7 @@ them.
 - [x] **Enums for status**, stored as strings: `AssignedPlanStatus` (with `canMoveTo`), `MembershipStatus`, `BookingStatus`, `VideoProvider`, `AnnouncementAudience`
 - [x] **Typed failures**: `RepositoryFailure` + `guard()`; every public repository method is wrapped
 - [x] **Naming**: plural `snake_case` collections in `FirestorePaths`, `snake_case.dart` files, `UpperCamelCase` classes
-- [x] `flutter analyze` clean and `flutter test` passing as of this change
+- [x] `dart format`, `flutter analyze` and `flutter test` all clean as of this change
 - [ ] Enforced in CI
 
 ---
@@ -277,7 +277,7 @@ the plan's own status.
 ## 9. Testing, release & handover (Guide §09)
 
 ### Testing
-- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state, booking capacity and roles — 87 passing
+- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state, booking capacity, roles and flavors — 92 passing
 - [x] Unit tests for booking capacity, status handling and video links — 65 passing
 - [ ] The booking transaction itself tested end to end (needs the emulator)
 - [x] Security-rules tests written: 67 cases across members, training and gym activity, per role
@@ -286,7 +286,7 @@ the plan's own status.
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators
 - [x] `flutter analyze` clean
-- [x] `flutter test` clean — 87 tests
+- [x] `flutter test` clean — 92 tests
 
 ### Release
 - [ ] Bump `version` in `pubspec.yaml`; build number increases on every store upload

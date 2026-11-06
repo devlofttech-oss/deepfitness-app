@@ -28,6 +28,23 @@ android {
         versionName = flutter.versionName
     }
 
+    // Two Firebase projects, selected at build time. The dev build gets its
+    // own application id so both can be installed on one handset.
+    flavorDimensions += "environment"
+
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            resValue("string", "app_name", "Deep Fitness Dev")
+        }
+        create("prod") {
+            dimension = "environment"
+            resValue("string", "app_name", "Deep Fitness")
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

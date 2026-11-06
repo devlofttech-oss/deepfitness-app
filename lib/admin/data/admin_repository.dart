@@ -11,7 +11,7 @@ import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/services/app_firebase.dart';
 import 'package:deepfitness/core/utils/firestore_values.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final adminRepositoryProvider = Provider<AdminRepository>(

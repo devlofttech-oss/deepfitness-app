@@ -1,4 +1,4 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

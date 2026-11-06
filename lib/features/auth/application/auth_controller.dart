@@ -2,7 +2,7 @@ import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/services/push_service.dart';
 import 'package:deepfitness/features/auth/data/auth_repository.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -1,9 +1,9 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/data/auth_repository.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
-import 'package:deepfitness/shared/widgets/async_state.dart';
-import 'package:deepfitness/shared/widgets/primary_button.dart';
+import 'package:deepfitness/core/models/app_models.dart';
+import 'package:deepfitness/core/widgets/async_state.dart';
+import 'package:deepfitness/core/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

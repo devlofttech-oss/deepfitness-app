@@ -1,7 +1,7 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
-import 'package:deepfitness/shared/widgets/pressable_scale.dart';
+import 'package:deepfitness/core/models/app_models.dart';
+import 'package:deepfitness/core/widgets/pressable_scale.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

@@ -68,6 +68,24 @@ rather than being hardcoded per screen.
 9. Scheduled functions require the Blaze plan. Set a budget alert on the
    project at setup.
 
+### Flavors
+
+Two Firebase projects, chosen at build time. Dev is the default, so forgetting
+the flag is harmless:
+
+```bash
+flutter run --flavor dev --dart-define=FLAVOR=dev
+```
+
+```bash
+flutter build appbundle --flavor prod --dart-define=FLAVOR=prod
+```
+
+A debug build pointed at prod throws on startup rather than writing test data
+into the live gym's records. Pass `--dart-define=ALLOW_PROD_DEBUG=true` if you
+genuinely need one. The dev build installs alongside prod with its own
+application id and its own launcher name.
+
 ### Local development
 
 ```bash

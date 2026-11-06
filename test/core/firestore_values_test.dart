@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/utils/firestore_values.dart';
 import 'package:deepfitness/features/auth/data/auth_repository.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

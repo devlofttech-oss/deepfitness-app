@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deepfitness/core/utils/firestore_values.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 
 /// Where an assigned plan stands for the member it belongs to.
 enum AssignedPlanStatus {

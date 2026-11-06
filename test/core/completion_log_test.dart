@@ -1,5 +1,5 @@
 import 'package:deepfitness/core/models/completion_log.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 CompletionLog _log({

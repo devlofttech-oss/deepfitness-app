@@ -5,10 +5,10 @@ import 'package:deepfitness/core/models/completion_log.dart';
 import 'package:deepfitness/core/models/group_class.dart';
 import 'package:deepfitness/core/models/gym_event.dart';
 import 'package:deepfitness/core/models/member.dart';
-import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/services/app_data_repository.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
-import 'package:deepfitness/shared/widgets/async_state.dart';
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/repositories/app_data_repository.dart';
+import 'package:deepfitness/core/models/app_models.dart';
+import 'package:deepfitness/core/widgets/async_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/app/colors.dart';
 import 'package:flutter/material.dart';
 
 class ProgressRing extends StatelessWidget {

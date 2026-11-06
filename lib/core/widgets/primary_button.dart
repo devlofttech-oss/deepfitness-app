@@ -1,5 +1,5 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/shared/widgets/pressable_scale.dart';
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/pressable_scale.dart';
 import 'package:flutter/material.dart';
 
 class PrimaryButton extends StatelessWidget {

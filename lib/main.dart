@@ -1,10 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deepfitness/core/config/firebase_config.dart';
-import 'package:deepfitness/core/constants/app_constants.dart';
-import 'package:deepfitness/core/router/app_router.dart';
+import 'package:deepfitness/app/flavor.dart';
+import 'package:deepfitness/app/router.dart';
 import 'package:deepfitness/core/services/app_firebase.dart';
-import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/core/theme/app_theme.dart';
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/app/theme.dart';
 import 'package:deepfitness/firebase_options.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -47,6 +47,9 @@ Future<void> main() async {
 }
 
 Future<void> _initializeFirebase() async {
+  // Before anything connects: a debug build must not reach production data.
+  Flavor.assertSafeForBuildMode();
+
   if (!DefaultFirebaseOptions.isConfigured) {
     AppFirebase.markUnavailable();
     debugPrint(
@@ -123,7 +126,7 @@ class DeepFitnessApp extends ConsumerWidget {
     // Dark-only app: both slots get the same theme so the OS light/dark
     // setting can never flip a screen to a light palette.
     return MaterialApp.router(
-      title: AppConstants.appName,
+      title: Flavor.current.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       darkTheme: AppTheme.dark,

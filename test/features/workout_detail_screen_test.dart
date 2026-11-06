@@ -1,8 +1,8 @@
 import 'package:deepfitness/core/models/assigned_plan.dart';
-import 'package:deepfitness/core/theme/app_theme.dart';
+import 'package:deepfitness/app/theme.dart';
 import 'package:deepfitness/features/workout/presentation/workout_detail_screen.dart';
-import 'package:deepfitness/services/app_data_repository.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/repositories/app_data_repository.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';

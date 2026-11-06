@@ -15,7 +15,7 @@ import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
 import 'package:deepfitness/features/trainer/presentation/trainer_screens.dart';
 import 'package:deepfitness/features/workout/presentation/exercise_logging_screen.dart';
 import 'package:deepfitness/features/workout/presentation/workout_detail_screen.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';

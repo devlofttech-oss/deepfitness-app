@@ -1,4 +1,4 @@
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
+import 'package:deepfitness/core/models/app_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

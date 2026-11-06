@@ -1,6 +1,6 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
-import 'package:deepfitness/shared/widgets/premium_card.dart';
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/models/app_models.dart';
+import 'package:deepfitness/core/widgets/premium_card.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
