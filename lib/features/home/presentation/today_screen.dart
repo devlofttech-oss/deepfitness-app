@@ -79,7 +79,7 @@ class _TodayContent extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 IconButton(
-                  onPressed: () => _showNotifications(context, workout),
+                  onPressed: () => context.push('/notifications'),
                   icon: Icon(
                     Icons.notifications_none_rounded,
                     size: 26,
@@ -200,48 +200,6 @@ class _TodayContent extends StatelessWidget {
       ],
     );
   }
-}
-
-void _showNotifications(BuildContext context, WorkoutPlan workout) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (context) => Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Notifications',
-            style: Theme.of(
-              context,
-            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 12),
-          ListTile(
-            leading: const Icon(
-              Icons.fitness_center_rounded,
-              color: AppColors.gold,
-            ),
-            title: Text(
-              workout.exercises.isEmpty ? 'No workout assigned' : workout.name,
-            ),
-            subtitle: Text(
-              workout.exercises.isEmpty
-                  ? 'Ask your trainer to assign a workout.'
-                  : '${workout.exercises.length} exercises available.',
-            ),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/workout');
-            },
-          ),
-        ],
-      ),
-    ),
-  );
 }
 
 String _greetingFor(DateTime now) {

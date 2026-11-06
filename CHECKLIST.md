@@ -235,7 +235,7 @@ the plan's own status.
 - [x] `sendAnnouncement` fans out to a topic and is admin-only
 - [ ] Admin compose UI (needs the dashboard)
 - [x] Every push mirrored into `announcements` — written before the send, so a failed send is still on record
-- [ ] In-app announcements list
+- [x] In-app announcements list — the bell on Today opens it; it read a placeholder sheet before
 - [x] Invalid tokens pruned from `fcmTokens[]` on send failure — `pushToTokens`
 - [x] Notification on/off preference stored and honoured — `pushToMember` returns early when it is false
 

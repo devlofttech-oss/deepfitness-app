@@ -6,6 +6,7 @@ import 'package:deepfitness/features/gym/presentation/gym_screen.dart';
 import 'package:deepfitness/features/home/presentation/member_shell.dart';
 import 'package:deepfitness/features/home/presentation/today_screen.dart';
 import 'package:deepfitness/features/membership/presentation/renewal_screen.dart';
+import 'package:deepfitness/features/notifications/presentation/announcements_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
 import 'package:deepfitness/features/progress/presentation/progress_screen.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
@@ -191,6 +192,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             child: WorkoutCompletionScreen(),
           ),
         ),
+      ),
+      GoRoute(
+        path: '/notifications',
+        pageBuilder: (context, state) =>
+            _smoothPage(state: state, child: const AnnouncementsScreen()),
       ),
       GoRoute(
         path: '/classes/watch',
