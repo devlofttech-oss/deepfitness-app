@@ -2,12 +2,14 @@ import 'dart:math' as math;
 
 import 'package:deepfitness/core/theme/app_colors.dart';
 import 'package:deepfitness/features/progress/presentation/activity_chart.dart';
+import 'package:deepfitness/features/progress/presentation/shareable_summary.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/async_state.dart';
 import 'package:deepfitness/shared/widgets/page_header.dart';
 import 'package:deepfitness/shared/widgets/premium_card.dart';
 import 'package:deepfitness/shared/widgets/premium_scaffold.dart';
+import 'package:deepfitness/shared/widgets/primary_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -134,8 +136,75 @@ class _ProgressContent extends ConsumerWidget {
           bests: progress.personalBests,
         ),
         const SizedBox(height: 24),
+        _ShareSection(progress: progress, rangeLabel: rangeLabel),
+        const SizedBox(height: 24),
       ],
     );
+  }
+}
+
+/// The summary card plus its share button.
+///
+/// The card is on screen rather than hidden off it: an unpainted boundary
+/// captures a blank frame, and a member seeing what they are about to share
+/// is better anyway.
+class _ShareSection extends ConsumerStatefulWidget {
+  const _ShareSection({required this.progress, required this.rangeLabel});
+
+  final MemberProgress progress;
+  final String rangeLabel;
+
+  @override
+  ConsumerState<_ShareSection> createState() => _ShareSectionState();
+}
+
+class _ShareSectionState extends ConsumerState<_ShareSection> {
+  final _boundaryKey = GlobalKey();
+  bool _sharing = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final user = ref.watch(currentUserProvider);
+    final name = user.maybeWhen(
+      data: (value) => value.name,
+      orElse: () => 'My progress',
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: ShareableSummary(
+            boundaryKey: _boundaryKey,
+            memberName: name,
+            progress: widget.progress,
+            rangeLabel: widget.rangeLabel,
+          ),
+        ),
+        const SizedBox(height: 14),
+        PrimaryButton(
+          label: _sharing ? 'Preparing...' : 'Share my progress',
+          icon: Icons.ios_share_rounded,
+          outline: true,
+          onPressed: _sharing ? null : () => _share(name),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _share(String name) async {
+    setState(() => _sharing = true);
+    try {
+      await shareProgressSummary(boundaryKey: _boundaryKey, memberName: name);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(friendlyErrorMessage(error))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _sharing = false);
+    }
   }
 }
 

@@ -209,7 +209,7 @@ the plan's own status.
 - [x] Completion rate, streaks, personal bests and muscle split all derived in Dart from `completion_logs`, nothing stored
 - [x] `fl_chart` added as the charting package
 - [x] Charts drawn with it — an activity bar chart over the selected range, derived on device from `completion_logs`
-- [ ] Shareable summary rendered as an image from the widget tree (`share_plus` is present but shares text)
+- [x] Shareable summary rendered as an image from the widget tree — a `RepaintBoundary` captured to PNG and handed to the share sheet
 
 ### Module 04 — Events
 - [x] `events` / `event_rsvps` modelled, ruled and indexed (`GymEvent`, `EventRsvp`)
@@ -277,7 +277,7 @@ the plan's own status.
 ## 9. Testing, release & handover (Guide §09)
 
 ### Testing
-- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state, booking capacity and roles — 82 passing
+- [x] Unit tests for unlock advance, skip, report maths, defensive reads, phone normalisation, membership state, booking capacity and roles — 87 passing
 - [x] Unit tests for booking capacity, status handling and video links — 65 passing
 - [ ] The booking transaction itself tested end to end (needs the emulator)
 - [x] Security-rules tests written: 67 cases across members, training and gym activity, per role
@@ -286,7 +286,7 @@ the plan's own status.
 - [ ] Integration test of the full path: sign in → assigned plan → complete → report
 - [ ] Device testing on a spread of real Android handsets and iPhone sizes, not only emulators
 - [x] `flutter analyze` clean
-- [x] `flutter test` clean — 82 tests
+- [x] `flutter test` clean — 87 tests
 
 ### Release
 - [ ] Bump `version` in `pubspec.yaml`; build number increases on every store upload
