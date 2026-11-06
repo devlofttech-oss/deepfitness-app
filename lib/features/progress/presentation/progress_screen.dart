@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/features/progress/presentation/activity_chart.dart';
 import 'package:deepfitness/services/app_data_repository.dart';
 import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:deepfitness/shared/widgets/async_state.dart';
@@ -53,27 +54,7 @@ class _ProgressContent extends ConsumerWidget {
           title: 'Progress',
           subtitle: rangeLabel,
           action: IconButton(
-            onPressed: () async {
-              final now = DateTime.now();
-              final picked = await showDateRangePicker(
-                context: context,
-                firstDate: now.subtract(const Duration(days: 365)),
-                lastDate: now,
-                initialDateRange: selectedRange == null
-                    ? DateTimeRange(
-                        start: DateTime(now.year, now.month, 1),
-                        end: now,
-                      )
-                    : DateTimeRange(
-                        start: selectedRange.start,
-                        end: selectedRange.end,
-                      ),
-              );
-              if (picked == null) return;
-              ref
-                  .read(progressDateRangeProvider.notifier)
-                  .select(picked.start, picked.end);
-            },
+            onPressed: () => _pickRange(context, ref, selectedRange),
             icon: const Icon(
               Icons.calendar_month_rounded,
               color: AppColors.gold,
@@ -81,7 +62,18 @@ class _ProgressContent extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
+        RangePresets(
+          isCustom: selectedRange != null,
+          customLabel: rangeLabel,
+          onWeek: () =>
+              ref.read(progressDateRangeProvider.notifier).selectLastWeek(),
+          onMonth: () => ref.read(progressDateRangeProvider.notifier).clear(),
+          onCustom: () => _pickRange(context, ref, selectedRange),
+        ),
+        const SizedBox(height: 18),
+        ActivityChart(days: progress.dailyCompletions),
+        const SizedBox(height: 18),
         _BodyVisualCard(progress: progress),
         const SizedBox(height: 18),
         Row(
@@ -1223,4 +1215,22 @@ class _Metric extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _pickRange(
+  BuildContext context,
+  WidgetRef ref,
+  ({DateTime start, DateTime end})? current,
+) async {
+  final now = DateTime.now();
+  final picked = await showDateRangePicker(
+    context: context,
+    firstDate: now.subtract(const Duration(days: 365)),
+    lastDate: now,
+    initialDateRange: current == null
+        ? DateTimeRange(start: DateTime(now.year, now.month, 1), end: now)
+        : DateTimeRange(start: current.start, end: current.end),
+  );
+  if (picked == null) return;
+  ref.read(progressDateRangeProvider.notifier).select(picked.start, picked.end);
 }

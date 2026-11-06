@@ -381,6 +381,7 @@ class MemberProgress {
     required this.completedExercises,
     required this.missedExercises,
     required this.adherence,
+    this.dailyCompletions = const [],
     this.gender,
   });
 
@@ -395,5 +396,17 @@ class MemberProgress {
   final int completedExercises;
   final int missedExercises;
   final double adherence;
+
+  /// Exercises completed per day over the selected range, oldest first. The
+  /// chart draws this; nothing about it is stored.
+  final List<DayCount> dailyCompletions;
   final String? gender;
+}
+
+/// One bar on the activity chart.
+class DayCount {
+  const DayCount(this.day, this.count);
+
+  final DateTime day;
+  final int count;
 }

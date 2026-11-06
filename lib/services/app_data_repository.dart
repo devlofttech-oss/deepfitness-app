@@ -705,6 +705,11 @@ class AppDataRepository {
         completedExercises: stats.completed,
         missedExercises: stats.missed,
         adherence: stats.adherence,
+        dailyCompletions: _dailyCompletions(
+          done,
+          startDate: startDate,
+          endDate: endDate,
+        ),
         gender: Val.toNullableText(member.data()?['gender']),
       );
     }, whileDoing: 'building your report');
@@ -777,6 +782,45 @@ class AppDataRepository {
     final plan = AssignedPlan.fromFirestore(snapshot.docs.first);
     if (plan.exercises.isEmpty) return 0;
     return (plan.currentIndex / plan.exercises.length).clamp(0.0, 1.0);
+  }
+
+  /// Completions per day across the range, including the empty days.
+  ///
+  /// The gaps matter: a chart that silently drops them would draw four
+  /// scattered workouts as though they were consecutive.
+  List<DayCount> _dailyCompletions(
+    List<CompletionLog> logs, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    final now = DateTime.now();
+    final start = Val.startOfDay(
+      startDate ?? DateTime(now.year, now.month, 1),
+    );
+    final end = Val.startOfDay(endDate ?? now);
+    if (end.isBefore(start)) return const [];
+
+    final counts = <DateTime, int>{};
+    for (final log in logs) {
+      final day = Val.startOfDay(log.completedAt);
+      counts[day] = (counts[day] ?? 0) + 1;
+    }
+
+    // A long range would draw more bars than there are pixels, so cap it.
+    const maxBars = 31;
+    final days = end.difference(start).inDays + 1;
+    final from = days > maxBars
+        ? end.subtract(const Duration(days: maxBars - 1))
+        : start;
+
+    return [
+      for (
+        var day = from;
+        !day.isAfter(end);
+        day = day.add(const Duration(days: 1))
+      )
+        DayCount(day, counts[day] ?? 0),
+    ];
   }
 
   int _dayStreak(List<CompletionLog> logs) {
