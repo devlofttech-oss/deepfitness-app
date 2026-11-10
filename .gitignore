@@ -49,3 +49,11 @@ app.*.map.json
 
 # Local scratch files
 /tmp/
+
+# Firebase
+node_modules/
+functions/node_modules/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
