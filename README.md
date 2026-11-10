@@ -1,35 +1,65 @@
 # Deep Fitness
 
-Premium Flutter gym management and fitness tracking app.
+Flutter gym app for members, with Firebase as the backend. Android, iOS and a
+Flutter Web dashboard for staff, from one codebase.
 
-## Current scope
+The source of truth for scope is `pdfs/Deep-Fitness-Developer-Guide.pdf`.
+Only the modules it names belong in this repository.
 
-The diet/nutrition member tab and trainer diet-assignment entry points are temporarily hidden. The underlying diet data model and implementation files remain in the codebase so the feature can be restored later.
+## Architecture
 
-## Theming
+There is no custom API server. The app reads and writes Firestore directly and
+the security rules are the access control; a small set of Cloud Functions
+covers the work a client cannot be trusted to do.
 
-The app is dark-only. `AppTheme.dark` is the single theme, `MaterialApp` pins `themeMode` to dark so the OS appearance setting cannot flip it, and the Android launch theme/background matches the `#121212` canvas. There is no light palette and no dark-mode toggle in settings — colours should come from `AppColors` rather than being hardcoded per screen.
-
-## Supabase setup
-
-1. Create a Supabase project.
-2. Open the Supabase SQL editor.
-3. Run `supabase/schema.sql`.
-4. Run the SQL in `supabase/migrations/202606120001_production_auth.sql`.
-5. Deploy `supabase/functions/create-member` with `SUPABASE_SERVICE_ROLE_KEY` set as a function secret.
-6. Create trainer accounts in Supabase Auth or another admin-only process with user metadata `{ "role": "trainer", "name": "Trainer Name" }`.
-
-Members can create their own account from the app. Trainers use the separate trainer login screen.
-
-Run the app with Supabase enabled:
-
-```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key
+```
+lib/
+  main.dart          # bootstrap, Firebase init, theme, router
+  app/               # router.dart, theme.dart, colors.dart
+  core/
+    models/          # shared models with Firestore converters
+    repositories/    # base repository, pagination, typed failures
+    services/        # auth, messaging
+    widgets/         # shared buttons, cards, empty and error states
+  features/          # auth, home, splash
+  admin/             # Flutter Web dashboard (module 08)
+functions/           # Cloud Functions
+firestore.rules      # the access control
+storage.rules
+firestore.indexes.json
+legacy/              # Supabase-era screens, kept as reference only
 ```
 
-Without those dart defines, the app uses the configured project in `SupabaseConfig`.
+Every write goes through a repository, so model mapping and validation sit in
+one place. Widgets never touch `FirebaseFirestore.instance`.
+
+## Module status
+
+| # | Module | State |
+|---|--------|-------|
+| 01 | Authentication & member profile | Built |
+| 02 | Workout plans | Not started |
+| 03 | Workout reports | Not started |
+| 04 | Events | Not started |
+| 05 | Group classes & booking | Not started |
+| 06 | Notifications | Functions only; no app surface |
+| 07 | iOS platform setup | Not started |
+| 08 | Admin dashboard | Not started |
+
+`legacy/` holds the screens from the previous Supabase build. They are
+excluded from analysis and are reference material for the modules above, not
+shipping code.
+
+## Setup
+
+1. Install the Flutter SDK and run `flutter doctor` until it is clean.
+2. `flutter pub get`
+3. Install the FlutterFire CLI and run `flutterfire configure` to generate
+   `lib/firebase_options.dart`.
+4. Place `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
+   in their platform folders.
+5. `firebase emulators:start` for local work.
+6. Deploy rules with `firebase deploy --only firestore:rules,storage`.
 
 ## Verification
 

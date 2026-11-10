@@ -1,0 +1,44 @@
+rules_version = '2';
+
+// Deep Fitness — Cloud Storage rules.
+//
+// Every upload is checked for who is writing, what type it is and how big
+// it is. The app resizes before upload, so the size ceiling here is a
+// backstop against a client that does not.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() { return request.auth != null; }
+    function role()       { return isSignedIn() ? request.auth.token.role : null; }
+    function isStaff()    { return role() == 'admin' || role() == 'trainer'; }
+    function isSelf(uid)  { return isSignedIn() && request.auth.uid == uid; }
+
+    function isImageUnder(mb) {
+      return request.resource.contentType.matches('image/.*')
+             && request.resource.size < mb * 1024 * 1024;
+    }
+
+    // A member's own profile photo.
+    match /members/{uid}/profile/{fileName} {
+      allow read:   if isSelf(uid) || isStaff();
+      allow write:  if isSelf(uid) && isImageUnder(5);
+      allow delete: if isSelf(uid) || isStaff();
+    }
+
+    // Exercise and event imagery, shown to every signed-in member and
+    // written only from the dashboard.
+    match /exercises/{allPaths=**} {
+      allow read:  if isSignedIn();
+      allow write: if isStaff() && isImageUnder(10);
+    }
+
+    match /events/{allPaths=**} {
+      allow read:  if isSignedIn();
+      allow write: if isStaff() && isImageUnder(10);
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

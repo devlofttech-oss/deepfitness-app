@@ -1,6 +1,5 @@
-import 'package:deepfitness/core/theme/app_colors.dart';
+import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
-import 'package:deepfitness/shared/models/deepfitness_models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -65,7 +64,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<AsyncValue<AuthSessionState>>(authControllerProvider, (
+    ref.listen<AsyncValue<AuthSession>>(authControllerProvider, (
       previous,
       next,
     ) {
@@ -115,19 +114,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
   }
 
-  void _goNext(AsyncValue<AuthSessionState> authState) {
+  /// Leaves the splash once the minimum wait has passed and the session has
+  /// resolved. Where it goes is the router's decision, not this screen's:
+  /// pushing at the root lets the redirect guard place it.
+  void _goNext(AsyncValue<AuthSession> authState) {
     if (!mounted || !_minimumWaitDone) return;
-    final session = authState.value;
-    if (authState.hasError) {
-      context.go('/login');
-      return;
-    }
-    if (session == null) return;
-    if (!session.isAuthenticated) {
-      context.go('/login');
-      return;
-    }
-    context.go(session.role == UserRole.trainer ? '/trainer' : '/');
+    if (authState.isLoading && !authState.hasValue) return;
+    context.go(authState.hasError ? '/sign-in' : '/');
   }
 }
 

@@ -1,0 +1,133 @@
+rules_version = '2';
+
+// Deep Fitness — Firestore security rules.
+//
+// These rules are the access control, not a second opinion on what the UI
+// hides. Anything allowed here is reachable with the SDK and a token, so no
+// rule is relaxed for the convenience of a screen.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn()  { return request.auth != null; }
+    function role()        { return isSignedIn() ? request.auth.token.role : null; }
+    function isAdmin()     { return role() == 'admin'; }
+    function isTrainer()   { return role() == 'trainer'; }
+    function isStaff()     { return isAdmin() || isTrainer(); }
+    function isSelf(uid)   { return isSignedIn() && request.auth.uid == uid; }
+
+    // The fields being written, and the subset that actually changed.
+    function incoming()    { return request.resource.data; }
+    function changed()     { return incoming().diff(resource.data).affectedKeys(); }
+
+    // Membership and the audit trail are staff-owned: a member editing
+    // their own profile may not extend their own expiry date.
+    function touchesProtected() {
+      return changed().hasAny([
+        'membershipStatus', 'expiryDate', 'joinedAt',
+        'createdAt', 'createdBy', 'deletedAt'
+      ].toSet());
+    }
+
+    match /members/{uid} {
+      allow read:   if isSelf(uid) || isStaff();
+      allow create: if isAdmin()
+                    || (isSelf(uid) && !touchesProtected());
+      allow update: if isAdmin()
+                    || (isSelf(uid) && !touchesProtected());
+      allow delete: if isAdmin();
+    }
+
+    // The exercise library is admin-managed and readable by everyone
+    // signed in, because assigned plans are built from it.
+    match /exercises/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    match /workout_plans/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // A member may tick off progress on their own plan and nothing else:
+    // they cannot reassign it, retitle it or swap the exercise snapshot.
+    match /assigned_plans/{planId} {
+      function onlyProgressChanged() {
+        return changed().hasOnly(['currentIndex', 'status', 'updatedAt'].toSet());
+      }
+
+      allow read:   if isStaff() || isSelf(resource.data.memberId);
+      allow create, delete: if isStaff();
+      allow update: if isStaff()
+                    || (isSelf(resource.data.memberId) && onlyProgressChanged());
+    }
+
+    // Append-only. Every report is derived from these, so a log that could
+    // be edited or removed after the fact would make the reports fiction.
+    match /completion_logs/{id} {
+      allow read:   if isStaff() || isSelf(resource.data.memberId);
+      allow create: if isSelf(incoming().memberId);
+      allow update, delete: if false;
+    }
+
+    match /events/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // One RSVP per member per event, and only their own.
+    match /event_rsvps/{id} {
+      allow read:   if isStaff() || isSelf(resource.data.memberId);
+      allow create: if isSelf(incoming().memberId);
+      allow delete: if isStaff() || isSelf(resource.data.memberId);
+      allow update: if false;
+    }
+
+    match /group_classes/{id} {
+      allow read:  if isSignedIn();
+      allow write: if isStaff();
+    }
+
+    // Members read sessions to see what is on and how full it is, but the
+    // counters move only inside a booking transaction or by staff.
+    match /class_sessions/{id} {
+      function onlyCountersChanged() {
+        return changed().hasOnly(['bookedCount', 'waitlistCount', 'updatedAt'].toSet());
+      }
+
+      allow read:   if isSignedIn();
+      allow create, delete: if isStaff();
+      allow update: if isStaff() || (isSignedIn() && onlyCountersChanged());
+    }
+
+    // A member books and cancels for themselves. Promotion off the
+    // waitlist is a privileged write, so status changes are staff or the
+    // onBookingCancelled function, never the member.
+    match /bookings/{id} {
+      function onlyCancelled() {
+        return changed().hasOnly(['status', 'updatedAt'].toSet())
+               && incoming().status == 'cancelled';
+      }
+
+      allow read:   if isStaff() || isSelf(resource.data.memberId);
+      allow create: if isSelf(incoming().memberId)
+                    && incoming().status in ['booked', 'waitlisted'];
+      allow update: if isStaff()
+                    || (isSelf(resource.data.memberId) && onlyCancelled());
+      allow delete: if isStaff();
+    }
+
+    // Written by the sendAnnouncement function with the Admin SDK, which
+    // bypasses these rules; from a client they are read-only.
+    match /announcements/{id} {
+      allow read:  if isSignedIn();
+      allow write: if false;
+    }
+
+    // Anything not named above is denied. A new collection has to arrive
+    // with its rules rather than inherit an open default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

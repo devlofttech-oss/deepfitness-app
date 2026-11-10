@@ -1,17 +1,12 @@
-import 'package:deepfitness/core/router/app_router.dart';
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/app/router.dart';
+import 'package:deepfitness/app/theme.dart';
 import 'package:deepfitness/core/constants/app_constants.dart';
-import 'package:deepfitness/core/theme/app_colors.dart';
-import 'package:deepfitness/core/theme/app_theme.dart';
-import 'package:deepfitness/services/supabase_service.dart';
-import 'package:deepfitness/services/timeout_http_client.dart';
+import 'package:deepfitness/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'core/config/supabase_config.dart';
-import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,43 +23,11 @@ Future<void> main() async {
     ),
   );
 
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  } catch (error, stackTrace) {
-    // Firebase is not required for the app to run, so a failed init is
-    // reported and swallowed rather than blocking startup.
-    FlutterError.reportError(
-      FlutterErrorDetails(
-        exception: error,
-        stack: stackTrace,
-        library: 'deepfitness',
-        context: ErrorDescription('while initializing Firebase'),
-      ),
-    );
-  }
-
-  if (SupabaseConfig.isConfigured) {
-    try {
-      await Supabase.initialize(
-        url: SupabaseConfig.url,
-        anonKey: SupabaseConfig.anonKey,
-        httpClient: TimeoutHttpClient(),
-      );
-      SupabaseService.markInitialized();
-    } catch (error, stackTrace) {
-      SupabaseService.markUnavailable();
-      FlutterError.reportError(
-        FlutterErrorDetails(
-          exception: error,
-          stack: stackTrace,
-          library: 'deepfitness',
-          context: ErrorDescription('while initializing Supabase'),
-        ),
-      );
-    }
-  }
+  // Firebase is the backend, so a failure here is fatal rather than
+  // something to carry on past: there is nothing for the app to read.
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const ProviderScope(child: DeepFitnessApp()));
 }
@@ -77,7 +40,7 @@ class DeepFitnessApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     // Dark-only app: both slots get the same theme so the OS light/dark
-    // setting can never flip a screen to a light palette.
+    // setting cannot flip it.
     return MaterialApp.router(
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,

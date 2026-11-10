@@ -1,1 +1,48 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"deepfitess-app","appId":"1:478703260627:android:2ccfed6a3288350a381526","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"deepfitess-app","configurations":{"android":"1:478703260627:android:2ccfed6a3288350a381526","ios":"1:478703260627:ios:1e0f5f995d8cc377381526"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": ["node_modules", ".git", "*.local"]
+    }
+  ],
+  "hosting": {
+    "public": "build/web",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+  },
+  "emulators": {
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "functions": { "port": 5001 },
+    "storage": { "port": 9199 },
+    "ui": { "enabled": true }
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "deepfitess-app",
+          "appId": "1:478703260627:android:2ccfed6a3288350a381526",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "deepfitess-app",
+          "configurations": {
+            "android": "1:478703260627:android:2ccfed6a3288350a381526",
+            "ios": "1:478703260627:ios:1e0f5f995d8cc377381526"
+          }
+        }
+      }
+    }
+  }
+}
