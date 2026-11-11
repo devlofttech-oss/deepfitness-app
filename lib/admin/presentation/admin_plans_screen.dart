@@ -95,9 +95,17 @@ class AdminPlansScreen extends ConsumerWidget {
                 ? const Center(child: Text('No plans yet.'))
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
-                    itemCount: list.length,
+                    itemCount: list.length + 1,
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
+                      if (index == list.length) {
+                        return LoadMoreRow(
+                          hasMore:
+                              ref.read(adminPlansProvider.notifier).hasMore,
+                          onTap: () =>
+                              ref.read(adminPlansProvider.notifier).loadMore(),
+                        );
+                      }
                       final plan = list[index];
                       return ListTile(
                         title: Text(plan.title),

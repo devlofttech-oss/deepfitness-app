@@ -60,10 +60,18 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
 
               return ListView.separated(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
-                itemCount: filtered.length,
+                itemCount: filtered.length + 1,
                 separatorBuilder: (_, _) => const Divider(height: 1),
-                itemBuilder: (context, index) =>
-                    _MemberRow(member: filtered[index]),
+                itemBuilder: (context, index) => index == filtered.length
+                    ? LoadMoreRow(
+                        // Hidden while a search is narrowing the list,
+                        // since more pages would not match it either.
+                        hasMore: _query.isEmpty &&
+                            ref.read(adminMembersProvider.notifier).hasMore,
+                        onTap: () =>
+                            ref.read(adminMembersProvider.notifier).loadMore(),
+                      )
+                    : _MemberRow(member: filtered[index]),
               );
             },
           ),

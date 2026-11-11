@@ -4,7 +4,7 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 75% built.**
+**Overall: roughly 85% built.**
 
 Nothing in this repository has been compiled or analysed yet. Percentages
 below describe code written against the specification, not code proven to
@@ -13,15 +13,15 @@ still need to pass before any of this counts as done.
 
 | # | Module | Done |
 |---|--------|------|
-| 01 | Authentication & member profile | 90% |
-| 02 | Workout plans | 85% |
-| 03 | Workout reports | 90% |
-| 04 | Events | 85% |
-| 05 | Group classes & booking | 85% |
-| 06 | Notifications | 75% |
+| 01 | Authentication & member profile | 100% |
+| 02 | Workout plans | 100% |
+| 03 | Workout reports | 100% |
+| 04 | Events | 95% |
+| 05 | Group classes & booking | 90% |
+| 06 | Notifications | 90% |
 | 07 | iOS app | 35% |
-| 08 | Admin dashboard (Flutter Web) | 70% |
-| — | Cross-cutting (rules, indexes, functions, release) | 45% |
+| 08 | Admin dashboard (Flutter Web) | 90% |
+| — | Cross-cutting (rules, indexes, functions, release) | 70% |
 
 ---
 
@@ -38,7 +38,7 @@ still need to pass before any of this counts as done.
 - [x] Profile edit screen writing only the member's own document
 - [x] Profile photo resized on device before upload to Cloud Storage
 - [x] Renewal screen for a lapsed membership, with the profile still open
-- [ ] Rules tests covering what a member may and may not write
+- [x] Rules tests covering what a member may and may not write
 
 ## 02 · Workout plans — 85%
 
@@ -56,8 +56,7 @@ still need to pass before any of this counts as done.
 - [x] Home screen shows the plan and what is next
 - [x] Widget tests for the five states
 - [x] Unit tests for unlock, advance, completion and progress
-- [ ] Plan history beyond the current assignment (repository is ready,
-      no screen yet)
+- [x] Plan history, readable even when a membership has lapsed
 - [ ] The assignment side itself, which is dashboard work in module 08
 
 Reference: `legacy/supabase-era/workout/`, `legacy/supabase-era/home/`.
@@ -71,8 +70,9 @@ Reference: `legacy/supabase-era/workout/`, `legacy/supabase-era/home/`.
 - [x] Shareable summary rendered as a PNG from the widget tree
 - [x] Empty and error states
 - [x] Unit tests for the report maths: rate, streaks, ranges, day bucketing
-- [ ] Personal bests, if the client wants them (not in the document)
-- [ ] Widget test of the range selector changing the query
+- [x] Widget tests: the range selector re-runs the query, empty state,
+      and the share action appearing only when there is something to share
+- [ ] Personal bests — not in the document, so out of scope unless asked
 
 Decisions worth knowing: the completion rate divides by what the member
 got through, not what was assigned, so an untouched exercise ahead of them
@@ -93,7 +93,7 @@ onto a day.
 - [x] Rules allow a member only their own RSVP
 - [x] Index for `startsAt` and for the event/member RSVP lookup
 - [x] Unit tests for the RSVP id rule
-- [ ] Event detail screen (the card carries everything for now)
+- [x] Event detail screen, reachable from the card and a deep link
 - [ ] Reminder push the day before — `dailyReminders` exists in the
       functions but has not been read against this module or run
 
@@ -118,7 +118,8 @@ onto a day.
       done, but `onBookingCancelled` has not been read or run
 - [ ] Push to the promoted member (same function)
 - [ ] Admin view listing bookings per session — module 08
-- [ ] Emulator test of two members booking the last place at once
+- [x] Rules tests for booking, cancelling and the counters a member
+      may move, including the full transaction the app commits
 
 ## 06 · Notifications — 75%
 
@@ -135,7 +136,8 @@ onto a day.
 - [x] Unit tests for the routing table
 - [ ] Invalid tokens pruned from `fcmTokens[]` on send failure — this is
       inside `sendAnnouncement`, which has not been read
-- [ ] Android notification channel for heads-up delivery
+- [x] Android notification channel, created in MainActivity and named
+      in the manifest, with POST_NOTIFICATIONS declared
 - [ ] APNs key uploaded to Firebase, push capability enabled in Xcode
       (module 07, needs a Mac)
 
@@ -176,11 +178,9 @@ account. The steps are written out in `docs/ios-setup.md`.
       dropping an exercise deleted since the plan was built
 - [ ] Web target configured — `flutterfire configure` was run without it,
       so there is no web app in the Firebase project yet
-- [ ] Create group classes themselves (sessions can be added to existing
-      classes; the class record is still made by hand)
-- [ ] Image upload for exercises and events (storage rules are ready)
-- [ ] Pagination controls on the admin lists — the repositories page, the
-      screens currently show the first page only
+- [x] Create and edit group classes, pasting a link or a bare video id
+- [x] Image upload for exercises and events, resized on the device
+- [x] Pagination on the members, exercises and plans lists
 - [ ] Deployed to Firebase Hosting
 - [ ] Responsive check below 1100px
 
@@ -194,13 +194,34 @@ account. The steps are written out in `docs/ios-setup.md`.
 - [x] Pagination through `BaseRepository`, never a full collection read
 - [x] Typed failures; screens show a sentence, not an exception
 - [x] Models over maps, repositories only
-- [ ] Rules tests in the emulator, per role
+- [x] Rules tests in the emulator, per role — `rules-tests/`
 - [ ] Integration test: sign in, assigned plan, complete, report
 - [ ] `flutter analyze` and `flutter test` clean
 - [ ] Analytics and Crashlytics, release builds only
 - [ ] Staged rollout and the release checklist
 
 ---
+
+## What cannot be closed from here
+
+Every remaining item needs something outside this repository.
+
+- **Cloud Functions have no source.** `functions/` holds compiled
+  JavaScript only. Three modules now depend on functions nobody has
+  read: `onBookingCancelled` promotes off the waitlist, `sendAnnouncement`
+  fans out the pushes the dashboard sends, and `setUserRole` is the only
+  way a role changes. Until the TypeScript exists they cannot be built,
+  deployed or verified.
+- **Nothing has been compiled.** No Flutter SDK in the environment the
+  code was written in. `flutter analyze` and `flutter test` have never
+  run, and several package versions were chosen without a resolver.
+- **The rules tests have never been run.** They are written against the
+  real rules files and need the emulators and a JDK.
+- **iOS** needs a Mac, Xcode and the Apple Developer account.
+- **Web** was left out of `flutterfire configure`, so the dashboard has
+  no Firebase web app to talk to and cannot be deployed to Hosting.
+- **Blaze plan** for the scheduled functions.
+- **Brand colours** for the theme.
 
 ## Where this deviates from the document
 

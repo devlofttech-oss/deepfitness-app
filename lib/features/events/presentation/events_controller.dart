@@ -37,6 +37,11 @@ class UpcomingEventsController extends AsyncNotifier<List<Event>> {
   }
 }
 
+/// One event by id, so the detail screen works from a deep link.
+final eventProvider = FutureProvider.family<Event?, String>(
+  (ref, id) => ref.watch(eventRepositoryProvider).find(id),
+);
+
 /// The events this member has said they are coming to.
 final myRsvpsProvider = StreamProvider<Set<String>>((ref) {
   final memberId = ref.watch(authControllerProvider).value?.member?.id;

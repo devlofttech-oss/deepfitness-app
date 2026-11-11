@@ -98,3 +98,26 @@ class AdminHeader extends StatelessWidget {
     );
   }
 }
+
+/// A "load more" row for a dashboard list.
+///
+/// Shown only when the repository reported a further page, so it does
+/// not sit at the bottom of a list that is already complete.
+class LoadMoreRow extends StatelessWidget {
+  const LoadMoreRow({super.key, required this.hasMore, required this.onTap});
+
+  final bool hasMore;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!hasMore) return const SizedBox(height: 24);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: OutlinedButton(onPressed: onTap, child: const Text('Load more')),
+      ),
+    );
+  }
+}

@@ -31,7 +31,16 @@ class PlanScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.canvas(context),
-      appBar: AppBar(title: const Text('Your plan')),
+      appBar: AppBar(
+        title: const Text('Your plan'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'Past plans',
+            onPressed: () => context.push('/plan/history'),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: plan.when(
           loading: () => const Center(child: CircularProgressIndicator()),

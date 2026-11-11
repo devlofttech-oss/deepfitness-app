@@ -1,5 +1,6 @@
 import 'package:deepfitness/admin/application/admin_controllers.dart';
 import 'package:deepfitness/admin/presentation/admin_shell.dart';
+import 'package:deepfitness/admin/presentation/image_field.dart';
 import 'package:deepfitness/core/models/base_fields.dart';
 import 'package:deepfitness/core/models/exercise.dart';
 import 'package:flutter/material.dart';
@@ -96,9 +97,18 @@ class AdminExercisesScreen extends ConsumerWidget {
                 ? const Center(child: Text('The library is empty.'))
                 : ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 32),
-                    itemCount: list.length,
+                    itemCount: list.length + 1,
                     separatorBuilder: (_, _) => const Divider(height: 1),
                     itemBuilder: (context, index) {
+                      if (index == list.length) {
+                        return LoadMoreRow(
+                          hasMore:
+                              ref.read(adminExercisesProvider.notifier).hasMore,
+                          onTap: () => ref
+                              .read(adminExercisesProvider.notifier)
+                              .loadMore(),
+                        );
+                      }
                       final exercise = list[index];
                       return ListTile(
                         title: Text(exercise.name),
@@ -147,6 +157,7 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
   late final _reps = TextEditingController(
     text: '${widget.existing?.defaultReps ?? 10}',
   );
+  late List<String> _photoUrls = [...?widget.existing?.photoUrls];
 
   @override
   void dispose() {
@@ -168,6 +179,15 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              ImageField(
+                folder: 'exercises',
+                id: widget.existing?.id ?? '',
+                initialUrl: _photoUrls.isEmpty ? null : _photoUrls.first,
+                // One image is what the member's plan shows, so a new
+                // upload replaces rather than appends.
+                onUploaded: (url) => setState(() => _photoUrls = [url]),
+              ),
+              const SizedBox(height: 12),
               TextField(
                 controller: _name,
                 decoration: const InputDecoration(labelText: 'Name'),
@@ -222,7 +242,7 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                 name: _name.text.trim(),
                 description: _description.text.trim(),
                 muscleGroup: _muscleGroup.text.trim(),
-                photoUrls: widget.existing?.photoUrls ?? const [],
+                photoUrls: _photoUrls,
                 defaultSets: int.tryParse(_sets.text) ?? 3,
                 defaultReps: int.tryParse(_reps.text) ?? 10,
               ),

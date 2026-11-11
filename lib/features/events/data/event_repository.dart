@@ -36,6 +36,19 @@ class EventRepository extends BaseRepository {
     );
   }
 
+  /// One event, for a deep link straight into the detail screen.
+  Future<Event?> find(String id) {
+    return guard(() async {
+      final snapshot = await firestore
+          .collection(Collections.events)
+          .doc(id)
+          .get();
+      if (!snapshot.exists) return null;
+      final event = Event.fromFirestore(snapshot, null);
+      return event.base.isDeleted ? null : event;
+    });
+  }
+
   /// The ids of the events this member has said they are coming to.
   Stream<Set<String>> watchMyRsvps(String memberId) {
     return firestore

@@ -1,5 +1,6 @@
 import 'package:deepfitness/admin/application/admin_controllers.dart';
 import 'package:deepfitness/admin/presentation/admin_shell.dart';
+import 'package:deepfitness/admin/presentation/image_field.dart';
 import 'package:deepfitness/core/models/base_fields.dart';
 import 'package:deepfitness/core/models/event.dart';
 import 'package:deepfitness/features/events/presentation/events_controller.dart';
@@ -102,6 +103,7 @@ class _EventDialogState extends State<_EventDialog> {
   );
   late final _venue = TextEditingController(text: widget.existing?.venue ?? '');
   late DateTime? _startsAt = widget.existing?.startsAt;
+  late String? _imageUrl = widget.existing?.imageUrl;
 
   @override
   void dispose() {
@@ -148,6 +150,13 @@ class _EventDialogState extends State<_EventDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            ImageField(
+              folder: 'events',
+              id: widget.existing?.id ?? '',
+              initialUrl: _imageUrl,
+              onUploaded: (url) => setState(() => _imageUrl = url),
+            ),
+            const SizedBox(height: 12),
             TextField(
               controller: _title,
               decoration: const InputDecoration(labelText: 'Title'),
@@ -196,7 +205,7 @@ class _EventDialogState extends State<_EventDialog> {
                 description: _description.text.trim(),
                 venue: _venue.text.trim(),
                 startsAt: _startsAt,
-                imageUrl: widget.existing?.imageUrl,
+                imageUrl: _imageUrl,
               ),
             );
           },

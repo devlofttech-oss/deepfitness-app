@@ -1,6 +1,7 @@
 import 'package:deepfitness/admin/application/admin_controllers.dart';
 import 'package:deepfitness/admin/data/admin_repository.dart';
 import 'package:deepfitness/admin/presentation/admin_shell.dart';
+import 'package:deepfitness/admin/presentation/group_class_dialog.dart';
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/models/class_session.dart';
 import 'package:deepfitness/core/models/group_class.dart';
@@ -27,6 +28,29 @@ class AdminClassesScreen extends ConsumerStatefulWidget {
 
 class _AdminClassesScreenState extends ConsumerState<AdminClassesScreen> {
   String? _selectedClassId;
+
+  Future<void> _editClass({GroupClass? existing}) async {
+    final draft = await showDialog<GroupClass>(
+      context: context,
+      builder: (context) => GroupClassDialog(existing: existing),
+    );
+    if (draft == null) return;
+
+    final saved = await ref
+        .read(adminActionProvider.notifier)
+        .run(
+          (repository) => repository.saveGroupClass(
+            groupClass: draft,
+            authorId: ref.read(adminAuthorIdProvider),
+          ),
+          refresh: [classesProvider],
+        );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(saved ? 'Saved.' : 'Could not save that.')),
+    );
+  }
 
   Future<void> _addSession(GroupClass groupClass) async {
     final draft = await showDialog<({DateTime startsAt, String instructor, int capacity})>(
@@ -62,7 +86,14 @@ class _AdminClassesScreenState extends ConsumerState<AdminClassesScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const AdminHeader(title: 'Classes'),
+        AdminHeader(
+          title: 'Classes',
+          action: FilledButton.icon(
+            onPressed: () => _editClass(),
+            icon: const Icon(Icons.add),
+            label: const Text('New class'),
+          ),
+        ),
         Expanded(
           child: classes.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -86,6 +117,11 @@ class _AdminClassesScreenState extends ConsumerState<AdminClassesScreen> {
                                 ),
                                 onTap: () => setState(
                                   () => _selectedClassId = groupClass.id,
+                                ),
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.edit_outlined),
+                                  onPressed: () =>
+                                      _editClass(existing: groupClass),
                                 ),
                               ),
                           ],

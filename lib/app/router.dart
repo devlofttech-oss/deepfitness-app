@@ -12,6 +12,7 @@ import 'package:deepfitness/features/auth/presentation/onboarding_screen.dart';
 import 'package:deepfitness/features/auth/presentation/renewal_screen.dart';
 import 'package:deepfitness/features/auth/presentation/sign_in_screen.dart';
 import 'package:deepfitness/features/auth/presentation/verify_code_screen.dart';
+import 'package:deepfitness/features/events/presentation/event_detail_screen.dart';
 import 'package:deepfitness/features/events/presentation/events_screen.dart';
 import 'package:deepfitness/features/group_classes/presentation/class_detail_screen.dart';
 import 'package:deepfitness/features/group_classes/presentation/classes_screen.dart';
@@ -20,6 +21,7 @@ import 'package:deepfitness/features/home/presentation/home_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/exercise_screen.dart';
+import 'package:deepfitness/features/workout_plan/presentation/plan_history_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/plan_screen.dart';
 import 'package:deepfitness/features/workout_report/presentation/report_screen.dart';
 import 'package:flutter/material.dart';
@@ -32,7 +34,13 @@ import 'package:go_router/go_router.dart';
 /// stay open, and training does not.
 // Reports are included: a lapsed member keeps read access to their own
 // history, which is the point of a lapse not being a sign-out.
-const _lapsedAllowed = {'/renew', '/profile', '/reports', '/notices'};
+const _lapsedAllowed = {
+  '/renew',
+  '/profile',
+  '/reports',
+  '/notices',
+  '/plan/history',
+};
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final session = ref.watch(authControllerProvider);
@@ -107,6 +115,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: 'exercise',
             builder: (context, state) => const ExerciseScreen(),
           ),
+          GoRoute(
+            path: 'history',
+            builder: (context, state) => const PlanHistoryScreen(),
+          ),
         ],
       ),
       ShellRoute(
@@ -158,6 +170,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/events',
         builder: (context, state) => const EventsScreen(),
+        routes: [
+          GoRoute(
+            path: ':eventId',
+            builder: (context, state) =>
+                EventDetailScreen(eventId: state.pathParameters['eventId']!),
+          ),
+        ],
       ),
       GoRoute(
         path: '/reports',

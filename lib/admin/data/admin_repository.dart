@@ -5,6 +5,7 @@ import 'package:deepfitness/core/models/assigned_plan.dart';
 import 'package:deepfitness/core/models/base_fields.dart';
 import 'package:deepfitness/core/models/completion_log.dart';
 import 'package:deepfitness/core/models/event.dart';
+import 'package:deepfitness/core/models/group_class.dart';
 import 'package:deepfitness/core/models/exercise.dart';
 import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/models/workout_plan.dart';
@@ -253,6 +254,36 @@ class AdminRepository extends BaseRepository {
   }
 
   // ---------------------------------------------------------------- classes
+
+  /// Creates or edits a class in the library.
+  Future<void> saveGroupClass({
+    required GroupClass groupClass,
+    required String authorId,
+  }) {
+    return guard(() async {
+      final collection = firestore.collection(Collections.groupClasses);
+      final data = {
+        'title': groupClass.title,
+        'description': groupClass.description,
+        'videoProvider': groupClass.videoProvider.name,
+        'videoId': groupClass.videoId,
+        'thumbnailUrl': groupClass.thumbnailUrl,
+        'durationMins': groupClass.durationMins,
+      };
+
+      if (groupClass.id.isEmpty) {
+        await collection.add({
+          ...data,
+          ...BaseFields.onCreate(createdBy: authorId),
+        });
+      } else {
+        await collection.doc(groupClass.id).update({
+          ...data,
+          ...BaseFields.onUpdate(),
+        });
+      }
+    });
+  }
 
   Future<void> saveClassSession({
     required String classId,

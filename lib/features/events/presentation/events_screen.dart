@@ -3,6 +3,7 @@ import 'package:deepfitness/core/models/event.dart';
 import 'package:deepfitness/features/events/presentation/events_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 /// Upcoming gym events, with an RSVP on each.
 class EventsScreen extends ConsumerStatefulWidget {
@@ -84,70 +85,76 @@ class _EventCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final starts = event.startsAt;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(16),
-      ),
+    return Material(
+      color: AppColors.surface(context),
+      borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (event.imageUrl != null)
-            Image.network(
-              event.imageUrl!,
-              height: 150,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  [
-                    if (starts != null)
-                      '${starts.day}/${starts.month} at '
-                          '${starts.hour.toString().padLeft(2, '0')}:'
-                          '${starts.minute.toString().padLeft(2, '0')}',
-                    if (event.venue.isNotEmpty) event.venue,
-                  ].join(' · '),
-                  style: TextStyle(color: AppColors.secondaryText(context)),
-                ),
-                if (event.description.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(event.description),
-                ],
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FilledButton.tonalIcon(
-                    onPressed: () => ref
-                        .read(rsvpControllerProvider.notifier)
-                        .toggle(eventId: event.id, going: going),
-                    icon: Icon(
-                      going ? Icons.check_circle : Icons.add_circle_outline,
+      child: InkWell(
+        onTap: () => context.push('/events/${event.id}'),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (event.imageUrl != null)
+              Image.network(
+                event.imageUrl!,
+                height: 150,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.title,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    [
+                      if (starts != null)
+                        '${starts.day}/${starts.month} at '
+                            '${starts.hour.toString().padLeft(2, '0')}:'
+                            '${starts.minute.toString().padLeft(2, '0')}',
+                      if (event.venue.isNotEmpty) event.venue,
+                    ].join(' · '),
+                    style: TextStyle(color: AppColors.secondaryText(context)),
+                  ),
+                  if (event.description.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      event.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    label: Text(going ? "You're going" : 'Count me in'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: going
-                          ? AppColors.success.withValues(alpha: 0.18)
-                          : AppColors.chipBackground(context),
-                      foregroundColor:
-                          going ? AppColors.success : AppColors.gold,
+                  ],
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.tonalIcon(
+                      onPressed: () => ref
+                          .read(rsvpControllerProvider.notifier)
+                          .toggle(eventId: event.id, going: going),
+                      icon: Icon(
+                        going ? Icons.check_circle : Icons.add_circle_outline,
+                      ),
+                      label: Text(going ? "You're going" : 'Count me in'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: going
+                            ? AppColors.success.withValues(alpha: 0.18)
+                            : AppColors.chipBackground(context),
+                        foregroundColor: going
+                            ? AppColors.success
+                            : AppColors.gold,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

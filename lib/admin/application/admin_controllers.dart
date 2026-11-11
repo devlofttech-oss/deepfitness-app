@@ -1,4 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deepfitness/admin/data/admin_repository.dart';
+import 'package:deepfitness/core/repositories/base_repository.dart';
 import 'package:deepfitness/core/models/completion_log.dart';
 import 'package:deepfitness/core/models/exercise.dart';
 import 'package:deepfitness/core/models/member.dart';
@@ -11,17 +13,82 @@ final adminAuthorIdProvider = Provider<String>(
   (ref) => ref.watch(authControllerProvider).value?.user?.uid ?? '',
 );
 
-final adminMembersProvider = FutureProvider<List<Member>>(
-  (ref) async => (await ref.watch(adminRepositoryProvider).members()).items,
-);
+/// A dashboard list that holds one page and can ask for the next.
+///
+/// The repositories have always paged; this is what lets the screens use
+/// it, so a gym with a thousand members does not pull the lot to render
+/// the first screenful.
+abstract class PagedAdminList<T> extends AsyncNotifier<List<T>> {
+  Page<T>? _lastPage;
 
-final adminExercisesProvider = FutureProvider<List<Exercise>>(
-  (ref) async => (await ref.watch(adminRepositoryProvider).exercises()).items,
-);
+  /// Fetches one page, starting after [startAfter] when given.
+  Future<Page<T>> fetch(
+    AdminRepository repository, {
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  });
 
-final adminPlansProvider = FutureProvider<List<WorkoutPlan>>(
-  (ref) async => (await ref.watch(adminRepositoryProvider).plans()).items,
-);
+  @override
+  Future<List<T>> build() async {
+    final page = await fetch(ref.watch(adminRepositoryProvider));
+    _lastPage = page;
+    return page.items;
+  }
+
+  bool get hasMore => _lastPage?.hasMore ?? false;
+
+  Future<void> loadMore() async {
+    final cursor = _lastPage;
+    if (cursor == null || !cursor.hasMore || state.isLoading) return;
+
+    final current = state.value ?? const [];
+    final next = await fetch(
+      ref.read(adminRepositoryProvider),
+      startAfter: cursor.lastDocument,
+    );
+
+    _lastPage = next;
+    state = AsyncData([...current, ...next.items]);
+  }
+}
+
+final adminMembersProvider =
+    AsyncNotifierProvider<AdminMembersList, List<Member>>(
+      AdminMembersList.new,
+    );
+
+class AdminMembersList extends PagedAdminList<Member> {
+  @override
+  Future<Page<Member>> fetch(
+    AdminRepository repository, {
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) => repository.members(startAfter: startAfter);
+}
+
+final adminExercisesProvider =
+    AsyncNotifierProvider<AdminExercisesList, List<Exercise>>(
+      AdminExercisesList.new,
+    );
+
+class AdminExercisesList extends PagedAdminList<Exercise> {
+  @override
+  Future<Page<Exercise>> fetch(
+    AdminRepository repository, {
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) => repository.exercises(startAfter: startAfter);
+}
+
+final adminPlansProvider =
+    AsyncNotifierProvider<AdminPlansList, List<WorkoutPlan>>(
+      AdminPlansList.new,
+    );
+
+class AdminPlansList extends PagedAdminList<WorkoutPlan> {
+  @override
+  Future<Page<WorkoutPlan>> fetch(
+    AdminRepository repository, {
+    DocumentSnapshot<Map<String, dynamic>>? startAfter,
+  }) => repository.plans(startAfter: startAfter);
+}
 
 final memberHistoryProvider =
     FutureProvider.family<List<CompletionLog>, String>(

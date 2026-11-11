@@ -11,6 +11,16 @@ final currentPlanProvider = StreamProvider<AssignedPlan?>((ref) {
   return ref.watch(assignedPlanRepositoryProvider).watchCurrent(memberId);
 });
 
+/// Every plan the member has been assigned, newest first.
+final planHistoryProvider = FutureProvider<List<AssignedPlan>>((ref) async {
+  final memberId = ref.watch(authControllerProvider).value?.member?.id;
+  if (memberId == null) return const [];
+  final page = await ref
+      .watch(assignedPlanRepositoryProvider)
+      .history(memberId);
+  return page.items;
+});
+
 final planProgressControllerProvider =
     AsyncNotifierProvider<PlanProgressController, void>(
       PlanProgressController.new,
