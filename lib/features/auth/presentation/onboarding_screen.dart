@@ -52,8 +52,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Welcome to Deep Fitness',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    'WELCOME TO DEEP FITNESS',
+                    style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 24),
                   TextField(
@@ -71,10 +71,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  if (busy)
-                    const Center(child: CircularProgressIndicator())
-                  else
-                    DfPrimaryButton(label: 'Continue', onPressed: _submit),
+                  DfPrimaryButton(
+                    label: 'Continue',
+                    busy: busy,
+                    onPressed: _submit,
+                  ),
                 ],
               ),
             ),

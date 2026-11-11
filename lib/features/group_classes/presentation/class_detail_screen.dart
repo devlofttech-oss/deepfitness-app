@@ -42,8 +42,8 @@ class ClassDetailScreen extends ConsumerWidget {
                             const SizedBox(height: 24),
                           ],
                           Text(
-                            'Live sessions',
-                            style: Theme.of(context).textTheme.titleLarge,
+                            'LIVE SESSIONS',
+                            style: Theme.of(context).textTheme.headlineSmall,
                           ),
                           const SizedBox(height: 12),
                           sessions.when(

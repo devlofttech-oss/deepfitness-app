@@ -6,7 +6,6 @@ import 'package:deepfitness/core/widgets/df_chrome.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/events/presentation/events_controller.dart';
 import 'package:deepfitness/features/workout_plan/application/assigned_plan_controller.dart';
-import 'package:deepfitness/features/workout_report/domain/report_range.dart';
 import 'package:deepfitness/features/workout_report/presentation/report_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

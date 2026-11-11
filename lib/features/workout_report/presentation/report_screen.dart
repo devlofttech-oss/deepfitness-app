@@ -1,4 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/features/workout_report/domain/report_range.dart';
 import 'package:deepfitness/features/workout_report/domain/workout_report.dart';
 import 'package:deepfitness/features/workout_report/presentation/report_controller.dart';
@@ -38,7 +39,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     return Scaffold(
       backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Your progress'),
+        title: const Text('YOUR PROGRESS'),
         actions: [
           if (report.hasValue && !report.requireValue.isEmpty)
             IconButton(
@@ -71,13 +72,16 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 padding: EdgeInsets.symmetric(vertical: 60),
                 child: Center(child: CircularProgressIndicator()),
               ),
-              error: (_, _) => const _ReportMessage(
-                'Could not load your progress. Check your connection.',
+              error: (_, _) => const DfMessage(
+                icon: Icons.wifi_off,
+                title: 'Could not load your progress',
+                body: 'Check your connection and try again.',
               ),
               data: (data) => data.isEmpty
-                  ? const _ReportMessage(
-                      'Nothing logged in this period yet. '
-                      'Finish an exercise and it will show up here.',
+                  ? const DfMessage(
+                      icon: Icons.insights,
+                      title: 'Nothing logged in this period',
+                      body: 'Finish an exercise and it will show up here.',
                     )
                   : RepaintBoundary(
                       key: _summaryKey,
@@ -134,8 +138,8 @@ class ReportSummary extends StatelessWidget {
           ),
           const SizedBox(height: 28),
           Text(
-            'Sets completed per day',
-            style: Theme.of(context).textTheme.titleMedium,
+            'SETS COMPLETED PER DAY',
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 4),
           Text(
@@ -173,60 +177,28 @@ class _RangeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Filters sit in one row above the chart, as the system asks.
     return Row(
       children: [
-        _RangeChip(
+        DfChip(
           label: 'Week',
           selected: range.kind == ReportRangeKind.week,
           onTap: onWeek,
         ),
-        const SizedBox(width: 8),
-        _RangeChip(
+        const SizedBox(width: Insets.sm),
+        DfChip(
           label: 'Month',
           selected: range.kind == ReportRangeKind.month,
           onTap: onMonth,
         ),
-        const SizedBox(width: 8),
-        _RangeChip(
+        const SizedBox(width: Insets.sm),
+        DfChip(
           label: 'Custom',
+          icon: Icons.calendar_month,
           selected: range.kind == ReportRangeKind.custom,
           onTap: onCustom,
         ),
       ],
-    );
-  }
-}
-
-class _RangeChip extends StatelessWidget {
-  const _RangeChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppColors.primaryContainer : AppColors.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(999),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? AppColors.onPrimaryContainer : AppColors.onSurface,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -244,51 +216,25 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
+    return DfCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: Insets.sm,
+        vertical: Insets.md,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(value, style: Theme.of(context).textTheme.headlineSmall),
+          DfLabel(label),
+          const SizedBox(height: Insets.sm),
+          Text(value, style: Theme.of(context).textTheme.displayMedium),
           const SizedBox(height: 2),
           Text(
             caption,
-            style: TextStyle(
-              color: AppColors.onSurfaceVariant,
-              fontSize: 11,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.outline),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ReportMessage extends StatelessWidget {
-  const _ReportMessage(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.onSurfaceVariant),
       ),
     );
   }

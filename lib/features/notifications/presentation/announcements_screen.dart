@@ -1,4 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/core/models/announcement.dart';
 import 'package:deepfitness/features/notifications/presentation/announcements_controller.dart';
 import 'package:flutter/material.dart';
@@ -17,15 +18,21 @@ class AnnouncementsScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: const Text('Notices')),
+      appBar: AppBar(title: const Text('NOTICES')),
       body: SafeArea(
         child: announcements.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => const _Message(
-            'Could not load notices. Check your connection.',
+          error: (_, _) => const DfMessage(
+            icon: Icons.wifi_off,
+            title: 'Could not load notices',
+            body: 'Check your connection and try again.',
           ),
           data: (list) => list.isEmpty
-              ? const _Message('Nothing from the gym yet.')
+              ? const DfMessage(
+                  icon: Icons.campaign_outlined,
+                  title: 'Nothing from the gym yet',
+                  body: 'Announcements and reminders arrive here.',
+                )
               : RefreshIndicator(
                   onRefresh: () async => ref.invalidate(announcementsProvider),
                   child: ListView.separated(
@@ -51,18 +58,13 @@ class _AnnouncementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final sent = announcement.sentAt;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return DfCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            announcement.title,
-            style: Theme.of(context).textTheme.titleMedium,
+            announcement.title.toUpperCase(),
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
           if (sent != null) ...[
             const SizedBox(height: 4),
@@ -79,26 +81,6 @@ class _AnnouncementCard extends StatelessWidget {
             Text(announcement.body),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _Message extends StatelessWidget {
-  const _Message(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.onSurfaceVariant),
-        ),
       ),
     );
   }

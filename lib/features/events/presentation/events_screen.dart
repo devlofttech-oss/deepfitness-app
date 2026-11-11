@@ -1,4 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/core/models/event.dart';
 import 'package:deepfitness/features/events/presentation/events_controller.dart';
 import 'package:flutter/material.dart';
@@ -46,23 +47,35 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: const Text('Events')),
+      appBar: AppBar(title: const Text('EVENTS')),
       body: SafeArea(
         child: events.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => const _EventsMessage(
-            'Could not load events. Check your connection.',
+          error: (_, _) => const DfMessage(
+            icon: Icons.wifi_off,
+            title: 'Could not load events',
+            body: 'Check your connection and try again.',
           ),
           data: (list) => list.isEmpty
-              ? const _EventsMessage('No events coming up just now.')
+              ? const DfMessage(
+                  icon: Icons.event_busy,
+                  title: 'Nothing coming up',
+                  body: 'New gym events will show up here.',
+                )
               : RefreshIndicator(
                   onRefresh: () async =>
                       ref.invalidate(upcomingEventsProvider),
                   child: ListView.separated(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(
+                      Insets.margin,
+                      Insets.md,
+                      Insets.margin,
+                      Insets.xl,
+                    ),
                     itemCount: list.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: 16),
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: Insets.sm),
                     itemBuilder: (context, index) => _EventCard(
                       event: list[index],
                       going: rsvps.contains(list[index].id),
@@ -107,8 +120,8 @@ class _EventCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    event.title,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    event.title.toUpperCase(),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -154,26 +167,6 @@ class _EventCard extends ConsumerWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EventsMessage extends StatelessWidget {
-  const _EventsMessage(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.onSurfaceVariant),
         ),
       ),
     );

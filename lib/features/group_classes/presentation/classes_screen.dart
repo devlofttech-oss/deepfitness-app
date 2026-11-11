@@ -1,4 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/core/models/group_class.dart';
 import 'package:deepfitness/features/group_classes/presentation/classes_controller.dart';
 import 'package:flutter/material.dart';
@@ -15,19 +16,31 @@ class ClassesScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: const Text('Classes')),
+      appBar: AppBar(title: const Text('CLASSES')),
       body: SafeArea(
         child: classes.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => const _Message(
-            'Could not load classes. Check your connection.',
+          error: (_, _) => const DfMessage(
+            icon: Icons.wifi_off,
+            title: 'Could not load classes',
+            body: 'Check your connection and try again.',
           ),
           data: (list) => list.isEmpty
-              ? const _Message('No classes just yet.')
+              ? const DfMessage(
+                  icon: Icons.self_improvement,
+                  title: 'No classes yet',
+                  body: 'The gym has not published any class videos.',
+                )
               : ListView.separated(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.margin,
+                    Insets.md,
+                    Insets.margin,
+                    Insets.xl,
+                  ),
                   itemCount: list.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 16),
+                  separatorBuilder: (_, _) =>
+                      const SizedBox(height: Insets.sm),
                   itemBuilder: (context, index) =>
                       _ClassCard(groupClass: list[index]),
                 ),
@@ -77,42 +90,17 @@ class _ClassCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    groupClass.title,
-                    style: Theme.of(context).textTheme.titleLarge,
+                    groupClass.title.toUpperCase(),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   if (groupClass.durationMins > 0) ...[
                     const SizedBox(height: 4),
-                    Text(
-                      '${groupClass.durationMins} min',
-                      style: TextStyle(
-                        color: AppColors.onSurfaceVariant,
-                      ),
-                    ),
+                    DfLabel('${groupClass.durationMins} min'),
                   ],
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Message extends StatelessWidget {
-  const _Message(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.onSurfaceVariant),
         ),
       ),
     );

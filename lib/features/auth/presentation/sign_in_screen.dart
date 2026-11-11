@@ -1,4 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/services/auth_service.dart';
 import 'package:deepfitness/core/widgets/df_button.dart';
@@ -102,45 +103,75 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox.shrink(),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Sign in',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall,
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryContainer,
+                      borderRadius: BorderRadius.circular(Radii.md),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'D',
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(color: AppColors.onPrimaryContainer),
+                    ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: Insets.lg),
+                  Text(
+                    'DEEP FITNESS',
+                    style: Theme.of(context).textTheme.headlineLarge,
+                  ),
+                  const SizedBox(height: Insets.xs),
+                  const DfLabel(
+                    'Mysore • Athlete Portal',
+                    colour: AppColors.primaryContainer,
+                  ),
+                  const SizedBox(height: Insets.md),
+                  Text(
+                    _useEmail
+                        ? 'Sign in with the email address the gym has on '
+                              'file for you.'
+                        : 'Enter your registered mobile number to reach '
+                              'your workouts and training logs.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: Insets.lg),
                   if (_useEmail) ..._emailFields() else ..._phoneFields(),
                   if (_error != null) ...[
-                    const SizedBox(height: 16),
+                    const SizedBox(height: Insets.md),
                     Text(
                       _error!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.error),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.error,
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 24),
-                  if (_busy)
-                    const Center(child: CircularProgressIndicator())
-                  else
-                    DfPrimaryButton(
-                      label: _useEmail ? 'Sign in' : 'Send code',
-                      onPressed: _useEmail ? _signInWithEmail : _sendCode,
-                    ),
-                  const SizedBox(height: 12),
-                  TextButton(
-                    onPressed: _busy
-                        ? null
-                        : () => setState(() {
-                            _useEmail = !_useEmail;
-                            _error = null;
-                          }),
-                    child: Text(
-                      _useEmail
-                          ? 'Use my phone number instead'
-                          : 'Use email and password instead',
+                  const SizedBox(height: Insets.lg),
+                  DfPrimaryButton(
+                    label: _useEmail ? 'Sign in' : 'Get verification code',
+                    busy: _busy,
+                    onPressed: _useEmail ? _signInWithEmail : _sendCode,
+                  ),
+                  const SizedBox(height: Insets.sm),
+                  Center(
+                    child: TextButton(
+                      onPressed: _busy
+                          ? null
+                          : () => setState(() {
+                              _useEmail = !_useEmail;
+                              _error = null;
+                            }),
+                      child: Text(
+                        (_useEmail
+                                ? 'Sign in with mobile instead'
+                                : 'Sign in with member email instead')
+                            .toUpperCase(),
+                      ),
                     ),
                   ),
                 ],
@@ -161,8 +192,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]')),
       ],
       decoration: const InputDecoration(
-        labelText: 'Phone number',
-        helperText: 'We will text you a six digit code.',
+        labelText: 'Mobile number',
+        prefixText: '+91  ',
+        helperText: 'We will send a 6-digit one-time code by SMS.',
       ),
     ),
   ];

@@ -36,9 +36,9 @@ class RenewalScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'Your membership has lapsed',
+                  'YOUR MEMBERSHIP HAS LAPSED',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall,
+                  style: Theme.of(context).textTheme.headlineLarge,
                 ),
                 const SizedBox(height: 12),
                 Text(

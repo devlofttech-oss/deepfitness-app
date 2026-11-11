@@ -1,5 +1,6 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/widgets/df_button.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:flutter/material.dart';
 
 /// The reasons offered first, so most skips take one tap.
@@ -19,9 +20,12 @@ Future<String?> showSkipReasonSheet(BuildContext context) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.surfaceContainerLow,
+    // Level 2 surface with its own border, so it reads as floating
+    // above the cards rather than merging with them.
+    backgroundColor: AppColors.surfaceContainerHigh,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.lg)),
+      side: BorderSide(color: AppColors.surfaceContainerHighest),
     ),
     builder: (context) => const _SkipReasonSheet(),
   );
@@ -62,29 +66,57 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Why are you skipping this?',
-            style: Theme.of(context).textTheme.titleLarge,
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(Radii.full),
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: Insets.lg),
+          Text(
+            'WHY ARE YOU SKIPPING THIS?',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: Insets.xs),
+          Text(
+            'The plan still moves on, so you are never stuck. The reason '
+            'is what makes this readable in your report later.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: Insets.md),
           // Plain tiles rather than RadioListTile: the radio group API has
           // churned across Flutter versions and this needs no part of it.
           for (final reason in [..._presetReasons, _otherLabel])
-            InkWell(
-              onTap: () => setState(() => _selected = reason),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+            Padding(
+              padding: const EdgeInsets.only(bottom: Insets.sm),
+              child: DfCard(
+                onTap: () => setState(() => _selected = reason),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Insets.md,
+                  vertical: Insets.md,
+                ),
+                colour: AppColors.surfaceContainer,
+                borderColour: _selected == reason
+                    ? AppColors.primaryContainer
+                    : AppColors.surfaceContainerHighest,
                 child: Row(
                   children: [
                     Icon(
                       _selected == reason
                           ? Icons.radio_button_checked
                           : Icons.radio_button_unchecked,
+                      size: 20,
                       color: _selected == reason
                           ? AppColors.primaryContainer
                           : AppColors.outline,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: Insets.md),
                     Expanded(child: Text(reason)),
                   ],
                 ),
@@ -98,13 +130,16 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
               decoration: const InputDecoration(labelText: 'Tell us briefly'),
               onChanged: (_) => setState(() {}),
             ),
-          const SizedBox(height: 24),
+          const SizedBox(height: Insets.md),
           DfPrimaryButton(
             label: 'Skip and move on',
+            trailingIcon: Icons.skip_next,
             // Disabled until there is something to record, because a skip
             // without a reason is exactly what the rule is there to stop.
+            // Disabled until there is a reason, because a skip without
+            // one is exactly what the rule exists to stop.
             onPressed: _reason.isEmpty
-                ? () {}
+                ? null
                 : () => Navigator.of(context).pop(_reason),
           ),
           const SizedBox(height: 8),

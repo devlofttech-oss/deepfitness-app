@@ -17,7 +17,7 @@ class PlanHistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: const Text('Past plans')),
+      appBar: AppBar(title: const Text('PAST PLANS')),
       body: SafeArea(
         child: history.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -81,8 +81,8 @@ class _HistoryCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  plan.title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  plan.title.toUpperCase(),
+                  style: Theme.of(context).textTheme.headlineSmall,
                 ),
               ),
               if (isCurrent)

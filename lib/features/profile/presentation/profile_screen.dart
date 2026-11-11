@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/widgets/df_button.dart';
@@ -92,10 +93,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(title: const Text('PROFILE')),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(
+            Insets.margin,
+            Insets.lg,
+            Insets.margin,
+            Insets.xl,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -136,15 +142,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 ),
               ],
               const SizedBox(height: 24),
-              if (saving.isLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                DfPrimaryButton(label: 'Save', onPressed: _save),
-              const SizedBox(height: 12),
-              TextButton(
+              DfPrimaryButton(
+                label: 'Save changes',
+                trailingIcon: Icons.check,
+                busy: saving.isLoading,
+                onPressed: _save,
+              ),
+              const SizedBox(height: Insets.sm),
+              DfSecondaryButton(
+                label: 'Sign out',
+                icon: Icons.logout,
                 onPressed: () =>
                     ref.read(authControllerProvider.notifier).signOut(),
-                child: const Text('Sign out'),
               ),
             ],
           ),
@@ -191,27 +200,22 @@ class _MembershipPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final expiry = member.expiryDate;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-      ),
+    return DfCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Membership', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const DfLabel('Membership'),
+          const SizedBox(height: Insets.sm),
           Text(
             member.isLapsed
-                ? 'Lapsed. Speak to the gym to renew.'
+                ? 'LAPSED'
                 : expiry == null
-                ? 'Active'
-                : 'Active until ${expiry.day}/${expiry.month}/${expiry.year}',
-            style: TextStyle(
+                ? 'ACTIVE'
+                : 'ACTIVE UNTIL ${expiry.day}/${expiry.month}/${expiry.year}',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               color: member.isLapsed
                   ? AppColors.error
-                  : AppColors.onSurfaceVariant,
+                  : AppColors.primaryContainer,
             ),
           ),
         ],

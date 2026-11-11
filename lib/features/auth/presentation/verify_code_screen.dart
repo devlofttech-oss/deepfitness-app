@@ -99,8 +99,8 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Enter the code',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    'ENTER THE CODE',
+                    style: Theme.of(context).textTheme.headlineLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -125,10 +125,11 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  if (_busy)
-                    const Center(child: CircularProgressIndicator())
-                  else
-                    DfPrimaryButton(label: 'Verify', onPressed: _confirm),
+                  DfPrimaryButton(
+                    label: 'Verify',
+                    busy: _busy,
+                    onPressed: _confirm,
+                  ),
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: _busy ? null : _resend,
