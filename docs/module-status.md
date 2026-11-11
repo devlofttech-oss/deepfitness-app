@@ -61,7 +61,7 @@ still need to pass before any of this counts as done.
 - [x] Widget tests for the five states
 - [x] Unit tests for unlock, advance, completion and progress
 - [x] Plan history, readable even when a membership has lapsed
-- [ ] The assignment side itself, which is dashboard work in module 08
+- [x] The assignment side, built in the dashboard (module 08)
 
 Reference: `legacy/supabase-era/workout/`, `legacy/supabase-era/home/`.
 
@@ -121,7 +121,7 @@ onto a day.
       the trigger owns `bookedCount` on a cancellation, so the client no
       longer decrements it too
 - [x] Push to the promoted member
-- [ ] Admin view listing bookings per session — module 08
+- [x] Admin view listing bookings per session (module 08)
 - [x] Rules tests for booking, cancelling and the counters a member
       may move, including the full transaction the app commits
 
