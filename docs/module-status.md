@@ -4,16 +4,17 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 92% built.**
+**Overall: roughly 93% built.**
 
 The designs arrived after the modules were written, so the figures below
 now carry a design column: a module can be functionally complete and
 still owe work against the screens in `stitch/`.
 
-Nothing in this repository has been compiled or analysed yet. Percentages
-below describe code written against the specification, not code proven to
-run. `flutter analyze`, `flutter test` and the Firestore rules tests all
-still need to pass before any of this counts as done.
+`flutter analyze` is clean and all 84 tests pass on Flutter 3.44.1 with
+Dart 3.12.1, and the Cloud Functions typecheck clean. What remains
+unproven is everything that needs a device, a browser or the emulator
+suite: the rules tests have never been run, and no screen has been seen
+on real hardware.
 
 | # | Module | Built | Matches the designs |
 |---|--------|-------|---------------------|
@@ -25,7 +26,7 @@ still need to pass before any of this counts as done.
 | 06 | Notifications | 100% | Yes |
 | 07 | iOS app | 35% | n/a |
 | 08 | Admin dashboard (Flutter Web) | 90% | No designs supplied |
-| — | Cross-cutting (rules, indexes, functions, release) | 85% | — |
+| — | Cross-cutting (rules, indexes, functions, release) | 90% | — |
 
 ---
 
@@ -199,7 +200,8 @@ account. The steps are written out in `docs/ios-setup.md`.
 - [x] Models over maps, repositories only
 - [x] Rules tests in the emulator, per role — `rules-tests/`
 - [x] Integration test: assigned plan, complete, skip, report
-- [ ] `flutter analyze` and `flutter test` clean
+- [x] `flutter analyze` and `flutter test` clean — verified on
+      Flutter 3.44.1 / Dart 3.12.1: no issues, 84 tests passing
 - [x] Analytics and Crashlytics, release builds only
 - [x] Emulator wiring behind `--dart-define=USE_EMULATOR=true`
 - [ ] Staged rollout and the release checklist
@@ -236,11 +238,10 @@ Still open on the design side:
 
 Every remaining item needs something outside this repository.
 
-- **The Dart has not been compiled.** No Flutter SDK in the environment
-  the code is written in. The Cloud Functions now typecheck clean here,
-  but `flutter analyze` and `flutter test` have still never run against
-  the app, and the newest package versions were chosen without a
-  resolver.
+- **Nothing has been run on a device.** Analyze and the unit and widget
+  tests pass, and the functions typecheck, but no screen has been seen on
+  real hardware and no function has been deployed. A passing widget test
+  says a layout does not throw, not that it looks right.
 - **The rules tests have never been run.** They are written against the
   real rules files and need the emulators and a JDK.
 - **iOS** needs a Mac, Xcode and the Apple Developer account.
