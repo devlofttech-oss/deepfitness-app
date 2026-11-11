@@ -16,7 +16,7 @@ class AnnouncementsScreen extends ConsumerWidget {
     final announcements = ref.watch(announcementsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: const Text('Notices')),
       body: SafeArea(
         child: announcements.when(
@@ -54,7 +54,7 @@ class _AnnouncementCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
+        color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -69,7 +69,7 @@ class _AnnouncementCard extends StatelessWidget {
             Text(
               '${sent.day}/${sent.month}/${sent.year}',
               style: TextStyle(
-                color: AppColors.secondaryText(context),
+                color: AppColors.onSurfaceVariant,
                 fontSize: 12,
               ),
             ),
@@ -97,7 +97,7 @@ class _Message extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.secondaryText(context)),
+          style: TextStyle(color: AppColors.onSurfaceVariant),
         ),
       ),
     );

@@ -223,7 +223,7 @@ class _SessionTile extends ConsumerWidget {
         '${session.waitlistCount > 0 ? ' · ${session.waitlistCount} waiting' : ''}'
         '${session.instructor.isEmpty ? '' : ' · ${session.instructor}'}',
         style: TextStyle(
-          color: session.isFull ? AppColors.gold : null,
+          color: session.isFull ? AppColors.primaryContainer : null,
         ),
       ),
       children: [

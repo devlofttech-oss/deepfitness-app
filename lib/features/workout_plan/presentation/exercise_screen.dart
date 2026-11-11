@@ -1,6 +1,6 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/models/assigned_plan.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:deepfitness/features/workout_plan/application/assigned_plan_controller.dart';
 import 'package:deepfitness/features/workout_plan/presentation/skip_reason_sheet.dart';
 import 'package:flutter/material.dart';
@@ -66,14 +66,14 @@ class _ExerciseScreenState extends ConsumerState<ExerciseScreen> {
 
     if (plan == null || exercise == null) {
       return Scaffold(
-        backgroundColor: AppColors.canvas(context),
+        backgroundColor: AppColors.surface,
         appBar: AppBar(),
         body: const Center(child: Text('Nothing to do right now.')),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: Text(exercise.name)),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -100,7 +100,7 @@ class _ExerciseScreenState extends ConsumerState<ExerciseScreen> {
                 const SizedBox(height: 12),
                 Text(
                   exercise.description,
-                  style: TextStyle(color: AppColors.secondaryText(context)),
+                  style: TextStyle(color: AppColors.onSurfaceVariant),
                 ),
               ],
               const SizedBox(height: 24),
@@ -115,14 +115,13 @@ class _ExerciseScreenState extends ConsumerState<ExerciseScreen> {
               if (busy)
                 const Center(child: CircularProgressIndicator())
               else ...[
-                PrimaryButton(
+                DfPrimaryButton(
                   label: 'Mark complete',
                   onPressed: () => _complete(plan, exercise),
                 ),
                 const SizedBox(height: 12),
-                PrimaryButton(
+                DfSecondaryButton(
                   label: 'Skip this exercise',
-                  outline: true,
                   onPressed: () => _skip(plan, exercise),
                 ),
               ],
@@ -168,12 +167,12 @@ class _SetCounter extends StatelessWidget {
               child: CircleAvatar(
                 radius: 22,
                 backgroundColor: filled
-                    ? AppColors.gold
-                    : AppColors.surface(context),
+                    ? AppColors.primaryContainer
+                    : AppColors.surfaceContainerLow,
                 child: Text(
                   '${index + 1}',
                   style: TextStyle(
-                    color: filled ? AppColors.black : AppColors.muted,
+                    color: filled ? AppColors.onPrimaryContainer : AppColors.outline,
                     fontWeight: FontWeight.w700,
                   ),
                 ),

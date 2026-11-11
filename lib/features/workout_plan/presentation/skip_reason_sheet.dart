@@ -1,5 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:flutter/material.dart';
 
 /// The reasons offered first, so most skips take one tap.
@@ -19,7 +19,7 @@ Future<String?> showSkipReasonSheet(BuildContext context) {
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: AppColors.surface(context),
+    backgroundColor: AppColors.surfaceContainerLow,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
@@ -81,8 +81,8 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
                           ? Icons.radio_button_checked
                           : Icons.radio_button_unchecked,
                       color: _selected == reason
-                          ? AppColors.gold
-                          : AppColors.muted,
+                          ? AppColors.primaryContainer
+                          : AppColors.outline,
                     ),
                     const SizedBox(width: 12),
                     Expanded(child: Text(reason)),
@@ -99,7 +99,7 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
               onChanged: (_) => setState(() {}),
             ),
           const SizedBox(height: 24),
-          PrimaryButton(
+          DfPrimaryButton(
             label: 'Skip and move on',
             // Disabled until there is something to record, because a skip
             // without a reason is exactly what the rule is there to stop.

@@ -134,7 +134,7 @@ class _AdminAnnouncementsScreenState
                     ? Text(
                         'Nothing sent yet.',
                         style: TextStyle(
-                          color: AppColors.secondaryText(context),
+                          color: AppColors.onSurfaceVariant,
                         ),
                       )
                     : Column(

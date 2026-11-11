@@ -56,18 +56,16 @@ void main() {
   testWidgets('a fresh plan shows the first exercise active', (tester) async {
     await pumpList(tester, assigned: plan(currentIndex: 0));
 
-    expect(find.text('3 sets of 10'), findsOneWidget);
-    expect(find.text('0 of 3 done'), findsOneWidget);
+    expect(find.text('3 sets × 10 reps'), findsWidgets);
+    expect(find.text('UP NEXT'), findsOneWidget);
   });
 
   testWidgets('later exercises are locked', (tester) async {
     await pumpList(tester, assigned: plan(currentIndex: 0));
 
-    expect(
-      find.text('Unlocks when the one before it is done'),
-      findsNWidgets(2),
-    );
-    expect(find.byIcon(Icons.lock_outline), findsNWidgets(2));
+    expect(find.text('Unlocks in sequence'), findsNWidgets(2));
+    // Two locked rows, each with a glyph and a badge icon.
+    expect(find.byIcon(Icons.lock_outline), findsNWidgets(4));
   });
 
   testWidgets('a finished exercise reads as completed', (tester) async {
@@ -77,8 +75,8 @@ void main() {
       logs: [log(skipped: false)],
     );
 
-    expect(find.text('Completed'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle), findsOneWidget);
+    expect(find.text('DONE'), findsOneWidget);
+    expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
   testWidgets('a skipped exercise is shown apart from a completed one', (
@@ -92,8 +90,8 @@ void main() {
       logs: [log(skipped: true)],
     );
 
-    expect(find.text('Skipped'), findsOneWidget);
-    expect(find.text('Completed'), findsNothing);
+    expect(find.text('SKIPPED'), findsOneWidget);
+    expect(find.text('DONE'), findsNothing);
   });
 
   testWidgets('a complete plan says so and leaves nothing active', (
@@ -109,14 +107,14 @@ void main() {
       ],
     );
 
-    expect(find.text('Plan complete. Well done.'), findsOneWidget);
-    expect(find.byIcon(Icons.chevron_right), findsNothing);
+    expect(find.text('COMPLETE'), findsWidgets);
+    expect(find.text('UP NEXT'), findsNothing);
   });
 
   testWidgets('an empty plan renders just the header', (tester) async {
     await pumpList(tester, assigned: plan(currentIndex: 0, count: 0));
 
-    expect(find.text('Push day'), findsOneWidget);
+    expect(find.text('PUSH DAY'), findsOneWidget);
     expect(find.byIcon(Icons.lock_outline), findsNothing);
   });
 
@@ -135,11 +133,11 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('Exercise 3'));
+    await tester.tap(find.text('EXERCISE 3'));
     await tester.pump();
     expect(taps, 0, reason: 'a locked exercise must not open');
 
-    await tester.tap(find.text('Exercise 2'));
+    await tester.tap(find.text('EXERCISE 2'));
     await tester.pump();
     expect(taps, 1);
   });

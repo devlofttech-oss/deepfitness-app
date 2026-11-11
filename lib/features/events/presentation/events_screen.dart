@@ -45,7 +45,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
     final rsvps = ref.watch(myRsvpsProvider).value ?? const <String>{};
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: const Text('Events')),
       body: SafeArea(
         child: events.when(
@@ -86,7 +86,7 @@ class _EventCard extends ConsumerWidget {
     final starts = event.startsAt;
 
     return Material(
-      color: AppColors.surface(context),
+      color: AppColors.surfaceContainerLow,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -119,7 +119,7 @@ class _EventCard extends ConsumerWidget {
                             '${starts.minute.toString().padLeft(2, '0')}',
                       if (event.venue.isNotEmpty) event.venue,
                     ].join(' · '),
-                    style: TextStyle(color: AppColors.secondaryText(context)),
+                    style: TextStyle(color: AppColors.onSurfaceVariant),
                   ),
                   if (event.description.isNotEmpty) ...[
                     const SizedBox(height: 12),
@@ -143,10 +143,10 @@ class _EventCard extends ConsumerWidget {
                       style: FilledButton.styleFrom(
                         backgroundColor: going
                             ? AppColors.success.withValues(alpha: 0.18)
-                            : AppColors.chipBackground(context),
+                            : AppColors.surfaceContainerHighest,
                         foregroundColor: going
                             ? AppColors.success
-                            : AppColors.gold,
+                            : AppColors.primaryContainer,
                       ),
                     ),
                   ),
@@ -173,7 +173,7 @@ class _EventsMessage extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.secondaryText(context)),
+          style: TextStyle(color: AppColors.onSurfaceVariant),
         ),
       ),
     );

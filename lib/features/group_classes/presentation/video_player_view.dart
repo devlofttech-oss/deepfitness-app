@@ -25,7 +25,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(AppColors.night)
+      ..setBackgroundColor(AppColors.surface)
       // The embed itself is the only thing this view may load. A tap on
       // a related video or a channel link must not turn the player into
       // a browser inside the app.
@@ -45,7 +45,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
     return AspectRatio(
       aspectRatio: 16 / 9,
       child: ColoredBox(
-        color: AppColors.night,
+        color: AppColors.surface,
         child: WebViewWidget(controller: _controller),
       ),
     );

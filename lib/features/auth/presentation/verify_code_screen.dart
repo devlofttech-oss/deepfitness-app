@@ -1,7 +1,7 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/services/auth_service.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -86,7 +86,7 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(backgroundColor: Colors.transparent),
       body: SafeArea(
         child: Center(
@@ -105,7 +105,7 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Sent to ${_pending.phoneNumber}',
-                    style: TextStyle(color: AppColors.secondaryText(context)),
+                    style: TextStyle(color: AppColors.onSurfaceVariant),
                   ),
                   const SizedBox(height: 24),
                   TextField(
@@ -121,14 +121,14 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                     const SizedBox(height: 8),
                     Text(
                       _error!,
-                      style: const TextStyle(color: AppColors.danger),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ],
                   const SizedBox(height: 16),
                   if (_busy)
                     const Center(child: CircularProgressIndicator())
                   else
-                    PrimaryButton(label: 'Verify', onPressed: _confirm),
+                    DfPrimaryButton(label: 'Verify', onPressed: _confirm),
                   const SizedBox(height: 12),
                   TextButton(
                     onPressed: _busy ? null : _resend,

@@ -1,6 +1,6 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/models/event.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:deepfitness/features/events/presentation/events_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +19,7 @@ class EventDetailScreen extends ConsumerWidget {
     final busy = ref.watch(rsvpControllerProvider).isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: Text(event.value?.title ?? 'Event')),
       body: SafeArea(
         child: event.when(
@@ -84,13 +84,21 @@ class _EventBody extends ConsumerWidget {
               if (busy)
                 const Center(child: CircularProgressIndicator())
               else
-                PrimaryButton(
-                  label: going ? "You're going · tap to withdraw" : 'Count me in',
-                  outline: going,
-                  onPressed: () => ref
-                      .read(rsvpControllerProvider.notifier)
-                      .toggle(eventId: event.id, going: going),
-                ),
+                if (going)
+                  DfSecondaryButton(
+                    label: "You're going · tap to withdraw",
+                    icon: Icons.check_circle,
+                    onPressed: () => ref
+                        .read(rsvpControllerProvider.notifier)
+                        .toggle(eventId: event.id, going: going),
+                  )
+                else
+                  DfPrimaryButton(
+                    label: 'Count me in',
+                    onPressed: () => ref
+                        .read(rsvpControllerProvider.notifier)
+                        .toggle(eventId: event.id, going: going),
+                  ),
             ],
           ),
         ),
@@ -111,12 +119,12 @@ class _DetailRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: AppColors.muted),
+          Icon(icon, size: 18, color: AppColors.outline),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(color: AppColors.secondaryText(context)),
+              style: TextStyle(color: AppColors.onSurfaceVariant),
             ),
           ),
         ],

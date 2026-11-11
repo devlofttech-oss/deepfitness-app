@@ -1,6 +1,6 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/constants/app_constants.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +20,7 @@ class RenewalScreen extends ConsumerWidget {
     final expiry = member?.expiryDate;
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -32,7 +32,7 @@ class RenewalScreen extends ConsumerWidget {
                 const Icon(
                   Icons.card_membership_outlined,
                   size: 56,
-                  color: AppColors.gold,
+                  color: AppColors.primaryContainer,
                 ),
                 const SizedBox(height: 24),
                 Text(
@@ -47,24 +47,23 @@ class RenewalScreen extends ConsumerWidget {
                       : 'It ran out on ${expiry.day}/${expiry.month}/${expiry.year}. '
                             'Speak to the gym to renew and pick your plan back up.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.secondaryText(context)),
+                  style: TextStyle(color: AppColors.onSurfaceVariant),
                 ),
                 const SizedBox(height: 32),
-                PrimaryButton(
+                DfPrimaryButton(
                   label: 'See my past workouts',
                   onPressed: () => context.go('/reports'),
                 ),
                 const SizedBox(height: 12),
-                PrimaryButton(
+                DfSecondaryButton(
                   label: 'My profile',
-                  outline: true,
                   onPressed: () => context.go('/profile'),
                 ),
                 const SizedBox(height: 24),
                 Text(
                   AppConstants.supportEmail,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: AppColors.secondaryText(context)),
+                  style: TextStyle(color: AppColors.onSurfaceVariant),
                 ),
               ],
             ),

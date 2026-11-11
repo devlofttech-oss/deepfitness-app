@@ -1,4 +1,7 @@
 import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
+import 'package:deepfitness/core/widgets/df_card.dart';
+import 'package:deepfitness/core/widgets/df_chrome.dart';
 import 'package:deepfitness/core/models/assigned_plan.dart';
 import 'package:deepfitness/core/models/completion_log.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
@@ -30,9 +33,9 @@ class PlanScreen extends ConsumerWidget {
     final plan = ref.watch(currentPlanProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        title: const Text('Your plan'),
+        title: const Text('ALL WORKOUTS'),
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
@@ -42,16 +45,17 @@ class PlanScreen extends ConsumerWidget {
         ],
       ),
       body: SafeArea(
+        top: false,
         child: plan.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => const _PlanMessage(
-            icon: Icons.error_outline,
+          error: (_, _) => const DfMessage(
+            icon: Icons.wifi_off,
             title: 'Could not load your plan',
             body: 'Check your connection and try again.',
           ),
           data: (data) => data == null || data.isEmpty
-              ? const _PlanMessage(
-                  icon: Icons.fitness_center_outlined,
+              ? const DfMessage(
+                  icon: Icons.fitness_center,
                   title: 'No plan yet',
                   body: 'Your trainer will assign one soon.',
                 )
@@ -100,9 +104,14 @@ class PlanExerciseList extends StatelessWidget {
     bool wasSkipped(int index) => index < logs.length && logs[index].skipped;
 
     return ListView.separated(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(
+        Insets.margin,
+        Insets.md,
+        Insets.margin,
+        Insets.xl,
+      ),
       itemCount: plan.exercises.length + 1,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: Insets.sm),
       itemBuilder: (context, position) {
         if (position == 0) return _PlanHeader(plan: plan);
 
@@ -133,37 +142,66 @@ class _PlanHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(plan.title, style: Theme.of(context).textTheme.headlineSmall),
-        const SizedBox(height: 12),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: plan.progress,
-            minHeight: 8,
-            backgroundColor: AppColors.surface(context),
+        Text(plan.title.toUpperCase(), style: theme.headlineLarge),
+        const SizedBox(height: Insets.xs),
+        DfLabel('${plan.exercises.length} exercises'),
+        const SizedBox(height: Insets.md),
+        DfCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const DfLabel('Session progress'),
+                        const SizedBox(height: Insets.xs),
+                        Text(
+                          '${plan.currentIndex} of ${plan.exercises.length} '
+                          'exercises done'.toUpperCase(),
+                          style: theme.headlineSmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${(plan.progress * 100).round()}%',
+                        style: theme.headlineLarge,
+                      ),
+                      const DfLabel('Complete'),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: Insets.md),
+              DfProgressBar(value: plan.progress),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        Text(
-          plan.isComplete
-              ? 'Plan complete. Well done.'
-              : '${plan.currentIndex} of ${plan.exercises.length} done',
-          style: TextStyle(
-            color: plan.isComplete
-                ? AppColors.success
-                : AppColors.secondaryText(context),
-          ),
+        const SizedBox(height: Insets.lg),
+        Row(
+          children: [
+            const Expanded(child: DfLabel('Sequence order')),
+            if (plan.isComplete)
+              const DfLabel('Complete', colour: AppColors.primaryContainer),
+          ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: Insets.sm),
       ],
     );
   }
 }
-
-enum _TileState { locked, active, complete, skipped }
 
 class _ExerciseTile extends StatelessWidget {
   const _ExerciseTile({
@@ -180,56 +218,108 @@ class _ExerciseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
     final locked = state == _TileState.locked;
+    final active = state == _TileState.active;
 
-    return Opacity(
-      // A locked exercise stays visible so the member can see what is
-      // coming; it is dimmed and not tappable.
-      opacity: locked ? 0.45 : 1,
-      child: Material(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+    return DfCard(
+      onTap: onTap,
+      // The one that is up next carries the accent bar and sits on a
+      // lighter surface; everything else recedes.
+      leadingAccent: active,
+      colour: active
+          ? AppColors.surfaceContainerHigh
+          : AppColors.surfaceContainerLow,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StateIcon(state: state, number: number),
+          const SizedBox(width: Insets.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _StateIcon(state: state, number: number),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        exercise.name,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        switch (state) {
-                          _TileState.skipped => 'Skipped',
-                          _TileState.complete => 'Completed',
-                          _TileState.locked =>
-                            'Unlocks when the one before it is done',
-                          _TileState.active =>
-                            '${exercise.sets} sets of ${exercise.reps}',
-                        },
-                        style: TextStyle(
-                          color: AppColors.secondaryText(context),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        exercise.name.toUpperCase(),
+                        style: theme.headlineSmall?.copyWith(
+                          // A locked exercise stays visible, so the
+                          // member can see what is coming, but reads as
+                          // clearly inert.
+                          color: locked
+                              ? AppColors.outline
+                              : AppColors.onSurface,
                         ),
                       ),
-                    ],
+                    ),
+                    const SizedBox(width: Insets.sm),
+                    _StateBadge(state: state),
+                  ],
+                ),
+                const SizedBox(height: Insets.xs),
+                Text(
+                  '${exercise.sets} sets × ${exercise.reps} reps',
+                  style: theme.bodySmall?.copyWith(
+                    color: locked
+                        ? AppColors.outline
+                        : AppColors.onSurfaceVariant,
                   ),
                 ),
-                if (state == _TileState.active)
-                  const Icon(Icons.chevron_right, color: AppColors.gold),
+                if (locked) ...[
+                  const SizedBox(height: Insets.xs),
+                  Text(
+                    'Unlocks in sequence',
+                    style: theme.bodySmall?.copyWith(color: AppColors.outline),
+                  ),
+                ],
+                if (active) ...[
+                  const SizedBox(height: Insets.md),
+                  DfPrimaryButton(
+                    label: 'Log this exercise',
+                    trailingIcon: Icons.play_arrow,
+                    onPressed: onTap,
+                  ),
+                ],
               ],
             ),
           ),
-        ),
+        ],
       ),
+    );
+  }
+}
+
+/// The right-hand badge: done, skipped, locked, or up next.
+class _StateBadge extends StatelessWidget {
+  const _StateBadge({required this.state});
+
+  final _TileState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final (text, colour) = switch (state) {
+      _TileState.complete => ('Done', AppColors.onSurfaceVariant),
+      _TileState.skipped => ('Skipped', AppColors.outline),
+      _TileState.locked => ('Locked', AppColors.outline),
+      _TileState.active => ('Up next', AppColors.primaryContainer),
+    };
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (state == _TileState.locked)
+          const Padding(
+            padding: EdgeInsets.only(right: Insets.xs),
+            child: Icon(
+              Icons.lock_outline,
+              size: 12,
+              color: AppColors.outline,
+            ),
+          ),
+        DfLabel(text, colour: colour),
+      ],
     );
   }
 }
@@ -243,53 +333,30 @@ class _StateIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, colour) = switch (state) {
-      _TileState.locked => (Icons.lock_outline, AppColors.muted),
-      _TileState.complete => (Icons.check_circle, AppColors.success),
-      _TileState.skipped => (Icons.remove_circle_outline, AppColors.muted),
-      _TileState.active => (null, AppColors.gold),
+      _TileState.locked => (Icons.lock_outline, AppColors.outline),
+      _TileState.complete => (Icons.check, AppColors.onSurfaceVariant),
+      _TileState.skipped => (Icons.remove, AppColors.outline),
+      _TileState.active => (null, AppColors.primaryContainer),
     };
 
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: colour.withValues(alpha: 0.15),
-      child: icon == null
-          ? Text('$number', style: const TextStyle(color: AppColors.gold))
-          : Icon(icon, size: 20, color: colour),
-    );
-  }
-}
-
-class _PlanMessage extends StatelessWidget {
-  const _PlanMessage({
-    required this.icon,
-    required this.title,
-    required this.body,
-  });
-
-  final IconData icon;
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 48, color: AppColors.muted),
-            const SizedBox(height: 16),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              body,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.secondaryText(context)),
-            ),
-          ],
-        ),
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: state == _TileState.active
+            ? AppColors.primaryContainer
+            : AppColors.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(Radii.sm),
       ),
+      alignment: Alignment.center,
+      child: icon == null
+          ? Text(
+              '$number',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.onPrimaryContainer,
+              ),
+            )
+          : Icon(icon, size: 18, color: colour),
     );
   }
 }

@@ -18,6 +18,7 @@ import 'package:deepfitness/features/group_classes/presentation/classes_screen.d
 import 'package:deepfitness/features/notifications/presentation/announcements_screen.dart';
 import 'package:deepfitness/features/home/presentation/home_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
+import 'package:deepfitness/features/shell/presentation/member_shell.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/exercise_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/plan_history_screen.dart';
@@ -104,20 +105,42 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/renew',
         builder: (context, state) => const RenewalScreen(),
       ),
-      GoRoute(path: '/', builder: (context, state) => const HomeScreen()),
-      GoRoute(
-        path: '/plan',
-        builder: (context, state) => const PlanScreen(),
+      // The five member tabs live inside the shell, so the bottom bar
+      // stays put as they are switched. Screens pushed on top of a tab —
+      // an exercise, an event — cover it, as the designs show.
+      ShellRoute(
+        builder: (context, state, child) =>
+            MemberShell(location: state.uri.path, child: child),
         routes: [
           GoRoute(
-            path: 'exercise',
-            builder: (context, state) => const ExerciseScreen(),
+            path: '/',
+            builder: (context, state) => const HomeScreen(),
           ),
           GoRoute(
-            path: 'history',
-            builder: (context, state) => const PlanHistoryScreen(),
+            path: '/plan',
+            builder: (context, state) => const PlanScreen(),
+          ),
+          GoRoute(
+            path: '/classes',
+            builder: (context, state) => const ClassesScreen(),
+          ),
+          GoRoute(
+            path: '/events',
+            builder: (context, state) => const EventsScreen(),
+          ),
+          GoRoute(
+            path: '/profile',
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/plan/exercise',
+        builder: (context, state) => const ExerciseScreen(),
+      ),
+      GoRoute(
+        path: '/plan/history',
+        builder: (context, state) => const PlanHistoryScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) =>
@@ -150,39 +173,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
-        path: '/classes',
-        builder: (context, state) => const ClassesScreen(),
-        routes: [
-          GoRoute(
-            path: ':classId',
-            builder: (context, state) => ClassDetailScreen(
-              classId: state.pathParameters['classId']!,
-            ),
-          ),
-        ],
+        path: '/classes/:classId',
+        builder: (context, state) =>
+            ClassDetailScreen(classId: state.pathParameters['classId']!),
       ),
       GoRoute(
         path: '/notices',
         builder: (context, state) => const AnnouncementsScreen(),
       ),
       GoRoute(
-        path: '/events',
-        builder: (context, state) => const EventsScreen(),
-        routes: [
-          GoRoute(
-            path: ':eventId',
-            builder: (context, state) =>
-                EventDetailScreen(eventId: state.pathParameters['eventId']!),
-          ),
-        ],
+        path: '/events/:eventId',
+        builder: (context, state) =>
+            EventDetailScreen(eventId: state.pathParameters['eventId']!),
       ),
       GoRoute(
         path: '/reports',
         builder: (context, state) => const ReportScreen(),
-      ),
-      GoRoute(
-        path: '/profile',
-        builder: (context, state) => const ProfileScreen(),
       ),
     ],
   );

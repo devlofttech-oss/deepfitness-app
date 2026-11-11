@@ -91,9 +91,9 @@ class _ImageFieldState extends ConsumerState<ImageField> {
             height: 120,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: AppColors.canvas(context),
+              color: AppColors.surface,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderDark),
+              border: Border.all(color: AppColors.surfaceContainerHigh),
               image: preview != null
                   ? DecorationImage(
                       image: MemoryImage(preview),
@@ -118,7 +118,7 @@ class _ImageFieldState extends ConsumerState<ImageField> {
             padding: const EdgeInsets.only(top: 6),
             child: Text(
               _error!,
-              style: const TextStyle(color: AppColors.danger, fontSize: 12),
+              style: const TextStyle(color: AppColors.error, fontSize: 12),
             ),
           ),
       ],

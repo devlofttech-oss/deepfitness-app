@@ -36,7 +36,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     final report = ref.watch(workoutReportProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         title: const Text('Your progress'),
         actions: [
@@ -100,7 +100,7 @@ class ReportSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.canvas(context),
+      color: AppColors.surface,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -140,7 +140,7 @@ class ReportSummary extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             report.range.label,
-            style: TextStyle(color: AppColors.secondaryText(context)),
+            style: TextStyle(color: AppColors.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
           VolumeChart(report: report),
@@ -149,7 +149,7 @@ class ReportSummary extends StatelessWidget {
             Text(
               '${report.skipped} exercise${report.skipped == 1 ? '' : 's'} '
               'skipped in this period.',
-              style: TextStyle(color: AppColors.secondaryText(context)),
+              style: TextStyle(color: AppColors.onSurfaceVariant),
             ),
           ],
         ],
@@ -211,7 +211,7 @@ class _RangeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? AppColors.gold : AppColors.surface(context),
+      color: selected ? AppColors.primaryContainer : AppColors.surfaceContainerLow,
       borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
@@ -221,7 +221,7 @@ class _RangeChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              color: selected ? AppColors.black : AppColors.white,
+              color: selected ? AppColors.onPrimaryContainer : AppColors.onSurface,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -247,7 +247,7 @@ class _StatTile extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
+        color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -256,7 +256,7 @@ class _StatTile extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              color: AppColors.secondaryText(context),
+              color: AppColors.onSurfaceVariant,
               fontSize: 12,
             ),
           ),
@@ -266,7 +266,7 @@ class _StatTile extends StatelessWidget {
           Text(
             caption,
             style: TextStyle(
-              color: AppColors.secondaryText(context),
+              color: AppColors.onSurfaceVariant,
               fontSize: 11,
             ),
           ),
@@ -288,7 +288,7 @@ class _ReportMessage extends StatelessWidget {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.secondaryText(context)),
+        style: TextStyle(color: AppColors.onSurfaceVariant),
       ),
     );
   }

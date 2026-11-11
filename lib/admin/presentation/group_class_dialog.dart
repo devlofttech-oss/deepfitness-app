@@ -111,7 +111,7 @@ class _GroupClassDialogState extends State<GroupClassDialog> {
                 'out of it. The video stays on the provider and is '
                 'embedded, never uploaded here.',
                 style: TextStyle(
-                  color: AppColors.secondaryText(context),
+                  color: AppColors.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),

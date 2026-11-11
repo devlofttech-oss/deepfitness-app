@@ -43,18 +43,18 @@ class AdminShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       body: Row(
         children: [
           NavigationRail(
-            backgroundColor: AppColors.surface(context),
+            backgroundColor: AppColors.surfaceContainerLow,
             extended: MediaQuery.sizeOf(context).width > 1100,
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) =>
                 context.go(_destinations[index].path),
             leading: const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
-              child: Icon(Icons.shield_outlined, color: AppColors.gold),
+              child: Icon(Icons.shield_outlined, color: AppColors.primaryContainer),
             ),
             destinations: [
               for (final destination in _destinations)

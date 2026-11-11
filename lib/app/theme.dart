@@ -1,178 +1,270 @@
 import 'package:deepfitness/app/colors.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// The app ships in a single dark theme. There is no light variant on
-/// purpose: every screen is designed against the near-black canvas, so a
-/// light mode would only ever be a half-finished second skin.
-class AppTheme {
+/// The type scale from the design system.
+///
+/// Two faces doing two jobs: Barlow Condensed for headings, metrics and
+/// labels, where condensed letterforms buy screen width for big numbers;
+/// Inter for anything that is read as a sentence.
+abstract final class AppText {
+  const AppText._();
+
+  static TextStyle _condensed({
+    required double size,
+    required double height,
+    required FontWeight weight,
+    double tracking = 0,
+    Color color = AppColors.onSurface,
+  }) {
+    return GoogleFonts.barlowCondensed(
+      fontSize: size,
+      height: height / size,
+      fontWeight: weight,
+      letterSpacing: tracking,
+      color: color,
+    );
+  }
+
+  static TextStyle _inter({
+    required double size,
+    required double height,
+    FontWeight weight = FontWeight.w400,
+    Color color = AppColors.onSurface,
+  }) {
+    return GoogleFonts.inter(
+      fontSize: size,
+      height: height / size,
+      fontWeight: weight,
+      color: color,
+    );
+  }
+
+  // Condensed headings and metrics.
+  static TextStyle get displayLarge =>
+      _condensed(size: 48, height: 52, weight: FontWeight.w700);
+  static TextStyle get displayMobile =>
+      _condensed(size: 36, height: 40, weight: FontWeight.w700);
+  static TextStyle get headlineLarge =>
+      _condensed(size: 32, height: 36, weight: FontWeight.w700);
+  static TextStyle get headlineMedium =>
+      _condensed(size: 24, height: 28, weight: FontWeight.w600);
+  static TextStyle get headlineSmall =>
+      _condensed(size: 20, height: 24, weight: FontWeight.w600);
+
+  // Condensed labels. Uppercase, with positive tracking so they stay
+  // legible in motion — the design system asks for +0.04 to +0.06em.
+  static TextStyle get labelLarge => _condensed(
+    size: 16,
+    height: 20,
+    weight: FontWeight.w600,
+    tracking: 16 * 0.05,
+  );
+  static TextStyle get labelMedium => _condensed(
+    size: 14,
+    height: 16,
+    weight: FontWeight.w600,
+    tracking: 14 * 0.05,
+  );
+  static TextStyle get labelSmall => _condensed(
+    size: 12,
+    height: 14,
+    weight: FontWeight.w600,
+    tracking: 12 * 0.06,
+  );
+
+  // Inter body copy.
+  static TextStyle get bodyLarge => _inter(size: 16, height: 24);
+  static TextStyle get bodyMedium => _inter(size: 14, height: 20);
+  static TextStyle get bodySmall => _inter(size: 12, height: 16);
+}
+
+abstract final class AppTheme {
   const AppTheme._();
 
-  static ThemeData get dark => _build();
+  /// The only theme. There is no light palette and no toggle.
+  static ThemeData get dark {
+    const scheme = ColorScheme.dark(
+      surface: AppColors.surface,
+      onSurface: AppColors.onSurface,
+      surfaceContainerLowest: AppColors.surfaceContainerLowest,
+      surfaceContainerLow: AppColors.surfaceContainerLow,
+      surfaceContainer: AppColors.surfaceContainer,
+      surfaceContainerHigh: AppColors.surfaceContainerHigh,
+      surfaceContainerHighest: AppColors.surfaceContainerHighest,
+      onSurfaceVariant: AppColors.onSurfaceVariant,
+      outline: AppColors.outline,
+      outlineVariant: AppColors.outlineVariant,
+      primary: AppColors.primaryContainer,
+      onPrimary: AppColors.onPrimaryContainer,
+      primaryContainer: AppColors.primaryContainer,
+      onPrimaryContainer: AppColors.onPrimaryContainer,
+      secondary: AppColors.secondary,
+      secondaryContainer: AppColors.secondaryContainer,
+      onSecondaryContainer: AppColors.onSecondaryContainer,
+      tertiary: AppColors.tertiaryContainer,
+      error: AppColors.error,
+      onError: AppColors.onError,
+      errorContainer: AppColors.errorContainer,
+      onErrorContainer: AppColors.onErrorContainer,
+    );
 
-  static ThemeData _build() {
-    const textColor = AppColors.white;
-    const surfaceColor = AppColors.slate;
-    const backgroundColor = AppColors.night;
-    const borderColor = AppColors.borderDark;
     final base = ThemeData(
       useMaterial3: true,
-      colorScheme:
-          ColorScheme.fromSeed(
-            seedColor: AppColors.gold,
-            primary: AppColors.gold,
-            surface: surfaceColor,
-            brightness: Brightness.dark,
-          ).copyWith(
-            // fromSeed derives warm brown-tinted containers from the orange
-            // seed; pin them to the neutral greys the screens actually use so
-            // dialogs, sheets, and menus match the cards.
-            onPrimary: AppColors.black,
-            onSurface: textColor,
-            surfaceContainerLowest: AppColors.night,
-            surfaceContainerLow: AppColors.slate,
-            surfaceContainer: AppColors.slate,
-            surfaceContainerHigh: AppColors.charcoal,
-            surfaceContainerHighest: AppColors.charcoal,
-            outline: borderColor,
-            outlineVariant: borderColor,
-          ),
-    );
-
-    // San Francisco is Apple's system font and can't be bundled into an
-    // Android/web build, so on iOS/macOS we point at the real system font
-    // via Flutter's special ".SF Pro" family names (resolved natively by
-    // the OS, nothing to embed). Everywhere else we fall back to Inter, a
-    // free, geometrically close match to SF Pro.
-    final isApplePlatform =
-        defaultTargetPlatform == TargetPlatform.iOS ||
-        defaultTargetPlatform == TargetPlatform.macOS;
-
-    final interTheme = GoogleFonts.interTextTheme(base.textTheme);
-    final baseTextTheme = isApplePlatform
-        ? interTheme.apply(fontFamily: '.SF Pro Text')
-        : interTheme;
-    final displayTextTheme = isApplePlatform
-        ? interTheme.apply(fontFamily: '.SF Pro Display')
-        : interTheme;
-
-    final textTheme = baseTextTheme.apply(
-      bodyColor: textColor,
-      displayColor: textColor,
-    );
-    final displayApplied = displayTextTheme.apply(
-      bodyColor: textColor,
-      displayColor: textColor,
+      brightness: Brightness.dark,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: AppColors.surface,
+      // The system rejects ambient shadows: depth is tonal layering and
+      // 1px borders, because a blur washes out under gym lighting.
+      shadowColor: Colors.transparent,
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: backgroundColor,
-      textTheme: textTheme.copyWith(
-        // Apple pairs its larger display/headline sizes with the "Display"
-        // optical size of SF Pro; the rest of the type scale uses "Text".
-        displayLarge: displayApplied.displayLarge?.copyWith(
-          fontSize: 40,
-          height: 1.08,
-          color: textColor,
-        ),
-        displaySmall: displayApplied.displaySmall?.copyWith(
-          fontSize: 30,
-          height: 1.12,
-          color: textColor,
-        ),
-        headlineMedium: displayApplied.headlineMedium?.copyWith(
-          fontSize: 22,
-          height: 1.18,
-          color: textColor,
-        ),
-        headlineSmall: displayApplied.headlineSmall?.copyWith(
-          fontSize: 19,
-          height: 1.2,
-          color: textColor,
-        ),
-        titleLarge: textTheme.titleLarge?.copyWith(
-          fontSize: 17,
-          height: 1.25,
-          color: textColor,
-        ),
-        titleMedium: textTheme.titleMedium?.copyWith(
-          fontSize: 14,
-          height: 1.3,
-          color: textColor,
-        ),
-        titleSmall: textTheme.titleSmall?.copyWith(
-          fontSize: 13,
-          height: 1.3,
-          color: textColor,
-        ),
-        bodyLarge: textTheme.bodyLarge?.copyWith(
-          fontSize: 13,
-          height: 1.35,
-          color: textColor,
-        ),
-        bodyMedium: textTheme.bodyMedium?.copyWith(
-          fontSize: 12,
-          height: 1.35,
-          color: textColor,
-        ),
-        bodySmall: textTheme.bodySmall?.copyWith(
-          fontSize: 11,
-          height: 1.25,
-          color: textColor,
-        ),
+      textTheme: TextTheme(
+        displayLarge: AppText.displayLarge,
+        displayMedium: AppText.displayMobile,
+        displaySmall: AppText.headlineLarge,
+        headlineLarge: AppText.headlineLarge,
+        headlineMedium: AppText.headlineMedium,
+        headlineSmall: AppText.headlineSmall,
+        titleLarge: AppText.headlineSmall,
+        titleMedium: AppText.labelLarge,
+        titleSmall: AppText.labelMedium,
+        labelLarge: AppText.labelLarge,
+        labelMedium: AppText.labelMedium,
+        labelSmall: AppText.labelSmall,
+        bodyLarge: AppText.bodyLarge,
+        bodyMedium: AppText.bodyMedium,
+        bodySmall: AppText.bodySmall,
       ),
-      dividerTheme: const DividerThemeData(color: borderColor),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
+        backgroundColor: AppColors.surfaceContainerLowest,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: textColor,
-        surfaceTintColor: Colors.transparent,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        titleTextStyle: AppText.headlineSmall.copyWith(
+          letterSpacing: 0.5,
+        ),
+        iconTheme: const IconThemeData(color: AppColors.onSurfaceVariant),
       ),
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: surfaceColor,
-        surfaceTintColor: Colors.transparent,
-        modalBackgroundColor: surfaceColor,
-        dragHandleColor: AppColors.mutedDark,
+      dividerTheme: const DividerThemeData(
+        color: AppColors.surfaceContainerHigh,
+        thickness: 1,
+        space: 1,
       ),
-      dialogTheme: const DialogThemeData(
-        backgroundColor: surfaceColor,
-        surfaceTintColor: Colors.transparent,
+      cardTheme: CardThemeData(
+        color: AppColors.surfaceContainerLow,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.base),
+          side: const BorderSide(color: AppColors.surfaceContainerHigh),
+        ),
       ),
-      popupMenuTheme: const PopupMenuThemeData(
-        color: surfaceColor,
-        surfaceTintColor: Colors.transparent,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: AppColors.primaryContainer,
+          foregroundColor: AppColors.onPrimaryContainer,
+          disabledBackgroundColor: AppColors.surfaceContainerHigh,
+          disabledForegroundColor: AppColors.outline,
+          // 52 is the floor the design system sets for a primary action.
+          minimumSize: const Size.fromHeight(52),
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.base),
+          ),
+          textStyle: AppText.labelLarge,
+        ),
       ),
-      snackBarTheme: const SnackBarThemeData(
-        backgroundColor: AppColors.charcoal,
-        contentTextStyle: TextStyle(color: textColor),
-        behavior: SnackBarBehavior.floating,
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.onSurface,
+          backgroundColor: AppColors.surfaceContainerLow,
+          minimumSize: const Size.fromHeight(52),
+          side: const BorderSide(color: AppColors.surfaceContainerHigh),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.base),
+          ),
+          textStyle: AppText.labelLarge,
+        ),
       ),
-      datePickerTheme: const DatePickerThemeData(
-        backgroundColor: surfaceColor,
-        surfaceTintColor: Colors.transparent,
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.onSurfaceVariant,
+          textStyle: AppText.labelMedium,
+          minimumSize: const Size(kMinTouchTarget, kMinTouchTarget),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceColor,
-        hintStyle: const TextStyle(color: AppColors.mutedDark),
+        fillColor: AppColors.surfaceContainerLow,
+        constraints: const BoxConstraints(minHeight: 52),
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 18,
-          vertical: 16,
+          horizontal: Insets.md,
+          vertical: Insets.md,
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: borderColor),
+        hintStyle: AppText.bodyMedium.copyWith(color: AppColors.outline),
+        labelStyle: AppText.bodyMedium.copyWith(
+          color: AppColors.onSurfaceVariant,
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: borderColor),
+        border: _inputBorder(AppColors.surfaceContainerHigh),
+        enabledBorder: _inputBorder(AppColors.surfaceContainerHigh),
+        // Focus is a 1px accent stroke, with no glow behind it.
+        focusedBorder: _inputBorder(AppColors.primaryContainer),
+        errorBorder: _inputBorder(AppColors.error),
+        focusedErrorBorder: _inputBorder(AppColors.error),
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppColors.surfaceContainerLowest,
+        selectedItemColor: AppColors.primaryContainer,
+        unselectedItemColor: AppColors.onSurfaceVariant,
+        selectedLabelStyle: AppText.labelSmall,
+        unselectedLabelStyle: AppText.labelSmall,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(Radii.lg),
+          ),
         ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.gold, width: 1.4),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.surfaceContainerHigh,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.lg),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: AppColors.surfaceContainerHighest,
+        contentTextStyle: AppText.bodyMedium,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.base),
+        ),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: AppColors.primaryContainer,
+        linearTrackColor: AppColors.surfaceContainerHigh,
+        circularTrackColor: AppColors.surfaceContainerHigh,
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: AppColors.surfaceContainerLow,
+        side: const BorderSide(color: AppColors.surfaceContainerHigh),
+        labelStyle: AppText.labelSmall,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(Radii.full),
         ),
       ),
     );
   }
+
+  static OutlineInputBorder _inputBorder(Color colour) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(Radii.base),
+    borderSide: BorderSide(color: colour),
+  );
 }

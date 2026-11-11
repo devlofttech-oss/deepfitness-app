@@ -16,7 +16,7 @@ class PlanHistoryScreen extends ConsumerWidget {
     final history = ref.watch(planHistoryProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: const Text('Past plans')),
       body: SafeArea(
         child: history.when(
@@ -27,7 +27,7 @@ class PlanHistoryScreen extends ConsumerWidget {
               child: Text(
                 'Could not load your plans. Check your connection.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.secondaryText(context)),
+                style: TextStyle(color: AppColors.onSurfaceVariant),
               ),
             ),
           ),
@@ -35,7 +35,7 @@ class PlanHistoryScreen extends ConsumerWidget {
               ? Center(
                   child: Text(
                     'No plans yet.',
-                    style: TextStyle(color: AppColors.secondaryText(context)),
+                    style: TextStyle(color: AppColors.onSurfaceVariant),
                   ),
                 )
               : ListView.separated(
@@ -66,12 +66,12 @@ class _HistoryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
+        color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
         // The newest assignment is the one the home screen shows, so it
         // is marked rather than left to be guessed from the order.
         border: isCurrent
-            ? Border.all(color: AppColors.gold.withValues(alpha: 0.6))
+            ? Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.6))
             : null,
       ),
       child: Column(
@@ -86,7 +86,7 @@ class _HistoryCard extends StatelessWidget {
                 ),
               ),
               if (isCurrent)
-                const Text('Current', style: TextStyle(color: AppColors.gold)),
+                const Text('Current', style: TextStyle(color: AppColors.primaryContainer)),
             ],
           ),
           const SizedBox(height: 6),
@@ -100,7 +100,7 @@ class _HistoryCard extends StatelessWidget {
             style: TextStyle(
               color: plan.isComplete
                   ? AppColors.success
-                  : AppColors.secondaryText(context),
+                  : AppColors.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 12),
@@ -109,7 +109,7 @@ class _HistoryCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: plan.progress,
               minHeight: 6,
-              backgroundColor: AppColors.canvas(context),
+              backgroundColor: AppColors.surface,
             ),
           ),
         ],

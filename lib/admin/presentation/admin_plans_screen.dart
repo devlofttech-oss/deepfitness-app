@@ -171,7 +171,7 @@ class _PlanBuilderDialogState extends State<_PlanBuilderDialog> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Order matters: a member unlocks these one at a time.',
-                style: TextStyle(color: AppColors.secondaryText(context)),
+                style: TextStyle(color: AppColors.onSurfaceVariant),
               ),
             ),
             const SizedBox(height: 8),

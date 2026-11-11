@@ -1,8 +1,7 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/services/auth_service.dart';
-import 'package:deepfitness/core/widgets/brand_mark.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,7 +93,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -105,7 +104,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const BrandMark(),
+                  const SizedBox.shrink(),
                   const SizedBox(height: 32),
                   Text(
                     'Sign in',
@@ -119,14 +118,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     Text(
                       _error!,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppColors.danger),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ],
                   const SizedBox(height: 24),
                   if (_busy)
                     const Center(child: CircularProgressIndicator())
                   else
-                    PrimaryButton(
+                    DfPrimaryButton(
                       label: _useEmail ? 'Sign in' : 'Send code',
                       onPressed: _useEmail ? _signInWithEmail : _sendCode,
                     ),

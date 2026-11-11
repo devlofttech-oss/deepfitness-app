@@ -1,5 +1,5 @@
 import 'package:deepfitness/app/colors.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,7 +40,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final busy = ref.watch(authControllerProvider).isLoading;
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -67,14 +67,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     const SizedBox(height: 8),
                     Text(
                       _error!,
-                      style: const TextStyle(color: AppColors.danger),
+                      style: const TextStyle(color: AppColors.error),
                     ),
                   ],
                   const SizedBox(height: 24),
                   if (busy)
                     const Center(child: CircularProgressIndicator())
                   else
-                    PrimaryButton(label: 'Continue', onPressed: _submit),
+                    DfPrimaryButton(label: 'Continue', onPressed: _submit),
                 ],
               ),
             ),

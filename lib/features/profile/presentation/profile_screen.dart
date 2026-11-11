@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
-import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/core/widgets/df_button.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/profile/application/profile_controller.dart';
 import 'package:flutter/material.dart';
@@ -91,7 +91,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _prefill(member);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: const Text('Profile')),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -132,14 +132,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   failure is RepositoryFailure
                       ? failure.message
                       : 'Could not save. Try again.',
-                  style: const TextStyle(color: AppColors.danger),
+                  style: const TextStyle(color: AppColors.error),
                 ),
               ],
               const SizedBox(height: 24),
               if (saving.isLoading)
                 const Center(child: CircularProgressIndicator())
               else
-                PrimaryButton(label: 'Save', onPressed: _save),
+                DfPrimaryButton(label: 'Save', onPressed: _save),
               const SizedBox(height: 12),
               TextButton(
                 onPressed: () =>
@@ -168,7 +168,7 @@ class _Avatar extends StatelessWidget {
       onTap: onTap,
       child: CircleAvatar(
         radius: 48,
-        backgroundColor: AppColors.surface(context),
+        backgroundColor: AppColors.surfaceContainerLow,
         backgroundImage: bytes != null
             ? MemoryImage(bytes)
             : (photoUrl != null ? NetworkImage(photoUrl!) : null)
@@ -194,7 +194,7 @@ class _MembershipPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
+        color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -210,8 +210,8 @@ class _MembershipPanel extends StatelessWidget {
                 : 'Active until ${expiry.day}/${expiry.month}/${expiry.year}',
             style: TextStyle(
               color: member.isLapsed
-                  ? AppColors.danger
-                  : AppColors.secondaryText(context),
+                  ? AppColors.error
+                  : AppColors.onSurfaceVariant,
             ),
           ),
         ],

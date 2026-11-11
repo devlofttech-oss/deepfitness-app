@@ -20,7 +20,7 @@ class ClassDetailScreen extends ConsumerWidget {
     final bookings = ref.watch(myBookingsProvider).value ?? const {};
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: Text(groupClass.value?.title ?? 'Class')),
       body: SafeArea(
         child: groupClass.when(
@@ -56,14 +56,14 @@ class ClassDetailScreen extends ConsumerWidget {
                             error: (_, _) => Text(
                               'Could not load the timetable.',
                               style: TextStyle(
-                                color: AppColors.secondaryText(context),
+                                color: AppColors.onSurfaceVariant,
                               ),
                             ),
                             data: (list) => list.isEmpty
                                 ? Text(
                                     'Nothing scheduled right now.',
                                     style: TextStyle(
-                                      color: AppColors.secondaryText(context),
+                                      color: AppColors.onSurfaceVariant,
                                     ),
                                   )
                                 : Column(
@@ -142,7 +142,7 @@ class _SessionTile extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface(context),
+        color: AppColors.surfaceContainerLow,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -164,8 +164,8 @@ class _SessionTile extends ConsumerWidget {
                   _subtitle(current),
                   style: TextStyle(
                     color: current?.status == BookingStatus.waitlisted
-                        ? AppColors.gold
-                        : AppColors.secondaryText(context),
+                        ? AppColors.primaryContainer
+                        : AppColors.onSurfaceVariant,
                   ),
                 ),
               ],

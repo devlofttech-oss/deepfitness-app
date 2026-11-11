@@ -33,20 +33,20 @@ class VolumeChart extends StatelessWidget {
           alignment: BarChartAlignment.spaceBetween,
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
-              getTooltipColor: (_) => AppColors.charcoal,
+              getTooltipColor: (_) => AppColors.surfaceContainerHigh,
               getTooltipItem: (group, _, rod, _) {
                 final day = days[group.x];
                 return BarTooltipItem(
                   '${rod.toY.toInt()} sets\n',
                   const TextStyle(
-                    color: AppColors.white,
+                    color: AppColors.onSurface,
                     fontWeight: FontWeight.w700,
                   ),
                   children: [
                     TextSpan(
                       text: '${day.day.day}/${day.day.month}'
                           '${day.skipped > 0 ? ' · ${day.skipped} skipped' : ''}',
-                      style: const TextStyle(color: AppColors.muted),
+                      style: const TextStyle(color: AppColors.outline),
                     ),
                   ],
                 );
@@ -57,7 +57,7 @@ class VolumeChart extends StatelessWidget {
           gridData: FlGridData(
             drawVerticalLine: false,
             getDrawingHorizontalLine: (_) =>
-                FlLine(color: AppColors.borderDark, strokeWidth: 1),
+                FlLine(color: AppColors.surfaceContainerHigh, strokeWidth: 1),
           ),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
@@ -82,7 +82,7 @@ class VolumeChart extends StatelessWidget {
                     child: Text(
                       '${day.day}/${day.month}',
                       style: const TextStyle(
-                        color: AppColors.muted,
+                        color: AppColors.outline,
                         fontSize: 11,
                       ),
                     ),
@@ -104,8 +104,8 @@ class VolumeChart extends StatelessWidget {
                       top: Radius.circular(4),
                     ),
                     color: days[i].sets > 0
-                        ? AppColors.gold
-                        : AppColors.borderDark,
+                        ? AppColors.primaryContainer
+                        : AppColors.surfaceContainerHigh,
                   ),
                 ],
               ),

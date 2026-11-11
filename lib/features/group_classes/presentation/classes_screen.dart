@@ -14,7 +14,7 @@ class ClassesScreen extends ConsumerWidget {
     final classes = ref.watch(classesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas(context),
+      backgroundColor: AppColors.surface,
       appBar: AppBar(title: const Text('Classes')),
       body: SafeArea(
         child: classes.when(
@@ -45,7 +45,7 @@ class _ClassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface(context),
+      color: AppColors.surfaceContainerLow,
       borderRadius: BorderRadius.circular(16),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -85,7 +85,7 @@ class _ClassCard extends StatelessWidget {
                     Text(
                       '${groupClass.durationMins} min',
                       style: TextStyle(
-                        color: AppColors.secondaryText(context),
+                        color: AppColors.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -112,7 +112,7 @@ class _Message extends StatelessWidget {
         child: Text(
           text,
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.secondaryText(context)),
+          style: TextStyle(color: AppColors.onSurfaceVariant),
         ),
       ),
     );

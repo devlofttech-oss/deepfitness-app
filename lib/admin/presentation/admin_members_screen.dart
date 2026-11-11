@@ -119,7 +119,7 @@ class _MemberRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ExpansionTile(
       leading: CircleAvatar(
-        backgroundColor: AppColors.surface(context),
+        backgroundColor: AppColors.surfaceContainerLow,
         backgroundImage: member.photoUrl == null
             ? null
             : NetworkImage(member.photoUrl!),
@@ -134,7 +134,7 @@ class _MemberRow extends ConsumerWidget {
           member.isLapsed ? 'Lapsed' : 'Active',
         ].join(' · '),
         style: TextStyle(
-          color: member.isLapsed ? AppColors.danger : null,
+          color: member.isLapsed ? AppColors.error : null,
         ),
       ),
       trailing: TextButton(
@@ -176,7 +176,7 @@ class _MemberHistory extends ConsumerWidget {
                         '${entry.skipped ? 'skipped${entry.skipReason == null ? '' : ' (${entry.skipReason})'}' : '${entry.setsDone} sets'}',
                         style: TextStyle(
                           color: entry.skipped
-                              ? AppColors.secondaryText(context)
+                              ? AppColors.onSurfaceVariant
                               : null,
                         ),
                       ),
