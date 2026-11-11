@@ -49,6 +49,23 @@ final classSessionsProvider =
       return ref.watch(bookingRepositoryProvider).watchSessions(classId);
     });
 
+/// The whole upcoming timetable, for the booking tab.
+final upcomingSessionsProvider = StreamProvider<List<ClassSession>>(
+  (ref) => ref.watch(bookingRepositoryProvider).watchUpcomingSessions(),
+);
+
+/// The day the booking tab is showing. Null means every upcoming day.
+final selectedSessionDayProvider = NotifierProvider<SelectedDay, DateTime?>(
+  SelectedDay.new,
+);
+
+class SelectedDay extends Notifier<DateTime?> {
+  @override
+  DateTime? build() => null;
+
+  void select(DateTime? day) => state = day;
+}
+
 /// The member's active bookings, keyed by session id.
 final myBookingsProvider = StreamProvider<Map<String, Booking>>((ref) {
   final memberId = ref.watch(authControllerProvider).value?.member?.id;

@@ -17,6 +17,7 @@ import 'package:deepfitness/features/group_classes/presentation/class_detail_scr
 import 'package:deepfitness/features/group_classes/presentation/classes_screen.dart';
 import 'package:deepfitness/features/notifications/presentation/announcements_screen.dart';
 import 'package:deepfitness/features/home/presentation/home_screen.dart';
+import 'package:deepfitness/features/profile/presentation/edit_profile_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
 import 'package:deepfitness/features/shell/presentation/member_shell.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
@@ -36,6 +37,7 @@ import 'package:go_router/go_router.dart';
 const _lapsedAllowed = {
   '/renew',
   '/profile',
+  '/profile/edit',
   '/reports',
   '/notices',
   '/plan/history',
@@ -133,6 +135,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ProfileScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
         path: '/plan/exercise',

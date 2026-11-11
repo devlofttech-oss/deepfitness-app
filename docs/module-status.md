@@ -4,24 +4,28 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 85% built.**
+**Overall: roughly 88% built.**
+
+The designs arrived after the modules were written, so the figures below
+now carry a design column: a module can be functionally complete and
+still owe work against the screens in `stitch/`.
 
 Nothing in this repository has been compiled or analysed yet. Percentages
 below describe code written against the specification, not code proven to
 run. `flutter analyze`, `flutter test` and the Firestore rules tests all
 still need to pass before any of this counts as done.
 
-| # | Module | Done |
-|---|--------|------|
-| 01 | Authentication & member profile | 100% |
-| 02 | Workout plans | 100% |
-| 03 | Workout reports | 100% |
-| 04 | Events | 95% |
-| 05 | Group classes & booking | 90% |
-| 06 | Notifications | 90% |
-| 07 | iOS app | 35% |
-| 08 | Admin dashboard (Flutter Web) | 90% |
-| — | Cross-cutting (rules, indexes, functions, release) | 70% |
+| # | Module | Built | Matches the designs |
+|---|--------|-------|---------------------|
+| 01 | Authentication & member profile | 100% | Yes |
+| 02 | Workout plans | 100% | Yes |
+| 03 | Workout reports | 100% | Mostly |
+| 04 | Events | 95% | Mostly |
+| 05 | Group classes & booking | 95% | Yes |
+| 06 | Notifications | 90% | Yes |
+| 07 | iOS app | 35% | n/a |
+| 08 | Admin dashboard (Flutter Web) | 90% | No designs supplied |
+| — | Cross-cutting (rules, indexes, functions, release) | 75% | — |
 
 ---
 
@@ -201,6 +205,32 @@ account. The steps are written out in `docs/ios-setup.md`.
 - [ ] Staged rollout and the release checklist
 
 ---
+
+## Design
+
+The app follows **Obsidian Kinetic**, the system shipped in
+`stitch/stitch_deep_fitness_member_app/obsidian_kinetic/DESIGN.md`. The
+tokens live in `lib/app/colors.dart` and `lib/app/theme.dart`, and the
+components that encode its rules are in `lib/core/widgets/`.
+
+Done against the twelve supplied screens: the five-tab shell, home, the
+plan detail with its locked and up-next treatment, the exercise detail
+and set grid, the skip sheet, the reports screen, group classes with the
+videos and booking tabs, the booking timetable, events, notices, the
+profile hub and the auth screens.
+
+Still open on the design side:
+
+- [ ] The elements with no data behind them: the QR check-in pass, the
+      "Level N" tier badge, estimated minutes and calories remaining, the
+      studio bay on a session, and the category badge on a class. Each
+      needs a field and a decision about where the number comes from.
+- [ ] Event imagery and the class category filter chips.
+- [ ] The dashboard has no supplied designs, so it keeps the same tokens
+      but follows its own layout.
+- [ ] The spec's prose names `#0B0C0E` and `#FFF500`; the Tailwind config
+      the screenshots were rendered from says `#121315` and `#F1E800`.
+      The rendered values are the ones in use.
 
 ## What cannot be closed from here
 

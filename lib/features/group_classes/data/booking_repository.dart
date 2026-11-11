@@ -33,6 +33,26 @@ class BookingRepository extends BaseRepository {
         );
   }
 
+  /// Every upcoming session, across all classes, soonest first.
+  ///
+  /// The timetable is read as one list and bucketed by day on the
+  /// device: a query per day would be a dozen reads to draw one screen.
+  Stream<List<ClassSession>> watchUpcomingSessions({
+    DateTime? from,
+    int limit = 100,
+  }) {
+    return notDeleted(firestore.collection(Collections.classSessions))
+        .where('startsAt', isGreaterThanOrEqualTo: from ?? DateTime.now())
+        .orderBy('startsAt')
+        .limit(limit)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => ClassSession.fromFirestore(doc, null))
+              .toList(growable: false),
+        );
+  }
+
   /// The member's active bookings, by session id.
   Stream<Map<String, Booking>> watchMyBookings(String memberId) {
     return firestore
