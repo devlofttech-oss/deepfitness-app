@@ -4,7 +4,7 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 65% built.**
+**Overall: roughly 75% built.**
 
 Nothing in this repository has been compiled or analysed yet. Percentages
 below describe code written against the specification, not code proven to
@@ -19,8 +19,8 @@ still need to pass before any of this counts as done.
 | 04 | Events | 85% |
 | 05 | Group classes & booking | 85% |
 | 06 | Notifications | 75% |
-| 07 | iOS app | 0% |
-| 08 | Admin dashboard (Flutter Web) | 0% |
+| 07 | iOS app | 35% |
+| 08 | Admin dashboard (Flutter Web) | 70% |
 | — | Cross-cutting (rules, indexes, functions, release) | 45% |
 
 ---
@@ -139,32 +139,50 @@ onto a day.
 - [ ] APNs key uploaded to Firebase, push capability enabled in Xcode
       (module 07, needs a Mac)
 
-## 07 · iOS app — 0%
+## 07 · iOS app — 35%
 
-- [ ] `GoogleService-Info.plist` in `ios/Runner/` and added to the target
-- [ ] APNs key uploaded, push capability enabled
-- [ ] Phone-auth reCAPTCHA fallback configured with the URL scheme
-- [ ] `Info.plist` usage strings for camera and photos
-- [ ] Layout checked from iPhone SE to Pro Max, notch safe areas
-- [ ] Apple sign-in, if any other social login is added
+- [x] `Info.plist` usage strings for camera and photos
+- [x] `remote-notification` in `UIBackgroundModes`
+- [x] `Runner.entitlements` declaring `aps-environment`
+- [x] Every screen already inside a `SafeArea`
+- [ ] `GoogleService-Info.plist` placed **and added to the Xcode target**
+- [ ] Push Notifications capability on the target
+- [ ] APNs key created and uploaded to Firebase
+- [ ] reCAPTCHA URL scheme from `REVERSED_CLIENT_ID`
+- [ ] Layout checked on real devices, SE through Pro Max
+- [ ] Apple sign-in — only if another social login is added, so nothing
 
-Requires a Mac. `flutterfire configure` registered the iOS app but the
-plist was never placed.
+Everything outstanding needs a Mac, Xcode and the Apple Developer
+account. The steps are written out in `docs/ios-setup.md`.
 
-## 08 · Admin dashboard (Flutter Web) — 0%
+## 08 · Admin dashboard (Flutter Web) — 70%
 
-- [ ] Web target configured (`flutterfire configure` was run without it)
-- [ ] `lib/admin/` screens, sharing models and repositories with the app
-- [ ] Manage the exercise library, plans and assignments
-- [ ] Create events, classes and class sessions
-- [ ] Member list with workout history
-- [ ] Compose and send announcements
-- [x] Admin-only enforced in rules by custom claim, not hidden in the UI
+- [x] `lib/admin/` sharing the models and repositories with the app
+- [x] Navigation rail shell, laid out for a desk, not a phone
+- [x] Exercise library: create, edit, soft delete
+- [x] Plan builder with drag-to-reorder, since order is the unlock order
+- [x] Assign a plan to a member, snapshotting the exercise details
+- [x] Member list with search and each member's workout history
+- [x] Set a member's membership status and expiry — the pair of fields a
+      member may not write about themselves
+- [x] Create events
+- [x] Create class sessions, and list who is booked on each
+- [x] Compose and send announcements through the callable, with a
+      confirm step because a push cannot be recalled
+- [x] Role changes go through `setUserRole`, never a document write
+- [x] Admin-only enforced in rules by custom claim; the router redirect
+      is convenience on top, not the control
+- [x] Unit tests for the assignment snapshot: order, copying, and
+      dropping an exercise deleted since the plan was built
+- [ ] Web target configured — `flutterfire configure` was run without it,
+      so there is no web app in the Firebase project yet
+- [ ] Create group classes themselves (sessions can be added to existing
+      classes; the class record is still made by hand)
+- [ ] Image upload for exercises and events (storage rules are ready)
+- [ ] Pagination controls on the admin lists — the repositories page, the
+      screens currently show the first page only
 - [ ] Deployed to Firebase Hosting
-
-Reference: `legacy/supabase-era/trainer/` — 2,655 lines covering the
-exercise library, plan builder, assignment flow and member list. That is
-the bulk of this module's work, written against Supabase.
+- [ ] Responsive check below 1100px
 
 ## Cross-cutting — 45%
 

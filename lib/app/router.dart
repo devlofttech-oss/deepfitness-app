@@ -1,3 +1,11 @@
+import 'package:deepfitness/admin/presentation/admin_announcements_screen.dart';
+import 'package:deepfitness/admin/presentation/admin_classes_screen.dart';
+import 'package:deepfitness/admin/presentation/admin_events_screen.dart';
+import 'package:deepfitness/admin/presentation/admin_exercises_screen.dart';
+import 'package:deepfitness/admin/presentation/admin_members_screen.dart';
+import 'package:deepfitness/admin/presentation/admin_plans_screen.dart';
+import 'package:deepfitness/admin/presentation/admin_shell.dart';
+import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/services/auth_service.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/presentation/onboarding_screen.dart';
@@ -48,6 +56,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         case AuthStage.needsProfile:
           return path == '/onboarding' ? null : '/onboarding';
         case AuthStage.ready:
+          final isAdminRoute = path.startsWith('/admin');
+          final isStaff = value?.role.isStaff ?? false;
+
+          // Staff land on the dashboard; a member who types an /admin
+          // URL is sent back. This is convenience, not security: the
+          // Firestore rules are what actually stop them, because hiding
+          // a screen does nothing against the SDK and a token.
+          if (isAdminRoute && !isStaff) return '/';
+          if (isStaff && !isAdminRoute) return '/admin/members';
+
           if (value?.isLapsed ?? false) {
             return _lapsedAllowed.contains(path) ? null : '/renew';
           }
@@ -88,6 +106,36 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: 'exercise',
             builder: (context, state) => const ExerciseScreen(),
+          ),
+        ],
+      ),
+      ShellRoute(
+        builder: (context, state, child) =>
+            AdminShell(location: state.uri.path, child: child),
+        routes: [
+          GoRoute(
+            path: '/admin/members',
+            builder: (context, state) => const AdminMembersScreen(),
+          ),
+          GoRoute(
+            path: '/admin/exercises',
+            builder: (context, state) => const AdminExercisesScreen(),
+          ),
+          GoRoute(
+            path: '/admin/plans',
+            builder: (context, state) => const AdminPlansScreen(),
+          ),
+          GoRoute(
+            path: '/admin/events',
+            builder: (context, state) => const AdminEventsScreen(),
+          ),
+          GoRoute(
+            path: '/admin/classes',
+            builder: (context, state) => const AdminClassesScreen(),
+          ),
+          GoRoute(
+            path: '/admin/announcements',
+            builder: (context, state) => const AdminAnnouncementsScreen(),
           ),
         ],
       ),

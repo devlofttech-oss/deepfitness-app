@@ -53,6 +53,14 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Deep Fitness uses the camera so you can take a profile photo.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Deep Fitness needs your photo library so you can choose a profile photo.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
