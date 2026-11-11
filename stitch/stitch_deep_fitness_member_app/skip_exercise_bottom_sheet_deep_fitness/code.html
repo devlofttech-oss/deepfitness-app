@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<meta content="mobile_tab" name="shell-type"/>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {surface: "#121315", "surface-container": "#1f2022", "surface-container-high": "#292a2c", "surface-container-highest": "#343537", "surface-container-low": "#1b1c1e", "surface-container-lowest": "#0d0e10", primary: "#ffffff", "on-surface": "#e3e2e5", "on-surface-variant": "#cbc7aa", "secondary-container": "#424750", "on-error-container": "#ffdad6", "surface-tint": "#d3cb00", "tertiary-fixed": "#97f2f2", "surface-dim": "#121315", "tertiary-fixed-dim": "#7ad5d5", "inverse-on-surface": "#303033", "on-secondary-fixed": "#171c24", "on-primary-fixed": "#1e1c00", "primary-container": "#f1e800", "on-secondary-fixed-variant": "#424750", "on-primary": "#343200", "error-container": "#93000a", background: "#121315", "on-primary-fixed-variant": "#4c4900", error: "#ffb4ab", "outline-variant": "#494831", "primary-fixed-dim": "#d3cb00", "inverse-primary": "#656100", "on-background": "#e3e2e5", secondary: "#c2c6d1", "on-error": "#690005", "inverse-surface": "#e3e2e5", "on-secondary-container": "#b1b5c0", "secondary-fixed": "#dee2ee", "on-tertiary-fixed": "#002020", outline: "#959277", tertiary: "#ffffff", "on-tertiary-fixed-variant": "#004f50", "primary-fixed": "#f1e800", "on-tertiary-container": "#007071", "tertiary-container": "#97f2f2", "surface-variant": "#343537", "on-tertiary": "#003737", "surface-bright": "#38393b", "on-primary-container": "#6b6700", "on-secondary": "#2c3139", "secondary-fixed-dim": "#c2c6d1"}, fontFamily: {barlow: ["'Barlow Condensed'", "sans-serif"], inter: ["Inter", "sans-serif"], headline: ["Barlow Condensed"], display: ["Barlow Condensed"], body: ["Inter"], label: ["Barlow Condensed"]}, fontSize: {}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}}}};</script>
+<style>
+    @layer base {
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+      body {
+        overscroll-behavior: none;
+      }
+      .pb-safe {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .pt-safe {
+        padding-top: env(safe-area-inset-top, 0px);
+      }
+    }
+    ::-webkit-scrollbar {
+      display: none;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#121315] font-inter text-zinc-100 flex flex-col min-h-screen relative overflow-hidden select-none">
+<!-- Fixed Top Header (Gym Chrome) -->
+<header class="fixed top-0 inset-x-0 z-10 bg-[#0d0e10]/90 backdrop-blur-md pt-safe border-b border-zinc-800/60">
+<div class="h-14 px-4 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<img alt="Deep Fitness Logo" class="h-7 w-auto object-contain brightness-90" src="https://lh3.googleusercontent.com/aida/AEtjO1X0Np1nmLlbfHVex2G7_OGGkAHQTJKqjNlqgE4z3ebWfXquK-wS61aXrDsH3epwH55rUIMbWQs8VofGQ3QRrdjPxM78ntaB390wzU0qhwPHBpEz7s2gakgnApkEl15MXJlcBTZzu1sdwB6ODSNyqwwaisAgzMUU_nOA92izKIz6lB8B_Ro-pdlOoHzuGtIprnEkSjNOrJqhjGrAjvEYDCmPy_tkuU7TcWJ5iTfgjQJh5Jj8xneKhfR_syw"/>
+<div class="flex flex-col leading-none">
+<span class="font-barlow text-lg uppercase tracking-wide text-zinc-100 font-bold">DEEP FITNESS</span>
+<span class="font-barlow text-xs uppercase tracking-wider text-emerald-400 font-semibold">MYSORE</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-800/80 text-emerald-400 text-xs font-semibold font-barlow tracking-wider">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          LIVE SET 3/4
+        </div>
+<img alt="Profile" class="w-7 h-7 rounded-full object-cover border border-zinc-700" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD0bcS6hlfwFFepRSAQ6MqPqcz8Qc7MnTgMgkep-T0hcDHIs9cEqxgnbPytyFgXSrlCW6mshtRdTR6-CFjJouQVpZfQ2gY-YRitZvpmMPW6kt7dd4ISgqjWPNPX2lLhYTidWfpcerYzN3hI5ABoo0OeBTjRo02Cfcpap5seMu2nmoRDi2AgK84DKixM1rRsx0PgAnsJz99YY7dPCoPA6J4CONIO6bYubCeq1VjRT8uVjbrOoI8Fcq-ONw"/>
+</div>
+</div>
+</header>
+<!-- Background Exercise Screen (Dimmed at 25% opacity, Darkened & Blurred) -->
+<div aria-hidden="true" class="absolute inset-0 pt-16 pb-20 px-4 flex flex-col pointer-events-none opacity-25 filter blur-[1px]">
+<!-- Exercise Header Info -->
+<div class="flex items-center justify-between py-2">
+<span class="font-barlow text-xs uppercase tracking-widest text-emerald-400 font-bold">Push Day A • Incline Chest</span>
+<div class="flex items-center gap-1 bg-zinc-800/80 px-2 py-0.5 rounded text-xs text-zinc-300">
+<span class="material-symbols-outlined text-[14px]">timer</span>
+<span>01:45</span>
+</div>
+</div>
+<!-- Media Frame -->
+<div class="relative w-full h-40 rounded-xl overflow-hidden bg-zinc-900 border border-zinc-800 mt-1">
+<img alt="Incline DB Press" class="w-full h-full object-cover grayscale brightness-40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9eBgwVxYp0atjsSv8qT7cOvcwC38MPIJ3UurVpe4JVcmQpCVHkLpuV1zZGSnj77xsOHEU0GkyVYD6V1takqYzs9AshieYuIk8rjPzQxtUFbkYiM6MmVoa-WZW-p5CTxb2QDB8_vcjNoY4ouERedaRG6r1ZnnHkfBWfWXZy0z1gKIdhSE3KOF2luG-KVZrHAAWbC3jg10-IOK9_MJZl2dR-mVWeX0sz25Z1wQ78k5bwuXmgkX0s3xJAQ"/>
+<div class="absolute inset-0 bg-black/60"></div>
+<div class="absolute bottom-2.5 left-3">
+<h2 class="font-barlow text-xl uppercase font-bold text-white tracking-wide">Incline Dumbbell Press</h2>
+<span class="text-xs text-emerald-400 font-medium">32 KG / HAND • TARGET: 8-10 REPS</span>
+</div>
+</div>
+<!-- Metrics Matrix Grid -->
+<div class="grid grid-cols-3 gap-2 mt-3">
+<div class="bg-zinc-800/60 p-2.5 rounded-lg flex flex-col items-center">
+<span class="text-[10px] text-zinc-400 font-barlow uppercase">Reps</span>
+<span class="text-lg font-barlow font-bold text-white">8-10</span>
+</div>
+<div class="bg-zinc-800/60 p-2.5 rounded-lg flex flex-col items-center">
+<span class="text-[10px] text-zinc-400 font-barlow uppercase">Rest</span>
+<span class="text-lg font-barlow font-bold text-white">90s</span>
+</div>
+<div class="bg-zinc-800/60 p-2.5 rounded-lg flex flex-col items-center">
+<span class="text-[10px] text-zinc-400 font-barlow uppercase">Target RPE</span>
+<span class="text-lg font-barlow font-bold text-white">8.5</span>
+</div>
+</div>
+</div>
+<!-- Modal Backdrop & Anchored Bottom Sheet Container -->
+<div class="fixed inset-0 z-30 flex flex-col justify-end bg-black/80 backdrop-blur-sm">
+<!-- Bottom Sheet Card: Perfectly sized and visible on mobile viewport -->
+<section aria-labelledby="modal-headline" aria-modal="true" class="w-full bg-[#16181B] border-t border-zinc-800 rounded-t-3xl px-4 pt-3 pb-5 flex flex-col max-h-[751px] overflow-y-auto shadow-2xl" role="dialog">
+<!-- Grabber Handle -->
+<div class="w-12 h-1 bg-zinc-600 rounded-full mx-auto mb-3 shrink-0"></div>
+<!-- Header row -->
+<div class="flex items-start justify-between">
+<div>
+<h2 class="text-2xl font-bold uppercase tracking-tight text-white font-['Barlow_Condensed']" id="modal-headline">
+            Skip this exercise?
+          </h2>
+<p class="text-xs text-zinc-400 mt-0.5">
+            The next exercise in your split will still unlock automatically.
+          </p>
+</div>
+<button aria-label="Close modal" class="w-8 h-8 rounded-full bg-zinc-800/80 hover:bg-zinc-700 text-zinc-400 hover:text-white flex items-center justify-center shrink-0 ml-2 transition-colors" onclick="handleDismiss()">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<!-- Selectable Reasons List -->
+<div class="mt-3 flex flex-col gap-2" id="reasons-list">
+<!-- Option 1: Injury or pain -->
+<label class="reason-option flex items-center justify-between p-2.5 px-3 rounded-xl bg-[#1E2024] border border-zinc-800/80 cursor-pointer transition-all hover:bg-zinc-800/70" data-reason="injury">
+<div class="flex items-center gap-3 min-w-0 pr-2">
+<div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-rose-400 shrink-0">
+<span class="material-symbols-outlined text-[19px]">healing</span>
+</div>
+<div class="flex flex-col min-w-0 leading-tight">
+<span class="font-barlow text-base uppercase font-bold text-zinc-100 tracking-wide">Injury or pain</span>
+<span class="text-[11px] text-zinc-400 truncate">Joint discomfort or tweak</span>
+</div>
+</div>
+<div class="radio-circle w-5 h-5 rounded-full border-2 border-zinc-600 flex items-center justify-center shrink-0">
+<div class="dot w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
+</div>
+</label>
+<!-- Option 2: Machine or equipment occupied (SELECTED by default) -->
+<label class="reason-option flex items-center justify-between p-2.5 px-3 rounded-xl bg-[#1E2024] border border-emerald-500 cursor-pointer transition-all" data-reason="occupied">
+<div class="flex items-center gap-3 min-w-0 pr-2">
+<div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 shrink-0">
+<span class="material-symbols-outlined text-[19px]">fitness_center</span>
+</div>
+<div class="flex flex-col min-w-0 leading-tight">
+<span class="font-barlow text-base uppercase font-bold text-white tracking-wide">Machine or equipment occupied</span>
+<span class="text-[11px] text-zinc-300 truncate">Bench or dumbbells in use at Mysore studio</span>
+</div>
+</div>
+<div class="radio-circle w-5 h-5 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
+<div class="dot w-2.5 h-2.5 rounded-full bg-emerald-500 block"></div>
+</div>
+</label>
+<!-- Option 3: Too difficult / fatigued -->
+<label class="reason-option flex items-center justify-between p-2.5 px-3 rounded-xl bg-[#1E2024] border border-zinc-800/80 cursor-pointer transition-all hover:bg-zinc-800/70" data-reason="fatigue">
+<div class="flex items-center gap-3 min-w-0 pr-2">
+<div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-amber-400 shrink-0">
+<span class="material-symbols-outlined text-[19px]">bolt</span>
+</div>
+<div class="flex flex-col min-w-0 leading-tight">
+<span class="font-barlow text-base uppercase font-bold text-zinc-100 tracking-wide">Too difficult / fatigued</span>
+<span class="text-[11px] text-zinc-400 truncate">Form breaking down or muscular exhaustion</span>
+</div>
+</div>
+<div class="radio-circle w-5 h-5 rounded-full border-2 border-zinc-600 flex items-center justify-center shrink-0">
+<div class="dot w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
+</div>
+</label>
+<!-- Option 4: Other -->
+<label class="reason-option flex items-center justify-between p-2.5 px-3 rounded-xl bg-[#1E2024] border border-zinc-800/80 cursor-pointer transition-all hover:bg-zinc-800/70" data-reason="other">
+<div class="flex items-center gap-3 min-w-0 pr-2">
+<div class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
+<span class="material-symbols-outlined text-[19px]">edit_note</span>
+</div>
+<div class="flex flex-col min-w-0 leading-tight">
+<span class="font-barlow text-base uppercase font-bold text-zinc-100 tracking-wide">Other</span>
+<span class="text-[11px] text-zinc-400 truncate">Provide your own note below</span>
+</div>
+</div>
+<div class="radio-circle w-5 h-5 rounded-full border-2 border-zinc-600 flex items-center justify-center shrink-0">
+<div class="dot w-2.5 h-2.5 rounded-full bg-emerald-500 hidden"></div>
+</div>
+</label>
+</div>
+<!-- Text Field for "Other" / Specific Notes -->
+<div class="mt-2.5">
+<input aria-label="Specify reason" class="w-full bg-[#0D0E10] border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors" placeholder="Specify reason (e.g., tight front delt, sharing rack)..." type="text"/>
+</div>
+<!-- Reassurance Note -->
+<div class="mt-2.5 flex items-center gap-2 bg-[#0D0E10]/70 border border-zinc-800/80 rounded-lg px-3 py-1.5">
+<span class="material-symbols-outlined text-emerald-400 text-[17px] shrink-0">verified_user</span>
+<p class="text-[11px] text-zinc-400 leading-tight">
+          Skipped exercises are saved in your log and <span class="text-zinc-200 font-semibold">won't affect</span> your 14-day streak.
+        </p>
+</div>
+<!-- Action Buttons -->
+<div class="mt-3.5 flex flex-col gap-2">
+<button class="w-full h-12 bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm uppercase tracking-wider rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-[0.99] shadow-lg shadow-rose-950/40" onclick="confirmSkip()" type="button">
+<span class="material-symbols-outlined text-[19px]">fast_forward</span>
+<span>Skip &amp; Next Exercise</span>
+</button>
+<button class="w-full h-12 bg-[#222428] hover:bg-[#2c2f35] text-zinc-200 font-bold text-sm uppercase tracking-wider rounded-xl flex items-center justify-center transition-colors" onclick="handleDismiss()" type="button">
+          Cancel • Resume Workout
+        </button>
+</div>
+</section>
+</div>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 inset-x-0 z-40 pb-safe bg-[#0d0e10]/95 backdrop-blur-xl border-t border-zinc-800/60">
+<div class="flex justify-between items-center h-14 px-2">
+<a class="flex-1 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">home</span>
+<span class="font-barlow text-[10px] uppercase tracking-wider mt-0.5">Home</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center text-emerald-400 font-bold" href="#">
+<span class="material-symbols-outlined text-[20px]">fitness_center</span>
+<span class="font-barlow text-[10px] uppercase tracking-wider mt-0.5">Workouts</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+<span class="font-barlow text-[10px] uppercase tracking-wider mt-0.5">Classes</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">confirmation_number</span>
+<span class="font-barlow text-[10px] uppercase tracking-wider mt-0.5">Events</span>
+</a>
+<a class="flex-1 flex flex-col items-center justify-center text-zinc-500 hover:text-zinc-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="font-barlow text-[10px] uppercase tracking-wider mt-0.5">Profile</span>
+</a>
+</div>
+</nav>
+<script>
+    // Radio toggle interaction for reason options
+    const reasonCards = document.querySelectorAll('.reason-option');
+    reasonCards.forEach(card => {
+      card.addEventListener('click', () => {
+        reasonCards.forEach(c => {
+          c.classList.remove('border-emerald-500');
+          c.classList.add('border-zinc-800/80');
+          const circle = c.querySelector('.radio-circle');
+          circle.classList.remove('border-emerald-500');
+          circle.classList.add('border-zinc-600');
+          const dot = c.querySelector('.dot');
+          dot.classList.add('hidden');
+          dot.classList.remove('block');
+        });
+
+        card.classList.add('border-emerald-500');
+        card.classList.remove('border-zinc-800/80');
+        const activeCircle = card.querySelector('.radio-circle');
+        activeCircle.classList.add('border-emerald-500');
+        activeCircle.classList.remove('border-zinc-600');
+        const activeDot = card.querySelector('.dot');
+        activeDot.classList.remove('hidden');
+        activeDot.classList.add('block');
+      });
+    });
+
+    function handleDismiss() {
+      const container = document.querySelector('.fixed.inset-0.z-30');
+      if (container) {
+        container.style.opacity = '0';
+        container.style.transition = 'opacity 0.2s ease-out';
+        setTimeout(() => {
+          container.style.display = 'none';
+        }, 200);
+      }
+    }
+
+    function confirmSkip() {
+      const btn = document.querySelector('button[onclick="confirmSkip()"]');
+      if (btn) {
+        btn.innerHTML = '<span class="material-symbols-outlined text-[19px] animate-spin">sync</span><span>Loading next exercise...</span>';
+        setTimeout(() => {
+          handleDismiss();
+        }, 600);
+      }
+    }
+  </script>
+</body></html>

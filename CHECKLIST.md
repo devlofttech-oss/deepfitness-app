@@ -12,7 +12,8 @@ Tick a box only when the item is implemented **and** verified (`flutter analyze`
 - [x] **B1. Backend conflict resolved — migrate to Firebase**, as the guide states. The Supabase client, config and service are gone from `lib/`; the old schema is parked in `legacy/supabase/`. Items marked **[FB]** are no longer blocked.
 - [ ] **B1a. Move the live Supabase data into Firestore.** Members, exercises, plans and history exist only in Postgres today. This needs an export/transform/import script and a cutover plan. The hard part is accounts: Firebase Auth issues new UIDs, so every member has to be re-created and re-invited, or matched on email/phone — and member documents are keyed by UID, so the mapping decides every other collection's foreign keys.
 - [ ] **B1b. Port the maintenance scripts.** `scripts/import_exercise_metadata.ps1`, `scripts/migrate_workouts_to_dataset_exercises.ps1` and `scripts/upload_exercise_images.ps1` all target Supabase and no longer work.
-- [ ] **B2. Stitch design not readable.** `stitch.withgoogle.com` requires a Google sign-in the tooling cannot perform. Need an export (Figma link, screenshots, or the generated HTML/CSS) before any screen can be checked against the design.
+- [x] **B2. Stitch design readable.** The export is in `stitch/stitch_deep_fitness_member_app/` — 11 screens, each with `code.html` and `screen.png`, plus the "Obsidian Kinetic" spec in `obsidian_kinetic/DESIGN.md`.
+- [ ] **B2a. The design spec contradicts itself.** `DESIGN.md`'s YAML frontmatter and its prose give two different palettes: YAML has `#121315` background and `#f1e800` accent, the prose says `#0B0C0E` and `#FFF500`. The exported HTML uses the YAML values, so the prose hex values look stale — confirm which is intended before theming.
 - [ ] **B3. Confirm the production project.** The guide says the app is already live and data changes must be additive. Confirm which Firebase project is production, and what happens to the live Supabase project, before the cutover.
 
 ---
@@ -317,9 +318,9 @@ the plan's own status.
 
 ## 10. UI design (Stitch)
 
-- [ ] Obtain a readable export of the Stitch project (blocked — see B2)
-- [ ] Map every Stitch screen to a route in `app_router.dart`
-- [ ] Reconcile colours, typography and spacing with `app_colors.dart` / `app_theme.dart`
+- [x] Obtain a readable export of the Stitch project — in `stitch/`
+- [ ] Map every Stitch screen to a route in `app/router.dart` — the 11 exported screens are login, home, workout plan detail, exercise detail, skip exercise (and its bottom sheet), workout progress report, group classes, book a class, events and profile
+- [ ] Reconcile colours, typography and spacing with `app/colors.dart` / `app/theme.dart` — the design is a yellow-on-near-black system (Barlow Condensed + Inter); the app is currently gold-on-black, so this is a real retheme, not a tweak
 - [ ] Identify screens in the design that have no implementation yet
 - [ ] Identify screens implemented that are not in the design
 
