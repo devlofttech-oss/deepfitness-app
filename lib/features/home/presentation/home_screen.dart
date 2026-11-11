@@ -22,6 +22,16 @@ class HomeScreen extends ConsumerWidget {
         title: const Text('Deep Fitness'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.event_outlined),
+            tooltip: 'Events',
+            onPressed: () => context.push('/events'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: 'Progress',
+            onPressed: () => context.push('/reports'),
+          ),
+          IconButton(
             icon: const Icon(Icons.person_outline),
             tooltip: 'Profile',
             onPressed: () => context.push('/profile'),

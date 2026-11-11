@@ -50,11 +50,14 @@ class RenewalScreen extends ConsumerWidget {
                   style: TextStyle(color: AppColors.secondaryText(context)),
                 ),
                 const SizedBox(height: 32),
-                // Reports land here as module 03; until then the profile
-                // is the way through rather than a promise of a screen
-                // that does not exist.
+                PrimaryButton(
+                  label: 'See my past workouts',
+                  onPressed: () => context.go('/reports'),
+                ),
+                const SizedBox(height: 12),
                 PrimaryButton(
                   label: 'My profile',
+                  outline: true,
                   onPressed: () => context.go('/profile'),
                 ),
                 const SizedBox(height: 24),

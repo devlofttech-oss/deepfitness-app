@@ -4,7 +4,7 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 35% built.**
+**Overall: roughly 50% built.**
 
 Nothing in this repository has been compiled or analysed yet. Percentages
 below describe code written against the specification, not code proven to
@@ -15,8 +15,8 @@ still need to pass before any of this counts as done.
 |---|--------|------|
 | 01 | Authentication & member profile | 90% |
 | 02 | Workout plans | 85% |
-| 03 | Workout reports | 0% |
-| 04 | Events | 0% |
+| 03 | Workout reports | 90% |
+| 04 | Events | 85% |
 | 05 | Group classes & booking | 10% |
 | 06 | Notifications | 30% |
 | 07 | iOS app | 0% |
@@ -62,25 +62,40 @@ still need to pass before any of this counts as done.
 
 Reference: `legacy/supabase-era/workout/`, `legacy/supabase-era/home/`.
 
-## 03 · Workout reports — 0%
+## 03 · Workout reports — 90%
 
-- [ ] Range selector: week, month, custom, as one query on `completedAt`
-- [ ] Completion rate, streaks and sets completed derived in Dart
-- [ ] Charts with a Flutter charting package, no server round trip
-- [ ] Shareable summary rendered as an image from the widget tree
-- [ ] Unit tests for the report maths
+- [x] Range selector: week, month, custom, as one query on `completedAt`
+- [x] Completion rate, streaks and sets derived in Dart, nothing stored
+- [x] Per-day series, including days with no activity
+- [x] Bar chart of sets per day (fl_chart), no server round trip
+- [x] Shareable summary rendered as a PNG from the widget tree
+- [x] Empty and error states
+- [x] Unit tests for the report maths: rate, streaks, ranges, day bucketing
+- [ ] Personal bests, if the client wants them (not in the document)
+- [ ] Widget test of the range selector changing the query
 
-No charting package is in `pubspec.yaml` yet.
-Reference: `legacy/supabase-era/progress/`.
+Decisions worth knowing: the completion rate divides by what the member
+got through, not what was assigned, so an untouched exercise ahead of them
+is not counted as a failure. A streak ending yesterday still counts while
+today is young, so the number does not flicker through the day. A log
+whose server timestamp has not landed yet is left out rather than guessed
+onto a day.
 
-## 04 · Events — 0%
+## 04 · Events — 85%
 
-- [ ] `Event` and `EventRsvp` models and repositories
-- [ ] List filtered `startsAt >= now`, ascending, paginated
-- [ ] RSVP creates one document per member per event
+- [x] `Event` and `EventRsvp` models with converters
+- [x] `EventRepository` through `BaseRepository`
+- [x] List filtered `startsAt >= now`, ascending, paginated
+- [x] Infinite scroll, pull to refresh, empty and error states
+- [x] RSVP creates one document per member per event, via a derived id so
+      a second tap overwrites rather than duplicates
+- [x] RSVP can be withdrawn
 - [x] Rules allow a member only their own RSVP
 - [x] Index for `startsAt` and for the event/member RSVP lookup
-- [ ] Reminder push the day before (function exists, unverified)
+- [x] Unit tests for the RSVP id rule
+- [ ] Event detail screen (the card carries everything for now)
+- [ ] Reminder push the day before — `dailyReminders` exists in the
+      functions but has not been read against this module or run
 
 ## 05 · Group classes & booking — 10%
 
