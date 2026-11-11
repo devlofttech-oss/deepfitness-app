@@ -5,6 +5,9 @@ import 'package:deepfitness/features/auth/presentation/renewal_screen.dart';
 import 'package:deepfitness/features/auth/presentation/sign_in_screen.dart';
 import 'package:deepfitness/features/auth/presentation/verify_code_screen.dart';
 import 'package:deepfitness/features/events/presentation/events_screen.dart';
+import 'package:deepfitness/features/group_classes/presentation/class_detail_screen.dart';
+import 'package:deepfitness/features/group_classes/presentation/classes_screen.dart';
+import 'package:deepfitness/features/notifications/presentation/announcements_screen.dart';
 import 'package:deepfitness/features/home/presentation/home_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
@@ -21,7 +24,7 @@ import 'package:go_router/go_router.dart';
 /// stay open, and training does not.
 // Reports are included: a lapsed member keeps read access to their own
 // history, which is the point of a lapse not being a sign-out.
-const _lapsedAllowed = {'/renew', '/profile', '/reports'};
+const _lapsedAllowed = {'/renew', '/profile', '/reports', '/notices'};
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final session = ref.watch(authControllerProvider);
@@ -87,6 +90,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             builder: (context, state) => const ExerciseScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/classes',
+        builder: (context, state) => const ClassesScreen(),
+        routes: [
+          GoRoute(
+            path: ':classId',
+            builder: (context, state) => ClassDetailScreen(
+              classId: state.pathParameters['classId']!,
+            ),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/notices',
+        builder: (context, state) => const AnnouncementsScreen(),
       ),
       GoRoute(
         path: '/events',

@@ -4,7 +4,7 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 50% built.**
+**Overall: roughly 65% built.**
 
 Nothing in this repository has been compiled or analysed yet. Percentages
 below describe code written against the specification, not code proven to
@@ -17,8 +17,8 @@ still need to pass before any of this counts as done.
 | 02 | Workout plans | 85% |
 | 03 | Workout reports | 90% |
 | 04 | Events | 85% |
-| 05 | Group classes & booking | 10% |
-| 06 | Notifications | 30% |
+| 05 | Group classes & booking | 85% |
+| 06 | Notifications | 75% |
 | 07 | iOS app | 0% |
 | 08 | Admin dashboard (Flutter Web) | 0% |
 | — | Cross-cutting (rules, indexes, functions, release) | 45% |
@@ -97,36 +97,47 @@ onto a day.
 - [ ] Reminder push the day before — `dailyReminders` exists in the
       functions but has not been read against this module or run
 
-## 05 · Group classes & booking — 10%
+## 05 · Group classes & booking — 85%
 
-- [ ] `GroupClass`, `ClassSession`, `Booking` models and repositories
-- [ ] Video stored as `videoProvider` + `videoId`, embed URL built in app
-- [ ] Player embedded in-app, not a jump out to YouTube
-- [ ] Booking in a Firestore transaction: read `bookedCount` against
-      `capacity`, then write booking and counter together
-- [ ] Full session adds a waitlisted booking with a position
-- [ ] Cancelling frees the slot and promotes the first waitlisted member
-      in the same transaction
-- [x] `onBookingCancelled` function exists (compiled only, untested)
+- [x] `GroupClass`, `ClassSession`, `Booking` models and repositories
+- [x] Video stored as `videoProvider` + `videoId`, embed URL built in app
+- [x] Player embedded in-app via a web view, locked to the embed URL so a
+      tap on a related video cannot turn it into a browser
+- [x] Booking in a Firestore transaction: the session is read and its
+      counter written atomically with the booking
+- [x] Full session adds a waitlisted booking with a position
+- [x] Cancelling frees the counter the member actually held, in a
+      transaction
+- [x] One booking per member per session, via a derived document id
+- [x] Class list, class detail with the timetable, book and cancel
+- [x] `onBookingCancelled` function exists (compiled only, unverified)
 - [x] Rules: members book and cancel their own; promotion is privileged
 - [x] Indexes for session/status/position and member/status/createdAt
-- [ ] Admin view listing bookings per session
-- [ ] Unit tests for booking capacity
+- [x] Unit tests for capacity, the waitlist boundary and cancellation
+- [ ] Promotion off the waitlist proven end to end — the client side is
+      done, but `onBookingCancelled` has not been read or run
+- [ ] Push to the promoted member (same function)
+- [ ] Admin view listing bookings per session — module 08
+- [ ] Emulator test of two members booking the last place at once
 
-No video player package is in `pubspec.yaml` yet.
-
-## 06 · Notifications — 30%
+## 06 · Notifications — 75%
 
 - [x] `sendAnnouncement` function fans out and mirrors to `announcements`
-- [x] Rules make `announcements` read-only from any client
-- [x] Index on audience and `sentAt`
+- [x] In-app notices list, paginated, so a dismissed push survives
 - [x] Permission requested and token registered on sign-in
-- [ ] In-app announcements list, so a dismissed push survives
-- [ ] Invalid tokens pruned from `fcmTokens[]` on send failure (needs
-      checking inside the function)
-- [ ] Foreground and background message handling in the app
-- [ ] Notification tap routing to the right screen
+- [x] Token removed on sign-out, before the sign-out itself
+- [x] Rotated tokens written back, so delivery does not quietly stop
+- [x] Foreground messages shown as an in-app banner with a View action
+- [x] Background handler registered as a top-level entry point
+- [x] Tap routing from the payload, with an unknown type falling back to
+      the notices list rather than doing nothing
+- [x] A payload route that is not an in-app path is ignored
+- [x] Unit tests for the routing table
+- [ ] Invalid tokens pruned from `fcmTokens[]` on send failure — this is
+      inside `sendAnnouncement`, which has not been read
+- [ ] Android notification channel for heads-up delivery
 - [ ] APNs key uploaded to Firebase, push capability enabled in Xcode
+      (module 07, needs a Mac)
 
 ## 07 · iOS app — 0%
 
