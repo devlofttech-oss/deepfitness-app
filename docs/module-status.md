@@ -4,7 +4,7 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 20% built.**
+**Overall: roughly 35% built.**
 
 Nothing in this repository has been compiled or analysed yet. Percentages
 below describe code written against the specification, not code proven to
@@ -13,8 +13,8 @@ still need to pass before any of this counts as done.
 
 | # | Module | Done |
 |---|--------|------|
-| 01 | Authentication & member profile | 60% |
-| 02 | Workout plans | 0% |
+| 01 | Authentication & member profile | 90% |
+| 02 | Workout plans | 85% |
 | 03 | Workout reports | 0% |
 | 04 | Events | 0% |
 | 05 | Group classes & booking | 10% |
@@ -35,27 +35,30 @@ still need to pass before any of this counts as done.
 - [x] FCM token removed on logout, before the sign-out itself
 - [x] Router redirects on auth state: signed out, no profile, ready
 - [x] Lapsed membership is a state on the document, not a sign-out
-- [ ] Profile edit screen writing only the member's own document
-- [ ] Profile photo resized on device before upload to Cloud Storage
-- [ ] Renewal screen for a lapsed membership (currently one line on home)
+- [x] Profile edit screen writing only the member's own document
+- [x] Profile photo resized on device before upload to Cloud Storage
+- [x] Renewal screen for a lapsed membership, with the profile still open
 - [ ] Rules tests covering what a member may and may not write
 
-## 02 · Workout plans — 0%
+## 02 · Workout plans — 85%
 
-The largest module. Nothing built.
-
-- [ ] `Exercise`, `WorkoutPlan`, `AssignedPlan` models with converters
-- [ ] Repositories for each, through `BaseRepository`
-- [ ] Assignment snapshots exercise details onto `assigned_plans`
-- [ ] `currentIndex` drives the unlock; an exercise is locked when its
+- [x] `Exercise`, `WorkoutPlan`, `AssignedPlan`, `CompletionLog` models
+      with Firestore converters and defaulted reads
+- [x] `AssignedPlanRepository` through `BaseRepository`
+- [x] `PlanExercise.snapshot` copies exercise details at assignment time
+- [x] `currentIndex` drives the unlock; an exercise is locked when its
       index exceeds it
-- [ ] Completing an exercise writes a log and advances `currentIndex` in
-      one batch
-- [ ] Skip requires a reason, still advances, so a member is never stuck
-- [ ] Unlock progress persists across sessions; it does not reset daily
-- [ ] Plan screen states: locked, active, complete, skipped, empty
-- [ ] Widget tests for those five states
-- [ ] Unit tests for unlock advance and skip
+- [x] Completing writes a log and advances `currentIndex` in one batch
+- [x] Skip requires a reason, still advances, so a member is never stuck
+- [x] Unlock progress persists; it is stored, not reset daily
+- [x] Plan screen states: locked, active, complete, skipped, empty
+- [x] Set counter, with an undo on the last tap
+- [x] Home screen shows the plan and what is next
+- [x] Widget tests for the five states
+- [x] Unit tests for unlock, advance, completion and progress
+- [ ] Plan history beyond the current assignment (repository is ready,
+      no screen yet)
+- [ ] The assignment side itself, which is dashboard work in module 08
 
 Reference: `legacy/supabase-era/workout/`, `legacy/supabase-era/home/`.
 

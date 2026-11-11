@@ -1,0 +1,221 @@
+import 'dart:typed_data';
+
+import 'package:deepfitness/app/colors.dart';
+import 'package:deepfitness/core/models/member.dart';
+import 'package:deepfitness/core/repositories/repository_failure.dart';
+import 'package:deepfitness/core/widgets/primary_button.dart';
+import 'package:deepfitness/features/auth/application/auth_controller.dart';
+import 'package:deepfitness/features/profile/application/profile_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+
+/// The member's own profile. Writes only their own document.
+class ProfileScreen extends ConsumerStatefulWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  final _nameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  Uint8List? _pickedPhoto;
+  bool _loaded = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  /// Fills the fields once, from the session. Doing this in `build` rather
+  /// than `initState` keeps it to one place, and the flag stops a rebuild
+  /// from overwriting what the member is in the middle of typing.
+  void _prefill(Member member) {
+    if (_loaded) return;
+    _loaded = true;
+    _nameController.text = member.name;
+    _phoneController.text = member.phone ?? '';
+    _emailController.text = member.email ?? '';
+  }
+
+  Future<void> _pickPhoto() async {
+    final file = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      // A first pass at the source, so a 12 MP photo is not read into
+      // memory at full size; the real resize happens before upload.
+      maxWidth: 2048,
+      maxHeight: 2048,
+    );
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    if (mounted) setState(() => _pickedPhoto = bytes);
+  }
+
+  Future<void> _save() async {
+    final saved = await ref
+        .read(profileControllerProvider.notifier)
+        .save(
+          name: _nameController.text,
+          phone: _phoneController.text.trim().isEmpty
+              ? null
+              : _phoneController.text.trim(),
+          email: _emailController.text.trim().isEmpty
+              ? null
+              : _emailController.text.trim(),
+          photoBytes: _pickedPhoto,
+        );
+
+    if (!mounted || !saved) return;
+    setState(() => _pickedPhoto = null);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Profile saved.')));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final member = ref.watch(authControllerProvider).value?.member;
+    final saving = ref.watch(profileControllerProvider);
+    final failure = saving.error;
+
+    if (member == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    _prefill(member);
+
+    return Scaffold(
+      backgroundColor: AppColors.canvas(context),
+      appBar: AppBar(title: const Text('Profile')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: _Avatar(
+                  photoUrl: member.photoUrl,
+                  picked: _pickedPhoto,
+                  onTap: saving.isLoading ? null : _pickPhoto,
+                ),
+              ),
+              const SizedBox(height: 24),
+              TextField(
+                controller: _nameController,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Phone'),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(labelText: 'Email'),
+              ),
+              const SizedBox(height: 24),
+              _MembershipPanel(member: member),
+              if (failure != null) ...[
+                const SizedBox(height: 16),
+                Text(
+                  failure is RepositoryFailure
+                      ? failure.message
+                      : 'Could not save. Try again.',
+                  style: const TextStyle(color: AppColors.danger),
+                ),
+              ],
+              const SizedBox(height: 24),
+              if (saving.isLoading)
+                const Center(child: CircularProgressIndicator())
+              else
+                PrimaryButton(label: 'Save', onPressed: _save),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () =>
+                    ref.read(authControllerProvider.notifier).signOut(),
+                child: const Text('Sign out'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Avatar extends StatelessWidget {
+  const _Avatar({required this.photoUrl, required this.picked, this.onTap});
+
+  final String? photoUrl;
+  final Uint8List? picked;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bytes = picked;
+    return GestureDetector(
+      onTap: onTap,
+      child: CircleAvatar(
+        radius: 48,
+        backgroundColor: AppColors.surface(context),
+        backgroundImage: bytes != null
+            ? MemoryImage(bytes)
+            : (photoUrl != null ? NetworkImage(photoUrl!) : null)
+                  as ImageProvider<Object>?,
+        child: bytes == null && photoUrl == null
+            ? const Icon(Icons.add_a_photo_outlined, size: 28)
+            : null,
+      ),
+    );
+  }
+}
+
+/// Read-only: membership is staff owned and the rules reject a member
+/// writing it, so showing it as an editable field would be a lie.
+class _MembershipPanel extends StatelessWidget {
+  const _MembershipPanel({required this.member});
+
+  final Member member;
+
+  @override
+  Widget build(BuildContext context) {
+    final expiry = member.expiryDate;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Membership', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
+          Text(
+            member.isLapsed
+                ? 'Lapsed. Speak to the gym to renew.'
+                : expiry == null
+                ? 'Active'
+                : 'Active until ${expiry.day}/${expiry.month}/${expiry.year}',
+            style: TextStyle(
+              color: member.isLapsed
+                  ? AppColors.danger
+                  : AppColors.secondaryText(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
