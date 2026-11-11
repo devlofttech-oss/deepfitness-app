@@ -62,7 +62,7 @@ class CompletionLog {
       'exerciseName': exerciseName,
       'setsDone': setsDone,
       'skipped': skipped,
-      if (skipReason != null) 'skipReason': skipReason,
+      'skipReason': ?skipReason,
       'completedAt': FieldValue.serverTimestamp(),
       ...BaseFields.onCreate(createdBy: memberId),
     };

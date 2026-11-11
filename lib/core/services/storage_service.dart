@@ -2,7 +2,6 @@ import 'dart:typed_data';
 
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/utils/image_resizer.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

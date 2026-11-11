@@ -5,7 +5,6 @@ import 'package:deepfitness/admin/presentation/admin_exercises_screen.dart';
 import 'package:deepfitness/admin/presentation/admin_members_screen.dart';
 import 'package:deepfitness/admin/presentation/admin_plans_screen.dart';
 import 'package:deepfitness/admin/presentation/admin_shell.dart';
-import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/services/auth_service.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:deepfitness/features/auth/presentation/onboarding_screen.dart';
@@ -24,7 +23,6 @@ import 'package:deepfitness/features/workout_plan/presentation/exercise_screen.d
 import 'package:deepfitness/features/workout_plan/presentation/plan_history_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/plan_screen.dart';
 import 'package:deepfitness/features/workout_report/presentation/report_screen.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 

@@ -40,7 +40,7 @@ class BaseFields {
   static Map<String, Object?> onCreate({String? createdBy}) => {
     'createdAt': FieldValue.serverTimestamp(),
     'updatedAt': FieldValue.serverTimestamp(),
-    if (createdBy != null) 'createdBy': createdBy,
+    'createdBy': ?createdBy,
     'deletedAt': null,
   };
 

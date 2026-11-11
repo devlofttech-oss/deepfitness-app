@@ -29,10 +29,13 @@ abstract class BaseRepository {
   Future<T> guard<T>(Future<T> Function() call) async {
     try {
       return await call();
+    } on FirebaseAuthException catch (error) {
+      // Must come first: FirebaseAuthException is a FirebaseException, so the
+      // broader catch below would otherwise swallow every auth error and
+      // fromAuth would never run.
+      throw RepositoryFailure.fromAuth(error);
     } on FirebaseException catch (error) {
       throw RepositoryFailure.fromFirestore(error);
-    } on FirebaseAuthException catch (error) {
-      throw RepositoryFailure.fromAuth(error);
     }
   }
 

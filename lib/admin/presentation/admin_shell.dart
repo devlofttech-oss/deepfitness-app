@@ -92,7 +92,7 @@ class AdminHeader extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
-          if (action != null) action!,
+          ?action,
         ],
       ),
     );

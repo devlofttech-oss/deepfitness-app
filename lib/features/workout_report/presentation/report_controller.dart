@@ -5,9 +5,17 @@ import 'package:deepfitness/features/workout_report/domain/workout_report.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The window the member has selected.
-final reportRangeProvider = StateProvider<ReportRange>(
-  (ref) => ReportRange.week(),
-);
+final reportRangeProvider =
+    NotifierProvider<ReportRangeController, ReportRange>(
+      ReportRangeController.new,
+    );
+
+class ReportRangeController extends Notifier<ReportRange> {
+  @override
+  ReportRange build() => ReportRange.week();
+
+  void select(ReportRange range) => state = range;
+}
 
 /// The report for the selected window.
 ///

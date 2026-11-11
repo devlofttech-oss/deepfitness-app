@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:deepfitness/core/models/base_fields.dart';
 import 'package:deepfitness/core/models/booking.dart';
 import 'package:deepfitness/core/models/class_session.dart';

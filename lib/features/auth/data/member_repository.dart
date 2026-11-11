@@ -60,8 +60,8 @@ class MemberRepository extends BaseRepository {
     return guard(() async {
       await firestore.collection(Collections.members).doc(uid).set({
         'name': name.trim(),
-        if (phone != null) 'phone': phone,
-        if (email != null) 'email': email,
+        'phone': ?phone,
+        'email': ?email,
         'joinedAt': FieldValue.serverTimestamp(),
         ...BaseFields.onCreate(createdBy: uid),
       }, SetOptions(merge: true));
@@ -79,9 +79,9 @@ class MemberRepository extends BaseRepository {
     return guard(() async {
       await firestore.collection(Collections.members).doc(uid).update({
         'name': name.trim(),
-        if (phone != null) 'phone': phone,
-        if (email != null) 'email': email,
-        if (photoUrl != null) 'photoUrl': photoUrl,
+        'phone': ?phone,
+        'email': ?email,
+        'photoUrl': ?photoUrl,
         ...BaseFields.onUpdate(),
       });
     });

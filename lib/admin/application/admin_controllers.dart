@@ -7,6 +7,7 @@ import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/models/workout_plan.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 
 /// The uid writes are attributed to, for `createdBy`.
 final adminAuthorIdProvider = Provider<String>(

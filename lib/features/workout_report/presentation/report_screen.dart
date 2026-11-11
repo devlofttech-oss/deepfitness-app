@@ -25,9 +25,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       lastDate: DateTime.now(),
     );
     if (picked == null) return;
-    ref.read(reportRangeProvider.notifier).state = ReportRange.custom(
-      from: picked.start,
-      to: picked.end,
+    ref.read(reportRangeProvider.notifier).select(
+      ReportRange.custom(from: picked.start, to: picked.end),
     );
   }
 
@@ -58,10 +57,12 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
           children: [
             _RangeSelector(
               range: range,
-              onWeek: () => ref.read(reportRangeProvider.notifier).state =
-                  ReportRange.week(),
-              onMonth: () => ref.read(reportRangeProvider.notifier).state =
-                  ReportRange.month(),
+              onWeek: () => ref
+                  .read(reportRangeProvider.notifier)
+                  .select(ReportRange.week()),
+              onMonth: () => ref
+                  .read(reportRangeProvider.notifier)
+                  .select(ReportRange.month()),
               onCustom: _pickCustomRange,
             ),
             const SizedBox(height: 20),
