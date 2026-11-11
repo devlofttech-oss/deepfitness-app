@@ -4,8 +4,8 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import {
   Collections,
   db,
-  messaging,
   onCreate,
+  pushToMember,
   requireRole,
 } from "./shared";
 
@@ -53,14 +53,54 @@ export const sendAnnouncement = onCall(async (request) => {
     ...onCreate(senderId),
   });
 
-  await messaging.send({
-    topic: audience,
-    notification: { title, body },
-    data: {
-      announcementId: ref.id,
-      ...(deepLink ? { deepLink } : {}),
-    },
-  });
+  // Fan out to the members' own tokens rather than to a topic. Nothing
+  // subscribes to a topic — the app records tokens on the member document
+  // — and a topic send reports no per-device failure, so the stale tokens
+  // the document asks to be pruned would never be found.
+  const recipients = await membersFor(audience);
+  const data = {
+    announcementId: ref.id,
+    route: deepLink ?? "/notices",
+    type: "announcement",
+  };
 
-  return { announcementId: ref.id };
+  let delivered = 0;
+  for (const memberId of recipients) {
+    delivered += await pushToMember(memberId, { title, body }, data);
+  }
+
+  return {
+    announcementId: ref.id,
+    recipients: recipients.length,
+    delivered,
+  };
 });
+
+/**
+ * The member ids an audience covers.
+ *
+ * Soft-deleted members are left out, and so are lapsed ones for anything
+ * but an "all" send: a broadcast about tomorrow's class is noise to
+ * somebody whose membership ran out.
+ */
+async function membersFor(audience: Audience): Promise<string[]> {
+  if (audience === "trainers") {
+    const staff = await db
+      .collection(Collections.members)
+      .where("role", "in", ["trainer", "admin"])
+      .where("deletedAt", "==", null)
+      .get();
+    return staff.docs.map((doc) => doc.id);
+  }
+
+  const query = db
+    .collection(Collections.members)
+    .where("deletedAt", "==", null);
+
+  const snapshot =
+    audience === "members"
+      ? await query.where("membershipStatus", "==", "active").get()
+      : await query.get();
+
+  return snapshot.docs.map((doc) => doc.id);
+}

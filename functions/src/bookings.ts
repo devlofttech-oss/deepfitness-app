@@ -82,7 +82,7 @@ export const onBookingCancelled = onDocumentUpdated(
         title: "You're in!",
         body: `A place opened up in ${title}. You are booked.`,
       },
-      { deepLink: "/classes", sessionId }
+      { route: "/classes", type: "booking_promoted", sessionId }
     );
   }
 );

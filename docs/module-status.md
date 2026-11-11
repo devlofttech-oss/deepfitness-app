@@ -4,7 +4,7 @@ Measured against `pdfs/Deep-Fitness-Developer-Guide.pdf` (25 October 2026),
 which is the source of truth for scope. Only the modules named there belong
 in this repository.
 
-**Overall: roughly 88% built.**
+**Overall: roughly 92% built.**
 
 The designs arrived after the modules were written, so the figures below
 now carry a design column: a module can be functionally complete and
@@ -20,12 +20,12 @@ still need to pass before any of this counts as done.
 | 01 | Authentication & member profile | 100% | Yes |
 | 02 | Workout plans | 100% | Yes |
 | 03 | Workout reports | 100% | Mostly |
-| 04 | Events | 95% | Mostly |
-| 05 | Group classes & booking | 95% | Yes |
-| 06 | Notifications | 90% | Yes |
+| 04 | Events | 100% | Mostly |
+| 05 | Group classes & booking | 100% | Yes |
+| 06 | Notifications | 100% | Yes |
 | 07 | iOS app | 35% | n/a |
 | 08 | Admin dashboard (Flutter Web) | 90% | No designs supplied |
-| — | Cross-cutting (rules, indexes, functions, release) | 75% | — |
+| — | Cross-cutting (rules, indexes, functions, release) | 85% | — |
 
 ---
 
@@ -98,8 +98,7 @@ onto a day.
 - [x] Index for `startsAt` and for the event/member RSVP lookup
 - [x] Unit tests for the RSVP id rule
 - [x] Event detail screen, reachable from the card and a deep link
-- [ ] Reminder push the day before — `dailyReminders` exists in the
-      functions but has not been read against this module or run
+- [x] Reminder push the day before, in `dailyReminders`
 
 ## 05 · Group classes & booking — 85%
 
@@ -118,9 +117,10 @@ onto a day.
 - [x] Rules: members book and cancel their own; promotion is privileged
 - [x] Indexes for session/status/position and member/status/createdAt
 - [x] Unit tests for capacity, the waitlist boundary and cancellation
-- [ ] Promotion off the waitlist proven end to end — the client side is
-      done, but `onBookingCancelled` has not been read or run
-- [ ] Push to the promoted member (same function)
+- [x] Promotion off the waitlist, read against the client and corrected:
+      the trigger owns `bookedCount` on a cancellation, so the client no
+      longer decrements it too
+- [x] Push to the promoted member
 - [ ] Admin view listing bookings per session — module 08
 - [x] Rules tests for booking, cancelling and the counters a member
       may move, including the full transaction the app commits
@@ -138,8 +138,7 @@ onto a day.
       the notices list rather than doing nothing
 - [x] A payload route that is not an in-app path is ignored
 - [x] Unit tests for the routing table
-- [ ] Invalid tokens pruned from `fcmTokens[]` on send failure — this is
-      inside `sendAnnouncement`, which has not been read
+- [x] Invalid tokens pruned from `fcmTokens[]` on send failure
 - [x] Android notification channel, created in MainActivity and named
       in the manifest, with POST_NOTIFICATIONS declared
 - [ ] APNs key uploaded to Firebase, push capability enabled in Xcode
@@ -199,9 +198,10 @@ account. The steps are written out in `docs/ios-setup.md`.
 - [x] Typed failures; screens show a sentence, not an exception
 - [x] Models over maps, repositories only
 - [x] Rules tests in the emulator, per role — `rules-tests/`
-- [ ] Integration test: sign in, assigned plan, complete, report
+- [x] Integration test: assigned plan, complete, skip, report
 - [ ] `flutter analyze` and `flutter test` clean
-- [ ] Analytics and Crashlytics, release builds only
+- [x] Analytics and Crashlytics, release builds only
+- [x] Emulator wiring behind `--dart-define=USE_EMULATOR=true`
 - [ ] Staged rollout and the release checklist
 
 ---
@@ -236,15 +236,11 @@ Still open on the design side:
 
 Every remaining item needs something outside this repository.
 
-- **Cloud Functions have no source.** `functions/` holds compiled
-  JavaScript only. Three modules now depend on functions nobody has
-  read: `onBookingCancelled` promotes off the waitlist, `sendAnnouncement`
-  fans out the pushes the dashboard sends, and `setUserRole` is the only
-  way a role changes. Until the TypeScript exists they cannot be built,
-  deployed or verified.
-- **Nothing has been compiled.** No Flutter SDK in the environment the
-  code was written in. `flutter analyze` and `flutter test` have never
-  run, and several package versions were chosen without a resolver.
+- **The Dart has not been compiled.** No Flutter SDK in the environment
+  the code is written in. The Cloud Functions now typecheck clean here,
+  but `flutter analyze` and `flutter test` have still never run against
+  the app, and the newest package versions were chosen without a
+  resolver.
 - **The rules tests have never been run.** They are written against the
   real rules files and need the emulators and a JDK.
 - **iOS** needs a Mac, Xcode and the Apple Developer account.

@@ -50,7 +50,7 @@ async function remindClassBookings(now: Timestamp, tomorrow: Timestamp) {
       await pushToMember(
         String(booking.data().memberId ?? ""),
         { title: "Class tomorrow", body: `${title} is on tomorrow.` },
-        { deepLink: "/classes", sessionId: session.id }
+        { route: "/classes", type: "class_reminder", sessionId: session.id }
       );
     }
   }
@@ -77,7 +77,7 @@ async function remindEventRsvps(now: Timestamp, tomorrow: Timestamp) {
       await pushToMember(
         String(rsvp.data().memberId ?? ""),
         { title: "Tomorrow at the gym", body: `${title} is on tomorrow.` },
-        { deepLink: "/events", eventId: event.id }
+        { route: "/events", type: "event_reminder", eventId: event.id }
       );
     }
   }

@@ -49,14 +49,21 @@ class BookingDecision {
 
   /// Decides what cancelling releases.
   ///
-  /// Only the counter the member was actually occupying moves. Promotion
-  /// of the first waitlisted member is the `onBookingCancelled` function's
-  /// job, because it writes another member's booking and no client may.
+  /// Giving up a booked place moves no counter here. The
+  /// `onBookingCancelled` trigger owns `bookedCount` on a cancellation,
+  /// because only it can see the waitlist in the same transaction: with
+  /// somebody waiting the place is handed straight on and the count does
+  /// not change, and with nobody waiting the trigger releases it. If this
+  /// decremented as well the two would both act on the same place and the
+  /// session would oversell.
+  ///
+  /// Leaving a waitlist is different: no trigger watches it, so the queue
+  /// counter is this client's to move.
   static BookingDecision cancel(Booking booking) {
     return BookingDecision(
       status: BookingStatus.cancelled,
       position: 0,
-      bookedDelta: booking.status == BookingStatus.booked ? -1 : 0,
+      bookedDelta: 0,
       waitlistDelta: booking.status == BookingStatus.waitlisted ? -1 : 0,
     );
   }

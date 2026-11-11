@@ -80,9 +80,13 @@ void main() {
   });
 
   group('cancelling', () {
-    test('a confirmed booking frees a place', () {
+    test('giving up a booked place moves no counter here', () {
+      // onBookingCancelled owns bookedCount on a cancellation: it is the
+      // only writer that can see the waitlist in the same transaction.
+      // Decrementing here as well would release the same place twice and
+      // let the session oversell.
       final decision = BookingDecision.cancel(booking(BookingStatus.booked));
-      expect(decision.bookedDelta, -1);
+      expect(decision.bookedDelta, 0);
       expect(decision.waitlistDelta, 0);
     });
 

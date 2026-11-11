@@ -1,6 +1,7 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/app/router.dart';
 import 'package:deepfitness/app/theme.dart';
+import 'package:deepfitness/core/config/firebase_setup.dart';
 import 'package:deepfitness/core/constants/app_constants.dart';
 import 'package:deepfitness/features/notifications/application/notification_handler.dart';
 import 'package:deepfitness/firebase_options.dart';
@@ -41,6 +42,11 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  if (useEmulator) {
+    await connectToEmulators();
+  }
+  await configureTelemetry();
+
   FirebaseMessaging.onBackgroundMessage(_onBackgroundMessage);
 
   runApp(const ProviderScope(child: DeepFitnessApp()));
