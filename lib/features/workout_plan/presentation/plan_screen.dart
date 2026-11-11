@@ -203,6 +203,10 @@ class _PlanHeader extends StatelessWidget {
   }
 }
 
+/// How an exercise in the list reads: still to come, the one to do now,
+/// or finished one way or the other.
+enum _TileState { locked, active, complete, skipped }
+
 class _ExerciseTile extends StatelessWidget {
   const _ExerciseTile({
     required this.number,

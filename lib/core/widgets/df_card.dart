@@ -46,17 +46,26 @@ class DfCard extends StatelessWidget {
               color: leadingAccent ? AppColors.primaryContainer : borderColour,
             ),
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (leadingAccent)
-                const SizedBox(
-                  width: 4,
-                  child: ColoredBox(color: AppColors.primaryContainer),
-                ),
-              Expanded(child: Padding(padding: padding, child: child)),
-            ],
-          ),
+          // Without the accent bar there is no Row at all: stretching
+          // one needs a bounded height, and inside a scrolling list the
+          // height is unbounded, which throws. IntrinsicHeight gives the
+          // bar something to match, and is only paid for when drawn.
+          child: leadingAccent
+              ? IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(
+                        width: 4,
+                        child: ColoredBox(color: AppColors.primaryContainer),
+                      ),
+                      Expanded(
+                        child: Padding(padding: padding, child: child),
+                      ),
+                    ],
+                  ),
+                )
+              : Padding(padding: padding, child: child),
         ),
       ),
     );

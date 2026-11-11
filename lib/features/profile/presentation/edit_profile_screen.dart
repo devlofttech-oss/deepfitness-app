@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:deepfitness/app/colors.dart';
-import 'package:deepfitness/core/widgets/df_card.dart';
 import 'package:deepfitness/core/models/member.dart';
 import 'package:deepfitness/core/repositories/repository_failure.dart';
 import 'package:deepfitness/core/widgets/df_button.dart';

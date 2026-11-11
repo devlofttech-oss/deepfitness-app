@@ -238,9 +238,7 @@ class _PassCard extends StatelessWidget {
       elapsed = (gone / total).clamp(0.0, 1.0);
     }
 
-    final daysLeft = expiry == null
-        ? null
-        : expiry.difference(DateTime.now()).inDays;
+    final daysLeft = expiry?.difference(DateTime.now()).inDays;
 
     return DfCard(
       borderColour: member.isLapsed

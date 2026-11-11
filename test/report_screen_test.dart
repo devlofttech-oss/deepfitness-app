@@ -33,16 +33,16 @@ void main() {
   testWidgets('opens on the week and asks for it once', (tester) async {
     await pumpReports(tester);
 
-    expect(find.text('Week'), findsOneWidget);
-    expect(find.text('Month'), findsOneWidget);
-    expect(find.text('Custom'), findsOneWidget);
+    expect(find.text('WEEK'), findsOneWidget);
+    expect(find.text('MONTH'), findsOneWidget);
+    expect(find.text('CUSTOM'), findsOneWidget);
     expect(requested, [ReportRangeKind.week]);
   });
 
   testWidgets('tapping Month re-runs the query for the month', (tester) async {
     await pumpReports(tester);
 
-    await tester.tap(find.text('Month'));
+    await tester.tap(find.text('MONTH'));
     await tester.pumpAndSettle();
 
     expect(requested, [ReportRangeKind.week, ReportRangeKind.month]);
@@ -54,7 +54,7 @@ void main() {
     await pumpReports(tester);
 
     expect(
-      find.textContaining('Nothing logged in this period'),
+      find.textContaining('NOTHING LOGGED IN THIS PERIOD'),
       findsOneWidget,
     );
   });
