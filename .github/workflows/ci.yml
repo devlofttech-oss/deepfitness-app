@@ -85,7 +85,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+          # firebase-tools 15 refuses anything below 21. The app build
+          # above stays on 17, which is what the Android toolchain wants.
+          java-version: '21'
 
       - uses: actions/setup-node@v4
         with:

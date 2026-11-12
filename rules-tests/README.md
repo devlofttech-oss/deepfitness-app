@@ -13,8 +13,8 @@ npm test
 ```
 
 `npm test` starts the Firestore and Storage emulators, runs the suite and
-shuts them down. It needs the Firebase CLI and a JDK, which the emulators
-require.
+shuts them down. It needs the Firebase CLI and **JDK 21 or newer**;
+firebase-tools 15 refuses to start on anything older.
 
 ## What is covered
 
@@ -39,9 +39,9 @@ not enough — it is a different mechanism.
 
 If that happens:
 
-1. Try a JDK 17 build (Temurin) rather than the newest release, and point
-   `JAVA_HOME` at it for the run. The emulator is tested against the
-   older LTS releases.
+1. Try a JDK 21 build (Temurin) and point `JAVA_HOME` at it for the run.
+   21 is the floor — firebase-tools 15 refuses anything older — and the
+   newest releases are the least tested against the emulator.
 2. Check `%TEMP%` points at a local NTFS path. Java puts the socket file
    there, and a network or removable drive will not serve one.
 3. Failing both, run the suite in CI — `.github/workflows/ci.yml` runs it
