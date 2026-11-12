@@ -4,9 +4,11 @@ name: Dashboard
 # web app in the Firebase project, which has not been created yet, and a
 # service account secret.
 
+# Run by hand until the web app exists. A workflow that is red on every
+# push teaches everyone to ignore red, which costs more than the missing
+# signal: put the `push` trigger back once `flutterfire configure` has
+# been re-run with web selected.
 on:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
