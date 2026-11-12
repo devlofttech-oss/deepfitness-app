@@ -1,0 +1,37 @@
+name: Dashboard
+
+# Builds the Flutter Web dashboard. It does not deploy: Hosting needs a
+# web app in the Firebase project, which has not been created yet, and a
+# service account secret.
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build the dashboard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.1
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      # Will fail until `flutterfire configure` is re-run with web
+      # selected, because DefaultFirebaseOptions has no web entry. That
+      # failure is the point: it says plainly what is missing rather than
+      # shipping a dashboard that cannot reach Firebase.
+      - run: flutter build web --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deepfitness-dashboard
+          path: build/web
+          retention-days: 30

@@ -28,3 +28,22 @@ require.
 - **content** — events, one RSVP per member, and announcements being
   read-only from every client.
 - The catch-all: a collection with no rules of its own is denied.
+
+## Windows
+
+The emulators need a working AF_UNIX socket, because Java's selector uses
+one for its internal self-pipe. On some Windows machines that `connect`
+returns `EINVAL` and the Firestore emulator dies on startup with
+`failed to create a child event loop`. Ordinary TCP loopback working is
+not enough — it is a different mechanism.
+
+If that happens:
+
+1. Try a JDK 17 build (Temurin) rather than the newest release, and point
+   `JAVA_HOME` at it for the run. The emulator is tested against the
+   older LTS releases.
+2. Check `%TEMP%` points at a local NTFS path. Java puts the socket file
+   there, and a network or removable drive will not serve one.
+3. Failing both, run the suite in CI — `.github/workflows/ci.yml` runs it
+   on Linux on every push, which is the same thing without the machine
+   in the way.

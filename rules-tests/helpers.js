@@ -10,7 +10,10 @@ import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
  */
 export async function createTestEnv() {
   return initializeTestEnvironment({
-    projectId: 'deepfitess-rules-test',
+    // A `demo-` prefix is a guarantee, not a convention: the
+    // emulators refuse to reach live services for such a project, so a
+    // misconfigured host cannot touch real member data.
+    projectId: 'demo-deepfitness',
     firestore: {
       rules: readFileSync('../firestore.rules', 'utf8'),
       host: '127.0.0.1',
