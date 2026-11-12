@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -56,7 +53,6 @@ class DefaultFirebaseOptions {
     projectId: 'deepfitess-app',
     storageBucket: 'deepfitess-app.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBfahcVmmcq2tObd1Gm3EqtUIg11Ehm7qM',
     appId: '1:478703260627:ios:1e0f5f995d8cc377381526',
@@ -64,5 +60,13 @@ class DefaultFirebaseOptions {
     projectId: 'deepfitess-app',
     storageBucket: 'deepfitess-app.firebasestorage.app',
     iosBundleId: 'com.deepfitness.app',
+  );
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyDw6mMssGF7VieAHII8EWKSdTS0TTkeapI',
+    appId: '1:478703260627:web:165ff02abaa99641381526',
+    messagingSenderId: '478703260627',
+    projectId: 'deepfitess-app',
+    authDomain: 'deepfitess-app.firebaseapp.com',
+    storageBucket: 'deepfitess-app.firebasestorage.app',
   );
 }
