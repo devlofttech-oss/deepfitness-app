@@ -198,12 +198,13 @@ account. The steps are written out in `docs/ios-setup.md`.
 - [x] Pagination through `BaseRepository`, never a full collection read
 - [x] Typed failures; screens show a sentence, not an exception
 - [x] Models over maps, repositories only
-- [x] Rules tests in the emulator, per role — `rules-tests/`
+- [x] Rules tests in the emulator, per role — `rules-tests/`, run in CI
 - [x] Integration test: assigned plan, complete, skip, report
 - [x] `flutter analyze` and `flutter test` clean — verified on
       Flutter 3.44.1 / Dart 3.12.1: no issues, 84 tests passing
 - [x] Analytics and Crashlytics, release builds only
 - [x] Emulator wiring behind `--dart-define=USE_EMULATOR=true`
+- [x] CI builds an installable APK on every push to master
 - [ ] Staged rollout and the release checklist
 
 ---
