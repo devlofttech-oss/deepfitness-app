@@ -16,6 +16,12 @@ npm test
 shuts them down. It needs the Firebase CLI and **JDK 21 or newer**;
 firebase-tools 15 refuses to start on anything older.
 
+The suites run one file at a time (`vitest.config.js`). They share a
+single emulator and each clears Firestore between its own tests, so in
+parallel they wipe one another's seeded documents — which surfaces as
+NOT_FOUND on a document just written, or a rule evaluating against a null
+`resource`. Both look like rule bugs and are not.
+
 ## What is covered
 
 - **members** — who reads whom, and the protected fields a member may not
