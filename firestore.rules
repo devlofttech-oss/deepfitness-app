@@ -9,7 +9,12 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     function isSignedIn()  { return request.auth != null; }
-    function role()        { return isSignedIn() ? request.auth.token.role : null; }
+
+    // `get` with a default, never `token.role`. A token carries the claim
+    // only once onMemberCreate has set it, and reading a key that is not
+    // there is an error, not a null — which would deny every rule on the
+    // way past, including the first sign-in that creates the profile.
+    function role()        { return isSignedIn() ? request.auth.token.get('role', '') : ''; }
     function isAdmin()     { return role() == 'admin'; }
     function isTrainer()   { return role() == 'trainer'; }
     function isStaff()     { return isAdmin() || isTrainer(); }

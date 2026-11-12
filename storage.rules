@@ -9,7 +9,9 @@ service firebase.storage {
   match /b/{bucket}/o {
 
     function isSignedIn() { return request.auth != null; }
-    function role()       { return isSignedIn() ? request.auth.token.role : null; }
+    // See firestore.rules: reading a claim that is not there is an
+    // error, so it is fetched with a default.
+    function role()       { return isSignedIn() ? request.auth.token.get('role', '') : ''; }
     function isStaff()    { return role() == 'admin' || role() == 'trainer'; }
     function isSelf(uid)  { return isSignedIn() && request.auth.uid == uid; }
 
