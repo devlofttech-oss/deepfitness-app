@@ -46,6 +46,11 @@ Future<void> configureTelemetry() async {
   final enabled = kReleaseMode && !useEmulator;
 
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(enabled);
+
+  // Crashlytics ships no web implementation. Calling it on web throws during
+  // startup, before runApp, so the dashboard would never paint at all.
+  if (kIsWeb) return;
+
   await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(enabled);
 
   if (!enabled) return;
