@@ -22,7 +22,16 @@ service cloud.firestore {
 
     // The fields being written, and the subset that actually changed.
     function incoming()    { return request.resource.data; }
-    function changed()     { return incoming().diff(resource.data).affectedKeys(); }
+
+    // On a create there is no `resource`, so diffing against resource.data
+    // raises and the whole rule evaluates to deny. Every incoming key counts
+    // as changed in that case, which is what the protected-field guard below
+    // means by "changed" anyway.
+    function changed() {
+      return resource == null
+        ? incoming().keys().toSet()
+        : incoming().diff(resource.data).affectedKeys();
+    }
 
     // Membership and the audit trail are staff-owned: a member editing
     // their own profile may not extend their own expiry date.
