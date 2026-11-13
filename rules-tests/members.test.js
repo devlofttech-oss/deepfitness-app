@@ -72,9 +72,13 @@ describe('members', () => {
   });
 
   test('a member cannot change their own membership status', async () => {
+    // Must differ from the seeded value. The rule denies a *change*, and
+    // affectedKeys() does not report a key written back as-is, so writing
+    // 'active' over 'active' is a no-op the rules allow -- and the test
+    // would fail on a rule that is behaving correctly.
     await assertFails(
       updateDoc(doc(asMember(env), 'members/member-1'), {
-        membershipStatus: 'active',
+        membershipStatus: 'lapsed',
       }),
     );
   });
