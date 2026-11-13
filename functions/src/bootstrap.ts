@@ -19,7 +19,11 @@ import { Collections, auth, db, onUpdate, requireSignedIn } from "./shared";
  * not a feature, and an endpoint named "make me an admin" should not outlive
  * the one minute it is needed.
  */
-export const bootstrapAdmin = onCall(async (request) => {
+// invoker "public" is what every Firebase callable needs: Cloud Run accepts the
+// request, and the function itself decides who may proceed. Without it the
+// deploy leaves the service IAM-locked and callers get a 401 before any of the
+// checks below ever run.
+export const bootstrapAdmin = onCall({ invoker: "public" }, async (request) => {
   const uid = requireSignedIn(request);
 
   // An existing admin is the signal that bootstrapping is over. Checked
