@@ -2,4 +2,11 @@
 <resources>
     <!-- Brand gold, used to tint the notification icon. -->
     <color name="notification_colour">#FF8A00</color>
+
+    <!-- The launch window and the Android 12 splash. Matches AppColors.surface
+         (0xFF121315) exactly, so there is no flash of a different colour
+         between the splash and Flutter's first frame. Referenced by
+         values/styles.xml, values-v31/styles.xml and both launch_background
+         drawables. -->
+    <color name="launch_background">#121315</color>
 </resources>
