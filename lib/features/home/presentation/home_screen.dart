@@ -345,8 +345,7 @@ class _EventsSection extends ConsumerWidget {
                             children: [
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       event.title,
@@ -390,8 +389,18 @@ class _DateBlock extends StatelessWidget {
   final DateTime date;
 
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
   ];
 
   @override
@@ -405,10 +414,7 @@ class _DateBlock extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Text(
-            '${date.day}',
-            style: Theme.of(context).textTheme.headlineSmall,
-          ),
+          Text('${date.day}', style: Theme.of(context).textTheme.headlineSmall),
           DfLabel(_months[date.month - 1]),
         ],
       ),

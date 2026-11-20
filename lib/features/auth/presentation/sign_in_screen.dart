@@ -146,9 +146,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                     const SizedBox(height: Insets.md),
                     Text(
                       _error!,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.error,
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: AppColors.error),
                     ),
                   ],
                   const SizedBox(height: Insets.lg),
@@ -188,9 +188,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
       controller: _phoneController,
       keyboardType: TextInputType.phone,
       autofillHints: const [AutofillHints.telephoneNumber],
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]')),
-      ],
+      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+ ]'))],
       decoration: const InputDecoration(
         labelText: 'Mobile number',
         prefixText: '+91  ',

@@ -42,10 +42,8 @@ class PlanHistoryScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(20),
                   itemCount: plans.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) => _HistoryCard(
-                    plan: plans[index],
-                    isCurrent: index == 0,
-                  ),
+                  itemBuilder: (context, index) =>
+                      _HistoryCard(plan: plans[index], isCurrent: index == 0),
                 ),
         ),
       ),
@@ -71,7 +69,9 @@ class _HistoryCard extends StatelessWidget {
         // The newest assignment is the one the home screen shows, so it
         // is marked rather than left to be guessed from the order.
         border: isCurrent
-            ? Border.all(color: AppColors.primaryContainer.withValues(alpha: 0.6))
+            ? Border.all(
+                color: AppColors.primaryContainer.withValues(alpha: 0.6),
+              )
             : null,
       ),
       child: Column(
@@ -86,7 +86,10 @@ class _HistoryCard extends StatelessWidget {
                 ),
               ),
               if (isCurrent)
-                const Text('Current', style: TextStyle(color: AppColors.primaryContainer)),
+                const Text(
+                  'Current',
+                  style: TextStyle(color: AppColors.primaryContainer),
+                ),
             ],
           ),
           const SizedBox(height: 6),

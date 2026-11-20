@@ -64,7 +64,10 @@ class _EventBody extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(event.title, style: Theme.of(context).textTheme.headlineSmall),
+              Text(
+                event.title,
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
               const SizedBox(height: 12),
               if (starts != null)
                 _DetailRow(
@@ -83,22 +86,21 @@ class _EventBody extends ConsumerWidget {
               const SizedBox(height: 32),
               if (busy)
                 const Center(child: CircularProgressIndicator())
+              else if (going)
+                DfSecondaryButton(
+                  label: "You're going · tap to withdraw",
+                  icon: Icons.check_circle,
+                  onPressed: () => ref
+                      .read(rsvpControllerProvider.notifier)
+                      .toggle(eventId: event.id, going: going),
+                )
               else
-                if (going)
-                  DfSecondaryButton(
-                    label: "You're going · tap to withdraw",
-                    icon: Icons.check_circle,
-                    onPressed: () => ref
-                        .read(rsvpControllerProvider.notifier)
-                        .toggle(eventId: event.id, going: going),
-                  )
-                else
-                  DfPrimaryButton(
-                    label: 'Count me in',
-                    onPressed: () => ref
-                        .read(rsvpControllerProvider.notifier)
-                        .toggle(eventId: event.id, going: going),
-                  ),
+                DfPrimaryButton(
+                  label: 'Count me in',
+                  onPressed: () => ref
+                      .read(rsvpControllerProvider.notifier)
+                      .toggle(eventId: event.id, going: going),
+                ),
             ],
           ),
         ),

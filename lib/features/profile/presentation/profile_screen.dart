@@ -181,8 +181,18 @@ class _IdentityCard extends ConsumerWidget {
   }
 
   static String _month(int month) => const [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
   ][month - 1];
 }
 
@@ -263,9 +273,7 @@ class _PassCard extends StatelessWidget {
           Text(
             member.isLapsed ? 'LAPSED' : 'ACTIVE',
             style: theme.headlineLarge?.copyWith(
-              color: member.isLapsed
-                  ? AppColors.error
-                  : AppColors.onSurface,
+              color: member.isLapsed ? AppColors.error : AppColors.onSurface,
             ),
           ),
           const SizedBox(height: Insets.md),
@@ -398,10 +406,7 @@ class _ConsoleTile extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.onSurfaceVariant,
-            ),
+            const Icon(Icons.chevron_right, color: AppColors.onSurfaceVariant),
           ],
         ),
       ),

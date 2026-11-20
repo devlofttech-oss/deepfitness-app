@@ -7,7 +7,11 @@ enum MemberTab {
   home(path: '/', icon: Icons.home_outlined, label: 'Home'),
   workouts(path: '/plan', icon: Icons.fitness_center, label: 'Workouts'),
   classes(path: '/classes', icon: Icons.groups_outlined, label: 'Classes'),
-  events(path: '/events', icon: Icons.confirmation_number_outlined, label: 'Events'),
+  events(
+    path: '/events',
+    icon: Icons.confirmation_number_outlined,
+    label: 'Events',
+  ),
   profile(path: '/profile', icon: Icons.person_outline, label: 'Profile');
 
   const MemberTab({

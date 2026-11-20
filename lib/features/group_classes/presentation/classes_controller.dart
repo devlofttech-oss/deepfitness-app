@@ -44,10 +44,11 @@ final groupClassProvider = FutureProvider.family<GroupClass?, String>(
 );
 
 /// Upcoming sessions for one class.
-final classSessionsProvider =
-    StreamProvider.family<List<ClassSession>, String>((ref, classId) {
-      return ref.watch(bookingRepositoryProvider).watchSessions(classId);
-    });
+final classSessionsProvider = StreamProvider.family<List<ClassSession>, String>(
+  (ref, classId) {
+    return ref.watch(bookingRepositoryProvider).watchSessions(classId);
+  },
+);
 
 /// The whole upcoming timetable, for the booking tab.
 final upcomingSessionsProvider = StreamProvider<List<ClassSession>>(

@@ -64,9 +64,11 @@ class WorkoutReport {
     }
 
     final daily = <DailyActivity>[];
-    for (var day = range.start;
-        day.isBefore(range.end);
-        day = day.add(const Duration(days: 1))) {
+    for (
+      var day = range.start;
+      day.isBefore(range.end);
+      day = day.add(const Duration(days: 1))
+    ) {
       final onDay = byDay[startOfDay(day)] ?? const <CompletionLog>[];
       daily.add(
         DailyActivity(
@@ -107,8 +109,7 @@ class WorkoutReport {
   /// The denominator is what the member got through, not what was
   /// assigned: an untouched exercise is still ahead of them and counting
   /// it as a failure would punish someone midway through a plan.
-  double get completionRate =>
-      totalLogged == 0 ? 0 : completed / totalLogged;
+  double get completionRate => totalLogged == 0 ? 0 : completed / totalLogged;
 
   int get activeDays => daily.where((day) => day.hasActivity).length;
 

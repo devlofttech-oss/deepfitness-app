@@ -94,10 +94,7 @@ class AdminRepository extends BaseRepository {
   /// Goes through the `setUserRole` callable, never a document write: the
   /// role lives in a custom claim on the token, and a field in Firestore
   /// would be a copy the rules do not read.
-  Future<void> setRole({
-    required String uid,
-    required UserRole role,
-  }) async {
+  Future<void> setRole({required String uid, required UserRole role}) async {
     try {
       await _functions.httpsCallable('setUserRole').call<void>({
         'uid': uid,
@@ -212,9 +209,10 @@ class AdminRepository extends BaseRepository {
     required String authorId,
   }) {
     return guard(() async {
-      final snapshot = snapshotExercises(plan: plan, library: library)
-          .map((exercise) => exercise.toMap())
-          .toList(growable: false);
+      final snapshot = snapshotExercises(
+        plan: plan,
+        library: library,
+      ).map((exercise) => exercise.toMap()).toList(growable: false);
 
       await firestore.collection(Collections.assignedPlans).add({
         'memberId': memberId,

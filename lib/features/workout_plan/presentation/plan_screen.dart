@@ -166,7 +166,8 @@ class _PlanHeader extends StatelessWidget {
                         const SizedBox(height: Insets.xs),
                         Text(
                           '${plan.currentIndex} of ${plan.exercises.length} '
-                          'exercises done'.toUpperCase(),
+                                  'exercises done'
+                              .toUpperCase(),
                           style: theme.headlineSmall,
                         ),
                       ],
@@ -316,11 +317,7 @@ class _StateBadge extends StatelessWidget {
         if (state == _TileState.locked)
           const Padding(
             padding: EdgeInsets.only(right: Insets.xs),
-            child: Icon(
-              Icons.lock_outline,
-              size: 12,
-              color: AppColors.outline,
-            ),
+            child: Icon(Icons.lock_outline, size: 12, color: AppColors.outline),
           ),
         DfLabel(text, colour: colour),
       ],

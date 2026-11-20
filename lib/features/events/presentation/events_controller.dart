@@ -49,8 +49,9 @@ final myRsvpsProvider = StreamProvider<Set<String>>((ref) {
   return ref.watch(eventRepositoryProvider).watchMyRsvps(memberId);
 });
 
-final rsvpControllerProvider =
-    AsyncNotifierProvider<RsvpController, void>(RsvpController.new);
+final rsvpControllerProvider = AsyncNotifierProvider<RsvpController, void>(
+  RsvpController.new,
+);
 
 class RsvpController extends AsyncNotifier<void> {
   @override

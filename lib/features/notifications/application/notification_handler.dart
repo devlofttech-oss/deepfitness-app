@@ -54,9 +54,7 @@ class NotificationHandler {
     // A rotated token has to be written back, or the member quietly
     // stops receiving anything.
     final messaging = _ref.read(messagingServiceProvider);
-    _subscriptions.add(
-      messaging.onTokenRefresh.listen((_) => _reregister()),
-    );
+    _subscriptions.add(messaging.onTokenRefresh.listen((_) => _reregister()));
   }
 
   void dispose() {

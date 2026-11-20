@@ -18,7 +18,11 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   late final Animation<double> _fade;
   late final Animation<double> _scale;
   late final Animation<double> _progress;
+  late final AnimationController _outroController;
+  late final Animation<double> _outroFade;
+  late final Animation<double> _outroScale;
   bool _minimumWaitDone = false;
+  bool _leaving = false;
 
   @override
   void initState() {
@@ -38,15 +42,30 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _scale = Tween<double>(begin: .96, end: 1).animate(
       CurvedAnimation(parent: _introController, curve: Curves.easeOutBack),
     );
-    _progress = Tween<double>(begin: 0, end: .72).animate(
-      CurvedAnimation(
-        parent: _progressController,
-        curve: Curves.easeInOutCubic,
-      ),
+    _progress = CurvedAnimation(
+      parent: _progressController,
+      curve: Curves.easeInOutCubic,
+    );
+    _outroController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _outroFade = Tween<double>(begin: 1, end: 0).animate(
+      CurvedAnimation(parent: _outroController, curve: Curves.easeInCubic),
+    );
+    // Drifts towards the viewer on the way out, so the splash feels like it
+    // opens into the app rather than being swapped for it.
+    _outroScale = Tween<double>(begin: 1, end: 1.04).animate(
+      CurvedAnimation(parent: _outroController, curve: Curves.easeInCubic),
     );
     Future<void>.delayed(const Duration(milliseconds: 520), () {
       if (!mounted) return;
-      _progressController.forward();
+      // Stops short of full: the bar completes on the way out, so it reads
+      // as finishing rather than freezing.
+      _progressController.animateTo(
+        .72,
+        duration: const Duration(milliseconds: 1100),
+      );
     });
     Future<void>.delayed(splashHold, () {
       if (!mounted) return;
@@ -59,6 +78,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   void dispose() {
     _introController.dispose();
     _progressController.dispose();
+    _outroController.dispose();
     super.dispose();
   }
 
@@ -77,47 +97,56 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     final session = ref.watch(authControllerProvider).value;
     final returning = session?.isSignedIn ?? false;
 
-    if (returning) return _HeroSplash(fade: _fade);
+    if (returning) {
+      return _HeroSplash(fade: _fade, outro: _outroFade, scale: _outroScale);
+    }
 
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const CustomPaint(painter: _SplashBackgroundPainter()),
-          SafeArea(
-            child: FadeTransition(
-              opacity: _fade,
-              child: ScaleTransition(
-                scale: _scale,
-                child: Column(
-                  children: [
-                    const Spacer(flex: 5),
-                    const _LogoOrb(),
-                    const SizedBox(height: 44),
-                    const _BrandWordmark(),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Ready to level up?',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: const Color(0xFF9F9F9F),
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0,
+      // Only the contents fade. The Scaffold keeps painting the canvas, and
+      // every screen the router can go to next uses the same colour, so the
+      // handover has nothing visible to cut between.
+      body: _Exit(
+        fade: _outroFade,
+        scale: _outroScale,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            const CustomPaint(painter: _SplashBackgroundPainter()),
+            SafeArea(
+              child: FadeTransition(
+                opacity: _fade,
+                child: ScaleTransition(
+                  scale: _scale,
+                  child: Column(
+                    children: [
+                      const Spacer(flex: 5),
+                      const _LogoOrb(),
+                      const SizedBox(height: 44),
+                      const _BrandWordmark(),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Ready to level up?',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: const Color(0xFF9F9F9F),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 36),
-                    AnimatedBuilder(
-                      animation: _progress,
-                      builder: (context, _) =>
-                          _LoadingBar(value: _progress.value),
-                    ),
-                    const Spacer(flex: 7),
-                  ],
+                      const SizedBox(height: 36),
+                      AnimatedBuilder(
+                        animation: _progress,
+                        builder: (context, _) =>
+                            _LoadingBar(value: _progress.value),
+                      ),
+                      const Spacer(flex: 7),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -130,10 +159,47 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   /// question of when the splash is finished. Both conditions matter: release
   /// before the session resolves and the router would place the member
   /// somewhere it has to correct a moment later.
-  void _goNext(AsyncValue<AuthSession> authState) {
-    if (!mounted || !_minimumWaitDone) return;
+  Future<void> _goNext(AsyncValue<AuthSession> authState) async {
+    if (!mounted || _leaving || !_minimumWaitDone) return;
     if (authState.isLoading && !authState.hasValue) return;
+    _leaving = true;
+
+    // Run the bar to the end before anything moves. Leaving it stalled at
+    // 72% is the thing that makes a splash feel cut off.
+    await _progressController.animateTo(
+      1,
+      duration: const Duration(milliseconds: 260),
+    );
+    if (!mounted) return;
+
+    await _outroController.forward();
+    if (!mounted) return;
+
+    // Released only once the content has faded out, so the route swap
+    // happens against a bare canvas. Every screen shares this background,
+    // so there is nothing left to see changing.
     ref.read(splashGateProvider.notifier).release();
+  }
+}
+
+/// Fades and eases the splash contents out of the way.
+///
+/// Pulled out so both splashes leave identically: one is a framed mark and
+/// the other a photograph, but the exit should not tell you which you were
+/// looking at.
+class _Exit extends StatelessWidget {
+  const _Exit({required this.fade, required this.scale, required this.child});
+
+  final Animation<double> fade;
+  final Animation<double> scale;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: fade,
+      child: ScaleTransition(scale: scale, child: child),
+    );
   }
 }
 
@@ -143,40 +209,50 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 /// scrim top and bottom keeps it from fighting the status bar or the first
 /// frame of the app underneath.
 class _HeroSplash extends StatelessWidget {
-  const _HeroSplash({required this.fade});
+  const _HeroSplash({
+    required this.fade,
+    required this.outro,
+    required this.scale,
+  });
 
   final Animation<double> fade;
+  final Animation<double> outro;
+  final Animation<double> scale;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.surface,
-      body: FadeTransition(
-        opacity: fade,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            Image.asset(
-              'assets/hero.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.topCenter,
-              filterQuality: FilterQuality.medium,
-            ),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.surface.withValues(alpha: .55),
-                    AppColors.surface.withValues(alpha: .10),
-                    AppColors.surface.withValues(alpha: .92),
-                  ],
-                  stops: const [0, .45, 1],
+      body: _Exit(
+        fade: outro,
+        scale: scale,
+        child: FadeTransition(
+          opacity: fade,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.asset(
+                'assets/hero.png',
+                fit: BoxFit.cover,
+                alignment: Alignment.topCenter,
+                filterQuality: FilterQuality.medium,
+              ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.surface.withValues(alpha: .55),
+                      AppColors.surface.withValues(alpha: .10),
+                      AppColors.surface.withValues(alpha: .92),
+                    ],
+                    stops: const [0, .45, 1],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

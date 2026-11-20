@@ -53,9 +53,7 @@ abstract class PagedAdminList<T> extends AsyncNotifier<List<T>> {
 }
 
 final adminMembersProvider =
-    AsyncNotifierProvider<AdminMembersList, List<Member>>(
-      AdminMembersList.new,
-    );
+    AsyncNotifierProvider<AdminMembersList, List<Member>>(AdminMembersList.new);
 
 class AdminMembersList extends PagedAdminList<Member> {
   @override
@@ -98,10 +96,9 @@ final memberHistoryProvider =
               .items,
     );
 
-final adminActionProvider =
-    AsyncNotifierProvider<AdminActionController, void>(
-      AdminActionController.new,
-    );
+final adminActionProvider = AsyncNotifierProvider<AdminActionController, void>(
+  AdminActionController.new,
+);
 
 /// Runs a dashboard write and refreshes whatever it changed.
 ///

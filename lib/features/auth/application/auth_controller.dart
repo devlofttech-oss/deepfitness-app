@@ -105,7 +105,8 @@ class AuthController extends AsyncNotifier<AuthSession> {
         stage: member == null ? AuthStage.needsProfile : AuthStage.ready,
         user: user,
         member: member,
-        role: await ref.read(authServiceProvider).currentRole() ??
+        role:
+            await ref.read(authServiceProvider).currentRole() ??
             UserRole.member,
       );
     });

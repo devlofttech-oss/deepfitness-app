@@ -22,10 +22,7 @@ class EventRepository extends BaseRepository {
     DateTime? now,
   }) {
     final query = notDeleted(firestore.collection(Collections.events))
-        .where(
-          'startsAt',
-          isGreaterThanOrEqualTo: now ?? DateTime.now(),
-        )
+        .where('startsAt', isGreaterThanOrEqualTo: now ?? DateTime.now())
         .orderBy('startsAt');
 
     return paginate<Event>(
@@ -76,10 +73,7 @@ class EventRepository extends BaseRepository {
 
   /// Withdraws the RSVP. A hard delete, because the rules allow a member
   /// to remove only their own and there is no history worth keeping.
-  Future<void> cancelRsvp({
-    required String eventId,
-    required String memberId,
-  }) {
+  Future<void> cancelRsvp({required String eventId, required String memberId}) {
     return guard(() async {
       await firestore
           .collection(Collections.eventRsvps)

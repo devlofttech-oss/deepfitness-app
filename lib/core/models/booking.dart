@@ -53,10 +53,8 @@ class Booking {
 
   /// One booking per member per session, made structural by deriving the
   /// id rather than leaving a duplicate for the rules to catch.
-  static String idFor({
-    required String sessionId,
-    required String memberId,
-  }) => '${sessionId}_$memberId';
+  static String idFor({required String sessionId, required String memberId}) =>
+      '${sessionId}_$memberId';
 
   static Map<String, Object?> create({
     required String sessionId,

@@ -63,8 +63,7 @@ class _EventsScreenState extends ConsumerState<EventsScreen> {
                   body: 'New gym events will show up here.',
                 )
               : RefreshIndicator(
-                  onRefresh: () async =>
-                      ref.invalidate(upcomingEventsProvider),
+                  onRefresh: () async => ref.invalidate(upcomingEventsProvider),
                   child: ListView.separated(
                     controller: _scrollController,
                     padding: const EdgeInsets.fromLTRB(

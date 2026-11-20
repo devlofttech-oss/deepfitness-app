@@ -10,8 +10,7 @@ class AdminMembersScreen extends ConsumerStatefulWidget {
   const AdminMembersScreen({super.key});
 
   @override
-  ConsumerState<AdminMembersScreen> createState() =>
-      _AdminMembersScreenState();
+  ConsumerState<AdminMembersScreen> createState() => _AdminMembersScreenState();
 }
 
 class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
@@ -66,7 +65,8 @@ class _AdminMembersScreenState extends ConsumerState<AdminMembersScreen> {
                     ? LoadMoreRow(
                         // Hidden while a search is narrowing the list,
                         // since more pages would not match it either.
-                        hasMore: _query.isEmpty &&
+                        hasMore:
+                            _query.isEmpty &&
                             ref.read(adminMembersProvider.notifier).hasMore,
                         onTap: () =>
                             ref.read(adminMembersProvider.notifier).loadMore(),
@@ -133,9 +133,7 @@ class _MemberRow extends ConsumerWidget {
           if (member.phone != null) member.phone!,
           member.isLapsed ? 'Lapsed' : 'Active',
         ].join(' · '),
-        style: TextStyle(
-          color: member.isLapsed ? AppColors.error : null,
-        ),
+        style: TextStyle(color: member.isLapsed ? AppColors.error : null),
       ),
       trailing: TextButton(
         onPressed: () => _editMembership(context, ref),
@@ -187,7 +185,6 @@ class _MemberHistory extends ConsumerWidget {
     );
   }
 
-  static String _date(DateTime? value) => value == null
-      ? '—'
-      : '${value.day}/${value.month}/${value.year}';
+  static String _date(DateTime? value) =>
+      value == null ? '—' : '${value.day}/${value.month}/${value.year}';
 }

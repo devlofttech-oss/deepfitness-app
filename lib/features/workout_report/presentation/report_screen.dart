@@ -26,9 +26,9 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       lastDate: DateTime.now(),
     );
     if (picked == null) return;
-    ref.read(reportRangeProvider.notifier).select(
-      ReportRange.custom(from: picked.start, to: picked.end),
-    );
+    ref
+        .read(reportRangeProvider.notifier)
+        .select(ReportRange.custom(from: picked.start, to: picked.end));
   }
 
   @override

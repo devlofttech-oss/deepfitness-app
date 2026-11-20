@@ -52,10 +52,7 @@ class StorageService {
     try {
       final resized = await resizeForUpload(bytes);
       final ref = _storage.ref('members/$uid/profile/avatar.jpg');
-      await ref.putData(
-        resized,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
+      await ref.putData(resized, SettableMetadata(contentType: 'image/jpeg'));
       return await ref.getDownloadURL();
     } on FirebaseException catch (error) {
       throw RepositoryFailure.fromFirestore(error);

@@ -39,9 +39,7 @@ Future<void> main() async {
 
   // Firebase is the backend, so a failure here is fatal rather than
   // something to carry on past: there is nothing for the app to read.
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   if (useEmulator) {
     await connectToEmulators();
   }

@@ -70,10 +70,7 @@ class _AnnouncementCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               '${sent.day}/${sent.month}/${sent.year}',
-              style: TextStyle(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12),
             ),
           ],
           if (announcement.body.isNotEmpty) ...[

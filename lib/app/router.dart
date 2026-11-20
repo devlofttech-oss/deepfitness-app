@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:deepfitness/admin/presentation/admin_announcements_screen.dart';
 import 'package:deepfitness/admin/presentation/admin_classes_screen.dart';
 import 'package:deepfitness/admin/presentation/admin_events_screen.dart';
@@ -87,7 +88,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           if (value?.isLapsed ?? false) {
             return _lapsedAllowed.contains(path) ? null : '/renew';
           }
-          if (isSignInRoute || path == '/onboarding' || path == '/splash' ||
+          if (isSignInRoute ||
+              path == '/onboarding' ||
+              path == '/splash' ||
               path == '/renew') {
             return '/';
           }
@@ -101,7 +104,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/sign-in',
-        builder: (context, state) => const SignInScreen(),
+        pageBuilder: (context, state) => _fadeIn(state, const SignInScreen()),
       ),
       GoRoute(
         path: '/verify',
@@ -125,7 +128,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => const HomeScreen(),
+            pageBuilder: (context, state) => _fadeIn(state, const HomeScreen()),
           ),
           GoRoute(
             path: '/plan',
@@ -208,3 +211,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Fades a screen in rather than sliding it.
+///
+/// Used for the two the splash hands off to. The splash has already faded
+/// its own contents to nothing by then, so a slide would be the only thing
+/// still moving, and it would announce the handover the fade is meant to
+/// hide. Everything else keeps the platform default.
+CustomTransitionPage<void> _fadeIn(GoRouterState state, Widget child) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 320),
+    transitionsBuilder: (context, animation, _, child) => FadeTransition(
+      opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+      child: child,
+    ),
+  );
+}

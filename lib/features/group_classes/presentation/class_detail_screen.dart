@@ -25,7 +25,8 @@ class ClassDetailScreen extends ConsumerWidget {
       body: SafeArea(
         child: groupClass.when(
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => const Center(child: Text('Could not load this class.')),
+          error: (_, _) =>
+              const Center(child: Text('Could not load this class.')),
           data: (data) => data == null
               ? const Center(child: Text('That class is no longer listed.'))
               : ListView(

@@ -143,9 +143,7 @@ abstract final class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: AppText.headlineSmall.copyWith(
-          letterSpacing: 0.5,
-        ),
+        titleTextStyle: AppText.headlineSmall.copyWith(letterSpacing: 0.5),
         iconTheme: const IconThemeData(color: AppColors.onSurfaceVariant),
       ),
       dividerTheme: const DividerThemeData(
@@ -227,9 +225,7 @@ abstract final class AppTheme {
         backgroundColor: AppColors.surfaceContainerHigh,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(Radii.lg),
-          ),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.lg)),
         ),
       ),
       dialogTheme: DialogThemeData(

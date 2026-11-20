@@ -15,8 +15,7 @@ class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  ConsumerState<EditProfileScreen> createState() =>
-      _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
@@ -146,7 +145,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 busy: saving.isLoading,
                 onPressed: _save,
               ),
-
             ],
           ),
         ),

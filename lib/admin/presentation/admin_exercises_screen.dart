@@ -102,8 +102,9 @@ class AdminExercisesScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       if (index == list.length) {
                         return LoadMoreRow(
-                          hasMore:
-                              ref.read(adminExercisesProvider.notifier).hasMore,
+                          hasMore: ref
+                              .read(adminExercisesProvider.notifier)
+                              .hasMore,
                           onTap: () => ref
                               .read(adminExercisesProvider.notifier)
                               .loadMore(),

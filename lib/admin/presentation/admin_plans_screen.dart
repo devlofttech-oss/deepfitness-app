@@ -28,8 +28,10 @@ class AdminPlansScreen extends ConsumerWidget {
     await ref
         .read(adminActionProvider.notifier)
         .run(
-          (repository) =>
-              repository.savePlan(draft, authorId: ref.read(adminAuthorIdProvider)),
+          (repository) => repository.savePlan(
+            draft,
+            authorId: ref.read(adminAuthorIdProvider),
+          ),
           refresh: [adminPlansProvider],
         );
   }
@@ -100,8 +102,9 @@ class AdminPlansScreen extends ConsumerWidget {
                     itemBuilder: (context, index) {
                       if (index == list.length) {
                         return LoadMoreRow(
-                          hasMore:
-                              ref.read(adminPlansProvider.notifier).hasMore,
+                          hasMore: ref
+                              .read(adminPlansProvider.notifier)
+                              .hasMore,
                           onTap: () =>
                               ref.read(adminPlansProvider.notifier).loadMore(),
                         );
@@ -109,9 +112,7 @@ class AdminPlansScreen extends ConsumerWidget {
                       final plan = list[index];
                       return ListTile(
                         title: Text(plan.title),
-                        subtitle: Text(
-                          '${plan.exerciseRefs.length} exercises',
-                        ),
+                        subtitle: Text('${plan.exerciseRefs.length} exercises'),
                         onTap: () => _build(context, ref, existing: plan),
                         trailing: FilledButton.tonal(
                           onPressed: () => _assign(context, ref, plan),
@@ -140,9 +141,7 @@ class _PlanBuilderDialog extends StatefulWidget {
 }
 
 class _PlanBuilderDialogState extends State<_PlanBuilderDialog> {
-  late final _title = TextEditingController(
-    text: widget.existing?.title ?? '',
-  );
+  late final _title = TextEditingController(text: widget.existing?.title ?? '');
   late final List<String> _picked = [...?widget.existing?.exerciseRefs];
 
   @override
@@ -203,16 +202,15 @@ class _PlanBuilderDialogState extends State<_PlanBuilderDialog> {
                     child: _picked.isEmpty
                         ? const Center(child: Text('Nothing picked yet.'))
                         : ReorderableListView(
-                            onReorderItem: (oldIndex, newIndex) =>
-                                setState(() {
-                                  // onReorderItem already accounts for the
-                                  // moved row leaving the list, so newIndex
-                                  // needs no adjusting.
-                                  _picked.insert(
-                                    newIndex,
-                                    _picked.removeAt(oldIndex),
-                                  );
-                                }),
+                            onReorderItem: (oldIndex, newIndex) => setState(() {
+                              // onReorderItem already accounts for the
+                              // moved row leaving the list, so newIndex
+                              // needs no adjusting.
+                              _picked.insert(
+                                newIndex,
+                                _picked.removeAt(oldIndex),
+                              );
+                            }),
                             children: [
                               for (var i = 0; i < _picked.length; i++)
                                 ListTile(

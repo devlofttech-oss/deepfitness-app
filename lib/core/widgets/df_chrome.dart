@@ -6,12 +6,7 @@ import 'package:flutter/material.dart';
 /// The app bar used across the member screens: the wordmark on the left,
 /// notices and the member's avatar on the right.
 class DfBrandBar extends StatelessWidget implements PreferredSizeWidget {
-  const DfBrandBar({
-    super.key,
-    this.photoUrl,
-    this.onNotices,
-    this.onProfile,
-  });
+  const DfBrandBar({super.key, this.photoUrl, this.onNotices, this.onProfile});
 
   final String? photoUrl;
   final VoidCallback? onNotices;
@@ -50,9 +45,9 @@ class DfBrandBar extends StatelessWidget implements PreferredSizeWidget {
             children: [
               Text(
                 'DEEP FITNESS',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  letterSpacing: 0.6,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineSmall?.copyWith(letterSpacing: 0.6),
               ),
               Text(
                 'MYSORE',

@@ -152,8 +152,9 @@ class AssignedPlan {
   /// The document stores progress as a single index, so anything below it
   /// is finished; whether it was completed or skipped lives in the
   /// completion log, not here.
-  ExerciseOutcome outcomeAt(int index) =>
-      index < currentIndex ? ExerciseOutcome.completed : ExerciseOutcome.pending;
+  ExerciseOutcome outcomeAt(int index) => index < currentIndex
+      ? ExerciseOutcome.completed
+      : ExerciseOutcome.pending;
 
   /// Fraction of the plan behind the member, for a progress indicator.
   double get progress {

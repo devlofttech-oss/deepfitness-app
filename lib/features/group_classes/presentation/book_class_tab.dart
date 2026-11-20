@@ -109,8 +109,18 @@ class _DayStrip extends StatelessWidget {
 
   static const _weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    'JAN',
+    'FEB',
+    'MAR',
+    'APR',
+    'MAY',
+    'JUN',
+    'JUL',
+    'AUG',
+    'SEP',
+    'OCT',
+    'NOV',
+    'DEC',
   ];
 
   @override
@@ -136,9 +146,7 @@ class _DayStrip extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: Insets.sm),
               child: _DayTile(
-                top: day == today
-                    ? 'TODAY'
-                    : _weekdays[day.weekday - 1],
+                top: day == today ? 'TODAY' : _weekdays[day.weekday - 1],
                 middle: '${day.day}',
                 bottom: _months[day.month - 1],
                 selected: selected == day,
@@ -212,11 +220,7 @@ class _DayTile extends StatelessWidget {
 
 /// One session: when, who, how full, and the action it affords.
 class _SessionCard extends ConsumerWidget {
-  const _SessionCard({
-    required this.session,
-    this.groupClass,
-    this.booking,
-  });
+  const _SessionCard({required this.session, this.groupClass, this.booking});
 
   final ClassSession session;
   final GroupClass? groupClass;
@@ -284,10 +288,7 @@ class _SessionCard extends ConsumerWidget {
                   color: AppColors.primaryContainer,
                 ),
                 const SizedBox(width: Insets.xs),
-                const DfLabel(
-                  'Booked',
-                  colour: AppColors.primaryContainer,
-                ),
+                const DfLabel('Booked', colour: AppColors.primaryContainer),
                 const Spacer(),
                 const DfLabel('Confirmed'),
               ],
@@ -300,8 +301,7 @@ class _SessionCard extends ConsumerWidget {
               Expanded(
                 child: Row(
                   children: [
-                    if (groupClass != null &&
-                        groupClass!.durationMins > 0) ...[
+                    if (groupClass != null && groupClass!.durationMins > 0) ...[
                       const Icon(
                         Icons.schedule,
                         size: 14,
@@ -314,10 +314,7 @@ class _SessionCard extends ConsumerWidget {
                 ),
               ),
               if (starts != null)
-                Text(
-                  _time(starts),
-                  style: theme.headlineSmall,
-                ),
+                Text(_time(starts), style: theme.headlineSmall),
             ],
           ),
           const SizedBox(height: Insets.xs),
@@ -357,7 +354,8 @@ class _SessionCard extends ConsumerWidget {
             )
           else if (session.isFull)
             DfSecondaryButton(
-              label: 'Join waitlist (position '
+              label:
+                  'Join waitlist (position '
                   '${session.waitlistCount + 1})',
               icon: Icons.hourglass_empty,
               onPressed: busy ? null : () => _book(context, ref),
@@ -422,9 +420,7 @@ class _CapacityBar extends StatelessWidget {
             minHeight: 6,
             backgroundColor: AppColors.surfaceContainerHigh,
             valueColor: AlwaysStoppedAnimation(
-              session.isFull
-                  ? AppColors.outline
-                  : AppColors.primaryContainer,
+              session.isFull ? AppColors.outline : AppColors.primaryContainer,
             ),
           ),
         ),

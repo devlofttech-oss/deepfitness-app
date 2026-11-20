@@ -22,8 +22,7 @@ class AdminClassesScreen extends ConsumerStatefulWidget {
   const AdminClassesScreen({super.key});
 
   @override
-  ConsumerState<AdminClassesScreen> createState() =>
-      _AdminClassesScreenState();
+  ConsumerState<AdminClassesScreen> createState() => _AdminClassesScreenState();
 }
 
 class _AdminClassesScreenState extends ConsumerState<AdminClassesScreen> {
@@ -53,10 +52,10 @@ class _AdminClassesScreenState extends ConsumerState<AdminClassesScreen> {
   }
 
   Future<void> _addSession(GroupClass groupClass) async {
-    final draft = await showDialog<({DateTime startsAt, String instructor, int capacity})>(
-      context: context,
-      builder: (context) => const _SessionDialog(),
-    );
+    final draft =
+        await showDialog<
+          ({DateTime startsAt, String instructor, int capacity})
+        >(context: context, builder: (context) => const _SessionDialog());
     if (draft == null) return;
 
     final saved = await ref
@@ -131,7 +130,9 @@ class _AdminClassesScreenState extends ConsumerState<AdminClassesScreen> {
                       Expanded(
                         child: _selectedClassId == null
                             ? const Center(
-                                child: Text('Pick a class to see its sessions.'),
+                                child: Text(
+                                  'Pick a class to see its sessions.',
+                                ),
                               )
                             : _SessionsPanel(
                                 groupClass: list.firstWhere(

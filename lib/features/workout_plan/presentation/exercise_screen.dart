@@ -37,11 +37,7 @@ class _ExerciseScreenState extends ConsumerState<ExerciseScreen> {
 
     final controller = ref.read(planProgressControllerProvider.notifier);
     final ok = skipped
-        ? await controller.skip(
-            plan: plan,
-            exercise: exercise,
-            reason: reason!,
-          )
+        ? await controller.skip(plan: plan, exercise: exercise, reason: reason!)
         : await controller.complete(
             plan: plan,
             exercise: exercise,
@@ -218,7 +214,8 @@ class _SetGrid extends StatelessWidget {
           // not need the screen to be left and come back.
           onTap: onChanged == null
               ? null
-              : () => onChanged!(filled && index == done - 1 ? index : index + 1),
+              : () =>
+                    onChanged!(filled && index == done - 1 ? index : index + 1),
           child: Container(
             width: 88,
             padding: const EdgeInsets.symmetric(vertical: Insets.sm),

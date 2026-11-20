@@ -114,7 +114,9 @@ class _VerifyCodeScreenState extends ConsumerState<VerifyCodeScreen> {
                     maxLength: 6,
                     autofillHints: const [AutofillHints.oneTimeCode],
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(labelText: 'Six digit code'),
+                    decoration: const InputDecoration(
+                      labelText: 'Six digit code',
+                    ),
                     onSubmitted: (_) => _confirm(),
                   ),
                   if (_error != null) ...[

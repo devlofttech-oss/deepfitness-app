@@ -48,8 +48,9 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
     super.dispose();
   }
 
-  String get _reason =>
-      _selected == _otherLabel ? _otherController.text.trim() : (_selected ?? '');
+  String get _reason => _selected == _otherLabel
+      ? _otherController.text.trim()
+      : (_selected ?? '');
 
   static const _otherLabel = 'Another reason';
 
@@ -85,9 +86,9 @@ class _SkipReasonSheetState extends State<_SkipReasonSheet> {
           Text(
             'The plan still moves on, so you are never stuck. The reason '
             'is what makes this readable in your report later.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.onSurfaceVariant,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.onSurfaceVariant),
           ),
           const SizedBox(height: Insets.md),
           // Plain tiles rather than RadioListTile: the radio group API has

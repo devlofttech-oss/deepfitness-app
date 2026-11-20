@@ -54,7 +54,10 @@ class AdminShell extends StatelessWidget {
                 context.go(_destinations[index].path),
             leading: const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
-              child: Icon(Icons.shield_outlined, color: AppColors.primaryContainer),
+              child: Icon(
+                Icons.shield_outlined,
+                color: AppColors.primaryContainer,
+              ),
             ),
             destinations: [
               for (final destination in _destinations)

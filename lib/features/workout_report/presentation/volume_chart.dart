@@ -16,7 +16,10 @@ class VolumeChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final days = report.daily;
-    final peak = days.fold<int>(0, (max, day) => day.sets > max ? day.sets : max);
+    final peak = days.fold<int>(
+      0,
+      (max, day) => day.sets > max ? day.sets : max,
+    );
 
     // A flat zero would otherwise draw a chart with no vertical extent.
     final maxY = (peak == 0 ? 1 : peak) * 1.2;
@@ -44,7 +47,8 @@ class VolumeChart extends StatelessWidget {
                   ),
                   children: [
                     TextSpan(
-                      text: '${day.day.day}/${day.day.month}'
+                      text:
+                          '${day.day.day}/${day.day.month}'
                           '${day.skipped > 0 ? ' · ${day.skipped} skipped' : ''}',
                       style: const TextStyle(color: AppColors.outline),
                     ),

@@ -144,10 +144,7 @@ class BookingRepository extends BaseRepository {
   /// bookings behind it. Promoting the first waitlisted member is the
   /// `onBookingCancelled` function's work: it writes someone else's
   /// booking, which no client is allowed to do.
-  Future<void> cancel({
-    required String sessionId,
-    required String memberId,
-  }) {
+  Future<void> cancel({required String sessionId, required String memberId}) {
     return guard(() async {
       await firestore.runTransaction((transaction) async {
         final sessionRef = firestore
@@ -178,8 +175,10 @@ class BookingRepository extends BaseRepository {
           transaction.update(sessionRef, {
             // Clamped at zero: a counter that drifted below the real
             // number of bookings would hand out places that do not exist.
-            'bookedCount':
-                (session.bookedCount + decision.bookedDelta).clamp(0, 1 << 31),
+            'bookedCount': (session.bookedCount + decision.bookedDelta).clamp(
+              0,
+              1 << 31,
+            ),
             'waitlistCount': (session.waitlistCount + decision.waitlistDelta)
                 .clamp(0, 1 << 31),
             ...BaseFields.onUpdate(),

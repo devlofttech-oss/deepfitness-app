@@ -125,7 +125,10 @@ class _AdminAnnouncementsScreenState
                 ],
               ),
               const SizedBox(height: 32),
-              Text('Sent before', style: Theme.of(context).textTheme.titleLarge),
+              Text(
+                'Sent before',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
               const SizedBox(height: 8),
               past.when(
                 loading: () => const LinearProgressIndicator(),
@@ -133,9 +136,7 @@ class _AdminAnnouncementsScreenState
                 data: (list) => list.isEmpty
                     ? Text(
                         'Nothing sent yet.',
-                        style: TextStyle(
-                          color: AppColors.onSurfaceVariant,
-                        ),
+                        style: TextStyle(color: AppColors.onSurfaceVariant),
                       )
                     : Column(
                         children: [
