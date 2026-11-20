@@ -1,8 +1,8 @@
 import 'package:deepfitness/app/colors.dart';
 import 'package:deepfitness/features/auth/application/auth_controller.dart';
+import 'package:deepfitness/features/splash/application/splash_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -48,7 +48,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       if (!mounted) return;
       _progressController.forward();
     });
-    Future<void>.delayed(const Duration(milliseconds: 1750), () {
+    Future<void>.delayed(splashHold, () {
       if (!mounted) return;
       _minimumWaitDone = true;
       _goNext(ref.read(authControllerProvider));
@@ -122,13 +122,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     );
   }
 
-  /// Leaves the splash once the minimum wait has passed and the session has
-  /// resolved. Where it goes is the router's decision, not this screen's:
-  /// pushing at the root lets the redirect guard place it.
+  /// Releases the splash once the minimum hold has passed and the session has
+  /// resolved.
+  ///
+  /// It opens the gate rather than navigating. Where to go is the router's
+  /// decision and it already knows how to make it; this screen only owns the
+  /// question of when the splash is finished. Both conditions matter: release
+  /// before the session resolves and the router would place the member
+  /// somewhere it has to correct a moment later.
   void _goNext(AsyncValue<AuthSession> authState) {
     if (!mounted || !_minimumWaitDone) return;
     if (authState.isLoading && !authState.hasValue) return;
-    context.go(authState.hasError ? '/sign-in' : '/');
+    ref.read(splashGateProvider.notifier).release();
   }
 }
 

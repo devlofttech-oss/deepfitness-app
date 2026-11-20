@@ -20,6 +20,7 @@ import 'package:deepfitness/features/home/presentation/home_screen.dart';
 import 'package:deepfitness/features/profile/presentation/edit_profile_screen.dart';
 import 'package:deepfitness/features/profile/presentation/profile_screen.dart';
 import 'package:deepfitness/features/shell/presentation/member_shell.dart';
+import 'package:deepfitness/features/splash/application/splash_gate.dart';
 import 'package:deepfitness/features/splash/presentation/splash_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/exercise_screen.dart';
 import 'package:deepfitness/features/workout_plan/presentation/plan_history_screen.dart';
@@ -45,11 +46,19 @@ const _lapsedAllowed = {
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final session = ref.watch(authControllerProvider);
+  final splashDone = ref.watch(splashGateProvider);
 
   return GoRouter(
     initialLocation: '/splash',
     redirect: (context, state) {
       final path = state.uri.path;
+
+      // Hold the splash until it says it is done. Auth resolving is not the
+      // same event as the member having seen anything: on a warm start
+      // Firebase answers in milliseconds, and the splash went past unseen.
+      if (!splashDone) {
+        return path == '/splash' ? null : '/splash';
+      }
 
       if (session.isLoading && !session.hasValue) {
         return path == '/splash' ? null : '/splash';
