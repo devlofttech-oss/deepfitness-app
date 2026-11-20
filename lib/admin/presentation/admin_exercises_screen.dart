@@ -183,7 +183,9 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
               ImageField(
                 folder: 'exercises',
                 id: widget.existing?.id ?? '',
-                initialUrl: _photoUrls.isEmpty ? null : _photoUrls.first,
+                initialUrl: _photoUrls.isEmpty
+                    ? widget.existing?.posterUrl
+                    : _photoUrls.first,
                 // One image is what the member's plan shows, so a new
                 // upload replaces rather than appends.
                 onUploaded: (url) => setState(() => _photoUrls = [url]),
@@ -244,6 +246,12 @@ class _ExerciseDialogState extends State<_ExerciseDialog> {
                 description: _description.text.trim(),
                 muscleGroup: _muscleGroup.text.trim(),
                 photoUrls: _photoUrls,
+                // Carried straight through. The dashboard does not edit
+                // these — they come from the animation pack import — and a
+                // save writes the whole document, so dropping them here
+                // would silently clear the demonstration.
+                videoUrl: widget.existing?.videoUrl,
+                posterUrl: widget.existing?.posterUrl,
                 defaultSets: int.tryParse(_sets.text) ?? 3,
                 defaultReps: int.tryParse(_reps.text) ?? 10,
               ),

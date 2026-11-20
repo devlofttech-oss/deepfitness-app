@@ -1,5 +1,6 @@
 import 'package:deepfitness/core/models/assigned_plan.dart';
 import 'package:deepfitness/core/models/base_fields.dart';
+import 'package:deepfitness/core/models/exercise.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PlanExercise exercise(String name) =>
@@ -112,6 +113,79 @@ void main() {
     test('an unknown status falls back to active', () {
       expect(AssignedPlanStatus.fromName('nonsense'),
           AssignedPlanStatus.active);
+    });
+  });
+
+  group('demonstration media', () {
+    Exercise libraryExercise({
+      List<String> photoUrls = const [],
+      String? videoUrl,
+      String? posterUrl,
+    }) {
+      return Exercise(
+        base: const BaseFields(id: '0184'),
+        name: 'Hyperextension',
+        photoUrls: photoUrls,
+        videoUrl: videoUrl,
+        posterUrl: posterUrl,
+      );
+    }
+
+    test('the snapshot carries the media across', () {
+      final snapshot = PlanExercise.snapshot(
+        libraryExercise(
+          videoUrl: 'https://cdn/video/0184.mp4',
+          posterUrl: 'https://cdn/poster/0184.webp',
+        ),
+      );
+
+      expect(snapshot.videoUrl, 'https://cdn/video/0184.mp4');
+      expect(snapshot.posterUrl, 'https://cdn/poster/0184.webp');
+    });
+
+    test('the media survives a round trip through Firestore', () {
+      final before = PlanExercise.snapshot(
+        libraryExercise(
+          videoUrl: 'https://cdn/video/0184.mp4',
+          posterUrl: 'https://cdn/poster/0184.webp',
+        ),
+      );
+      final after = PlanExercise.fromMap(
+        before.toMap().cast<String, dynamic>(),
+      );
+
+      expect(after.videoUrl, before.videoUrl);
+      expect(after.posterUrl, before.posterUrl);
+    });
+
+    test('an uploaded photo wins over the imported poster', () {
+      // Uploading one is a deliberate act by a trainer; the poster that
+      // came with the animation pack is only ever a default.
+      final overridden = libraryExercise(
+        photoUrls: const ['https://storage/custom.jpg'],
+        posterUrl: 'https://cdn/poster/0184.webp',
+      );
+
+      expect(overridden.stillUrl, 'https://storage/custom.jpg');
+      expect(
+        PlanExercise.snapshot(overridden).stillUrl,
+        'https://storage/custom.jpg',
+      );
+    });
+
+    test('the poster is used when nothing was uploaded', () {
+      final imported = libraryExercise(posterUrl: 'https://cdn/poster/0184.webp');
+
+      expect(imported.stillUrl, 'https://cdn/poster/0184.webp');
+      expect(
+        PlanExercise.snapshot(imported).stillUrl,
+        'https://cdn/poster/0184.webp',
+      );
+    });
+
+    test('an exercise with no media at all has no still', () {
+      expect(libraryExercise().stillUrl, isNull);
+      expect(PlanExercise.snapshot(libraryExercise()).stillUrl, isNull);
     });
   });
 }

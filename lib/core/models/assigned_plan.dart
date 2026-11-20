@@ -30,6 +30,8 @@ class PlanExercise {
     this.description = '',
     this.muscleGroup = '',
     this.photoUrl,
+    this.videoUrl,
+    this.posterUrl,
     this.sets = 3,
     this.reps = 10,
   });
@@ -41,6 +43,8 @@ class PlanExercise {
       description: (data['description'] as String?) ?? '',
       muscleGroup: (data['muscleGroup'] as String?) ?? '',
       photoUrl: data['photoUrl'] as String?,
+      videoUrl: data['videoUrl'] as String?,
+      posterUrl: data['posterUrl'] as String?,
       sets: (data['sets'] as num?)?.toInt() ?? 3,
       reps: (data['reps'] as num?)?.toInt() ?? 10,
     );
@@ -54,6 +58,8 @@ class PlanExercise {
       description: exercise.description,
       muscleGroup: exercise.muscleGroup,
       photoUrl: exercise.photoUrls.isEmpty ? null : exercise.photoUrls.first,
+      videoUrl: exercise.videoUrl,
+      posterUrl: exercise.posterUrl,
       sets: exercise.defaultSets,
       reps: exercise.defaultReps,
     );
@@ -64,8 +70,19 @@ class PlanExercise {
   final String description;
   final String muscleGroup;
   final String? photoUrl;
+
+  /// Copied at assignment time like everything else here, so a member's
+  /// plan keeps playing the demonstration they were given even if the
+  /// library entry is later re-imported or retired.
+  final String? videoUrl;
+  final String? posterUrl;
+
   final int sets;
   final int reps;
+
+  /// The still to show before anything plays. A hand-uploaded photo wins
+  /// over the pack's poster, as it does in the library.
+  String? get stillUrl => photoUrl ?? posterUrl;
 
   Map<String, Object?> toMap() => {
     'exerciseId': exerciseId,
@@ -73,6 +90,8 @@ class PlanExercise {
     'description': description,
     'muscleGroup': muscleGroup,
     'photoUrl': photoUrl,
+    'videoUrl': videoUrl,
+    'posterUrl': posterUrl,
     'sets': sets,
     'reps': reps,
   };

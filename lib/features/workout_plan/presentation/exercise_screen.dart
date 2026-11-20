@@ -99,17 +99,8 @@ class _ExerciseScreenState extends ConsumerState<ExerciseScreen> {
             Insets.xl,
           ),
           children: [
-            if (exercise.photoUrl != null)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(Radii.base),
-                child: Image.network(
-                  exercise.photoUrl!,
-                  height: 200,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const SizedBox.shrink(),
-                ),
-              ),
+            if (exercise.stillUrl != null)
+              _Demonstration(url: exercise.stillUrl!),
             const SizedBox(height: Insets.md),
             Text(exercise.name.toUpperCase(), style: theme.headlineLarge),
             const SizedBox(height: Insets.xs),
@@ -182,6 +173,60 @@ class _ExerciseScreenState extends ConsumerState<ExerciseScreen> {
                   : () => _finish(plan, exercise, skipped: true),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The demonstration still for the current exercise.
+///
+/// Square, because the animation pack is square and cropping a body
+/// demonstration to a letterbox cuts off the head and the feet — which is
+/// most of what makes the movement readable. Capped so it does not take the
+/// whole screen on a tall phone and push the set grid below the fold.
+///
+/// It reserves its space before the image arrives, so the controls under it
+/// do not jump once the network answers.
+class _Demonstration extends StatelessWidget {
+  const _Demonstration({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 320),
+        child: AspectRatio(
+          aspectRatio: 1,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(Radii.base),
+            child: ColoredBox(
+              color: AppColors.surfaceContainerLow,
+              child: Image.network(
+                url,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) => progress == null
+                    ? child
+                    : const Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                // A missing demonstration is not worth an error state: the
+                // name, the sets and the instructions are all still there.
+                errorBuilder: (_, _, _) => const Center(
+                  child: Icon(
+                    Icons.fitness_center,
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );

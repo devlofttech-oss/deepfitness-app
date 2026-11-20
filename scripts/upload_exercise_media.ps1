@@ -63,7 +63,7 @@ foreach ($pass in $passes) {
     continue
   }
 
-  $args = @(
+  $awsArgs = @(
     "s3", "sync", $local, "s3://$Bucket/$Prefix/$($pass.Dir)/",
     "--endpoint-url", $endpoint,
     "--exclude", "*", "--include", $pass.Pattern,
@@ -71,11 +71,11 @@ foreach ($pass in $passes) {
     "--cache-control", $cacheControl,
     "--no-progress"
   )
-  if ($DryRun) { $args += "--dryrun" }
+  if ($DryRun) { $awsArgs += "--dryrun" }
 
   Write-Output ""
   Write-Output "=== $($pass.Dir) -> s3://$Bucket/$Prefix/$($pass.Dir)/  ($($pass.Type))"
-  & aws @args
+  & aws @awsArgs
   if ($LASTEXITCODE -ne 0) { throw "aws s3 sync failed for $($pass.Dir)" }
 }
 
