@@ -71,6 +71,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       _goNext(next);
     });
 
+    // Signed in goes to the app, signed out goes to sign-in, so the splash
+    // shows the artwork for wherever it is about to land: the logo on the way
+    // to the login page, the hero on the way into the app itself.
+    final session = ref.watch(authControllerProvider).value;
+    final returning = session?.isSignedIn ?? false;
+
+    if (returning) return _HeroSplash(fade: _fade);
+
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Stack(
@@ -124,6 +132,52 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 }
 
+/// The splash a signed-in member sees on the way back into the app.
+///
+/// Full bleed rather than a framed logo: this one is a photograph, and a
+/// scrim top and bottom keeps it from fighting the status bar or the first
+/// frame of the app underneath.
+class _HeroSplash extends StatelessWidget {
+  const _HeroSplash({required this.fade});
+
+  final Animation<double> fade;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: FadeTransition(
+        opacity: fade,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            Image.asset(
+              'assets/hero.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+              filterQuality: FilterQuality.medium,
+            ),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.surface.withValues(alpha: .55),
+                    AppColors.surface.withValues(alpha: .10),
+                    AppColors.surface.withValues(alpha: .92),
+                  ],
+                  stops: const [0, .45, 1],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LogoOrb extends StatelessWidget {
   const _LogoOrb();
 
@@ -161,7 +215,7 @@ class _LogoOrb extends StatelessWidget {
           Positioned(left: 58, top: 134, child: _Sparkle(size: 20)),
           Positioned(right: 62, top: 124, child: _Sparkle(size: 18)),
           Image.asset(
-            'assets/logo2.png',
+            'assets/logo.png',
             width: 164,
             height: 164,
             fit: BoxFit.contain,

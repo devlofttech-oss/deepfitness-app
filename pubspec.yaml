@@ -62,6 +62,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -76,7 +77,7 @@ flutter:
 
   assets:
     - assets/logo.png
-    - assets/logo2.png
+    - assets/hero.png
     - assets/body/
     - assets/body/male/
     - assets/body/female/
@@ -111,3 +112,20 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Launcher icons, generated from assets/logo.png.
+#
+# Regenerate after changing the source image:
+#     dart run flutter_launcher_icons
+#
+# The adaptive icon needs its own background: Android masks the foreground to
+# whatever shape the launcher wants, and a logo drawn to the edges loses its
+# corners. #121315 matches AppColors.surface, so the icon sits on the app's
+# own canvas rather than a white square.
+flutter_launcher_icons:
+  image_path: "assets/logo.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#121315"
+  adaptive_icon_foreground: "assets/logo.png"

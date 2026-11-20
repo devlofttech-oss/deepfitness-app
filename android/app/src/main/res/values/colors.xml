@@ -9,4 +9,8 @@
          values/styles.xml, values-v31/styles.xml and both launch_background
          drawables. -->
     <color name="launch_background">#121315</color>
+
+    <!-- Behind the adaptive launcher icon, written by flutter_launcher_icons
+         from the adaptive_icon_background in pubspec.yaml. -->
+    <color name="ic_launcher_background">#121315</color>
 </resources>
