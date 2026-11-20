@@ -113,7 +113,12 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# Launcher icons, generated from assets/logo.png.
+# Launcher icons, generated from tool/app_icon.png.
+#
+# The source lives outside assets/ on purpose. Anything under assets/ and
+# declared above is bundled into the APK, and the icon source is only needed
+# at build time -- shipping a 1150 KB copy to every handset for a file the app
+# never reads is pure weight. assets/logo.png is the smaller in-app copy.
 #
 # Regenerate after changing the source image:
 #     dart run flutter_launcher_icons
@@ -123,9 +128,9 @@ flutter:
 # corners. #121315 matches AppColors.surface, so the icon sits on the app's
 # own canvas rather than a white square.
 flutter_launcher_icons:
-  image_path: "assets/logo.png"
+  image_path: "tool/app_icon.png"
   android: true
   ios: true
   remove_alpha_ios: true
   adaptive_icon_background: "#121315"
-  adaptive_icon_foreground: "assets/logo.png"
+  adaptive_icon_foreground: "tool/app_icon.png"
