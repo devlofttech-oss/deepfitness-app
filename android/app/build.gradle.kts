@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -5,6 +8,20 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+
+// The upload key, when there is one.
+//
+// `key.properties` holds the keystore path and its passwords and is in
+// android/.gitignore, so it never reaches the repository. A machine without
+// it still builds — see the release build type below — which keeps
+// `flutter run --release` working for anyone who has not been given the key.
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        FileInputStream(keystorePropertiesFile).use { load(it) }
+    }
+}
+val hasUploadKey = keystorePropertiesFile.exists()
 
 android {
     namespace = "com.deepfitness.app"
@@ -26,11 +43,34 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (hasUploadKey) {
+            create("release") {
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+                storePassword = keystoreProperties.getProperty("storePassword")
+                storeFile = keystoreProperties.getProperty("storeFile")?.let { file(it) }
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Falls back to the debug keys so a developer without the upload
+            // key can still build and install a release APK. That fallback is
+            // also a trap: a debug-signed artifact looks normal and Play will
+            // reject it, so CI checks the signer after building rather than
+            // trusting this. See the "Verify the signer" step in ci.yml.
+            signingConfig = if (hasUploadKey) {
+                signingConfigs.getByName("release")
+            } else {
+                logger.warn(
+                    "WARNING: no android/key.properties — signing the release " +
+                        "build with the DEBUG key. This artifact cannot be " +
+                        "uploaded to the Play Console.",
+                )
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }
