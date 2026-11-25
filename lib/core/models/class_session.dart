@@ -23,9 +23,9 @@ class ClassSession {
       classId: (data['classId'] as String?) ?? '',
       instructor: (data['instructor'] as String?) ?? '',
       startsAt: readTimestamp(data['startsAt']),
-      capacity: (data['capacity'] as num?)?.toInt() ?? 0,
-      bookedCount: (data['bookedCount'] as num?)?.toInt() ?? 0,
-      waitlistCount: (data['waitlistCount'] as num?)?.toInt() ?? 0,
+      capacity: readInt(data['capacity'], 0),
+      bookedCount: readInt(data['bookedCount'], 0),
+      waitlistCount: readInt(data['waitlistCount'], 0),
     );
   }
 

@@ -32,8 +32,8 @@ class Exercise {
       photoUrls: readStringList(data['photoUrls']),
       videoUrl: data['videoUrl'] as String?,
       posterUrl: data['posterUrl'] as String?,
-      defaultSets: (data['defaultSets'] as num?)?.toInt() ?? 3,
-      defaultReps: (data['defaultReps'] as num?)?.toInt() ?? 10,
+      defaultSets: readInt(data['defaultSets'], 3),
+      defaultReps: readInt(data['defaultReps'], 10),
     );
   }
 

@@ -188,4 +188,63 @@ void main() {
       expect(PlanExercise.snapshot(libraryExercise()).stillUrl, isNull);
     });
   });
+
+  group('numbers that arrived as strings', () {
+    // The seeded plan in the live project stores reps as "8", and "45s" for
+    // a plank. A `as num?` cast throws on those rather than returning null,
+    // so the whole plan stream failed and every member saw "Could not load
+    // your plan" with nothing in the logs to say why.
+    test('a plan exercise written with a string rep count still parses', () {
+      final parsed = PlanExercise.fromMap(const <String, dynamic>{
+        'exerciseId': 'bench-press',
+        'name': 'Bench Press',
+        'sets': 4,
+        'reps': '8',
+      });
+
+      expect(parsed.name, 'Bench Press');
+      expect(parsed.sets, 4);
+      expect(parsed.reps, 8);
+    });
+
+    test('a duration in the reps field reads as its leading number', () {
+      final plank = PlanExercise.fromMap(const <String, dynamic>{
+        'exerciseId': 'plank',
+        'name': 'Plank',
+        'sets': 3,
+        'reps': '45s',
+      });
+
+      expect(plank.reps, 45);
+    });
+
+    test('an unparseable value falls back instead of throwing', () {
+      final odd = PlanExercise.fromMap(const <String, dynamic>{
+        'exerciseId': 'x',
+        'name': 'X',
+        'sets': 'as many as you like',
+        'reps': null,
+      });
+
+      expect(odd.sets, 3);
+      expect(odd.reps, 10);
+    });
+
+    test('a whole plan of string-typed exercises parses', () {
+      final plan = AssignedPlan.fromMap(const <String, dynamic>{
+        'memberId': 'member-1',
+        'planId': 'push-day',
+        'title': 'Push Day',
+        'currentIndex': 0,
+        'status': 'active',
+        'exercises': [
+          {'exerciseId': 'bench-press', 'name': 'Bench Press', 'sets': 4, 'reps': '8'},
+          {'exerciseId': 'plank', 'name': 'Plank', 'sets': 3, 'reps': '45s'},
+        ],
+      }, 'plan-1');
+
+      expect(plan.exercises, hasLength(2));
+      expect(plan.exercises.map((e) => e.reps), [8, 45]);
+    });
+  });
 }

@@ -35,7 +35,7 @@ class Booking {
       sessionId: (data['sessionId'] as String?) ?? '',
       memberId: (data['memberId'] as String?) ?? '',
       status: BookingStatus.fromName(data['status']),
-      position: (data['position'] as num?)?.toInt() ?? 0,
+      position: readInt(data['position'], 0),
     );
   }
 

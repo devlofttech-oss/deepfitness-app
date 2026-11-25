@@ -39,7 +39,7 @@ class GroupClass {
       videoProvider: VideoProvider.fromName(data['videoProvider']),
       videoId: (data['videoId'] as String?) ?? '',
       thumbnailUrl: data['thumbnailUrl'] as String?,
-      durationMins: (data['durationMins'] as num?)?.toInt() ?? 0,
+      durationMins: readInt(data['durationMins'], 0),
     );
   }
 

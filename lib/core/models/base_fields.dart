@@ -68,6 +68,25 @@ DateTime? readTimestamp(Object? value) {
   return null;
 }
 
+/// Reads a field that should be a whole number, whatever shape it arrived in.
+///
+/// A plain `as num?` cast looks safe and is not: casting a String to `num?`
+/// throws rather than yielding null, so one document with `"8"` where 8 was
+/// meant takes down the whole screen that reads it. Not every document is
+/// written by this app — seed scripts, imports and the dashboard have all
+/// put strings in numeric fields — so the parse has to survive it.
+///
+/// Digits are taken from the front of a string, which is what makes `"45s"`
+/// read as 45 instead of falling back and silently losing the number.
+int readInt(Object? value, int fallback) {
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final match = RegExp(r'-?\d+').firstMatch(value);
+    if (match != null) return int.tryParse(match.group(0)!) ?? fallback;
+  }
+  return fallback;
+}
+
 /// Reads a list field, defaulting to empty rather than throwing on a document
 /// written before the field existed.
 List<String> readStringList(Object? value) {

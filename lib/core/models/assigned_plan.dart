@@ -45,8 +45,8 @@ class PlanExercise {
       photoUrl: data['photoUrl'] as String?,
       videoUrl: data['videoUrl'] as String?,
       posterUrl: data['posterUrl'] as String?,
-      sets: (data['sets'] as num?)?.toInt() ?? 3,
-      reps: (data['reps'] as num?)?.toInt() ?? 10,
+      sets: readInt(data['sets'], 3),
+      reps: readInt(data['reps'], 10),
     );
   }
 
@@ -115,10 +115,20 @@ class AssignedPlan {
     DocumentSnapshot<Map<String, dynamic>> snapshot,
     SnapshotOptions? _,
   ) {
-    final data = snapshot.data() ?? const <String, dynamic>{};
+    return AssignedPlan.fromMap(
+      snapshot.data() ?? const <String, dynamic>{},
+      snapshot.id,
+    );
+  }
+
+  /// Builds a plan from a plain document map.
+  ///
+  /// Separate from [fromFirestore] so the parsing can be tested against the
+  /// shapes documents actually arrive in, without standing up a snapshot.
+  factory AssignedPlan.fromMap(Map<String, dynamic> data, String id) {
     final raw = data['exercises'];
     return AssignedPlan(
-      base: BaseFields.fromMap(snapshot.id, data),
+      base: BaseFields.fromMap(id, data),
       memberId: (data['memberId'] as String?) ?? '',
       planId: (data['planId'] as String?) ?? '',
       title: (data['title'] as String?) ?? '',
@@ -128,7 +138,7 @@ class AssignedPlan {
                 .map(PlanExercise.fromMap)
                 .toList(growable: false)
           : const [],
-      currentIndex: (data['currentIndex'] as num?)?.toInt() ?? 0,
+      currentIndex: readInt(data['currentIndex'], 0),
       status: AssignedPlanStatus.fromName(data['status']),
       assignedAt: readTimestamp(data['assignedAt']),
     );

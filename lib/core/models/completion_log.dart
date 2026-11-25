@@ -26,7 +26,7 @@ class CompletionLog {
       memberId: (data['memberId'] as String?) ?? '',
       assignedPlanId: (data['assignedPlanId'] as String?) ?? '',
       exerciseName: (data['exerciseName'] as String?) ?? '',
-      setsDone: (data['setsDone'] as num?)?.toInt() ?? 0,
+      setsDone: readInt(data['setsDone'], 0),
       skipped: (data['skipped'] as bool?) ?? false,
       skipReason: data['skipReason'] as String?,
       completedAt: readTimestamp(data['completedAt']),
